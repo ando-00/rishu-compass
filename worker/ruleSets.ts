@@ -99,6 +99,7 @@ function buildDataset(row: RuleSetRow, source: Source, confirmation: Confirmatio
   const name = `${source.name} 確定ルール 第${row.id}版`;
   return {
     ...createDataset(`${DATASET_PREFIX}${row.id}`, name, acceptRules(rules, accepted), source.courses, source.students),
+    sourceId: source.id,
     confirmation: {
       proposalId: row.id,
       respondent: confirmation.respondent,

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AdviseResponse, Correction, SavedAdvice } from "../shared/advise";
 import type { Answers } from "../shared/api";
-import { adviseStudent, fetchLatestAdvice } from "./api";
+import { adviseStudent, fetchLatestAdvice, loadRecordedAdvice } from "./api";
 import { PlanBadge } from "./StatusBadge";
 
 type Props = {
@@ -76,6 +76,14 @@ function PlanResult({ result }: { result: Extract<AdviseResponse, { status: "pas
 }
 
 function RecordNote({ saved }: { saved: SavedAdvice }) {
+  const recording = saved.advice?.status === "passed" ? saved.advice.recording : undefined;
+  if (recording) {
+    return (
+      <p className="notice">
+        {recording.recordedAt} に {recording.model} で作った記録を読み込みました。今のルールで検査し直しています。今回は Claude を呼んでいません。
+      </p>
+    );
+  }
   return (
     <p className="muted">
       {saved.recordedAt
@@ -108,13 +116,13 @@ export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
       });
   }, [datasetId, studentId, answers]);
 
-  async function run() {
+  async function run(create: typeof adviseStudent) {
     const request = ++latestRequest.current;
     setRunning(true);
     setSaved(null);
     setError(null);
     try {
-      const created = await adviseStudent(datasetId, studentId, answers);
+      const created = await create(datasetId, studentId, answers);
       if (request === latestRequest.current) setSaved(created);
     } catch (cause) {
       if (request !== latestRequest.current) return;
@@ -131,9 +139,19 @@ export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
         履修中の科目をすべて修得した前提で、Claude が案を組みます。検査を通った案だけを表示します。
       </p>
       <div className="actions">
-        <button type="button" disabled={running} onClick={() => void run()}>
+        <button type="button" disabled={running} onClick={() => void run(adviseStudent)}>
           {running ? "作成中です" : result ? "履修案を作り直す" : "履修案を作る"}
         </button>
+        {saved?.recordingAvailable && !result && (
+          <button
+            type="button"
+            className="secondary"
+            disabled={running}
+            onClick={() => void run(loadRecordedAdvice)}
+          >
+            記録を読み込む
+          </button>
+        )}
       </div>
       {error && <p role="alert" className="error">{error}</p>}
       {saved && result && (

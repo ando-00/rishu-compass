@@ -19,6 +19,8 @@ export const adviseResponseSchema = z.discriminatedUnion("status", [
     iterations: z.number(),
     // 経過を残す前に作った記録には、この項目がない
     corrections: z.array(correctionSchema).default([]),
+    // 同梱の記録を読み込んだ案にだけ付く。この案では Claude を呼んでいない
+    recording: z.object({ model: z.string(), recordedAt: z.string() }).optional(),
   }),
   z.object({
     status: z.literal("needs_staff"),
@@ -31,6 +33,8 @@ export const adviseResponseSchema = z.discriminatedUnion("status", [
 export const savedAdviceSchema = z.object({
   advice: adviseResponseSchema.nullable(),
   recordedAt: z.string().nullable(),
+  // 今の回答と今のルールで検査を通る、同梱の記録があるときに true
+  recordingAvailable: z.boolean().optional(),
 });
 
 export type Correction = z.infer<typeof correctionSchema>;

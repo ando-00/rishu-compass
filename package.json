@@ -18,7 +18,8 @@
     "eval:advise": "tsx evals/advise.ts",
     "eval:score": "tsx evals/score.ts",
     "eval:recheck": "tsx evals/recheck.ts",
-    "record:proposal": "tsx evals/record-proposal.ts"
+    "record:proposal": "tsx evals/record-proposal.ts",
+    "record:advice": "tsx evals/record-advice.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

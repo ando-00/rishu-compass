@@ -33,6 +33,7 @@
 | `data/fictional/kamome/gold-rules.ts` | かもめ大学の正解ルール | 下の「かもめ大学の正解ルール」のとおり |
 | `data/fictional/sakuradai/gold-eval.json` | 評価用の10名の正解（まだない） | 作り手が書く。区分別の不足単位、今年度の卒業が難しいか、職員に回すか、伝える要点の番号を学生ごとに持つ。形は `evals/scoring.ts` にある。Claude の出力や `engine/` の結果から作らない |
 | `data/fictional/*/recorded-proposal.json` | API キーなしで試すための、実際の変換の記録 | `evals/results/extract/` の最新の記録から `npm run record:proposal` で作る。Claude の出力で、正解ではない |
+| `data/fictional/sakuradai/recorded-advice.json` | API キーなしで試すための、表示用の学生3人の履修案の記録 | `npm run record:advice` で実際の Claude を呼んで作る。学生は第6条の回答で判定が変わる型から選んだ。読み込むときに今のルールで検査し直す |
 
 かもめ大学の科目データでは、名前に「演習」を含む科目に科目群「演習」を付けました。これは名前からの機械的な分類で、手引きの「演習科目」の解釈を確定するものではありません。
 

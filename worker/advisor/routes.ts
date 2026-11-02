@@ -7,7 +7,7 @@ import { resolveDataset } from "../ruleSets";
 import { ModelError } from "../rule-extraction/model";
 import { adviseStudent } from "./advise";
 import { createAdvisorLoop } from "./claude";
-import { findAdvice, recordAdvice } from "./records";
+import { findAdvice, findRecordedAdvice, recordAdvice } from "./records";
 
 type Bindings = { Bindings: Env & ClaudeBindings };
 
@@ -26,8 +26,12 @@ async function readRequest(c: Context<Bindings>) {
     return c.json({ error: "回答の形式が正しくありません" }, 400);
   }
 
-  const { id, rules, courses } = dataset;
-  return { datasetId: id, input: { rules, courses, student, answers: body.data.answers } };
+  const { id, sourceId, rules, courses } = dataset;
+  return {
+    datasetId: id,
+    sourceId: sourceId ?? id,
+    input: { rules, courses, student, answers: body.data.answers },
+  };
 }
 
 advisorRoutes.post("/:id/students/:studentId/advise", async (c) => {
@@ -50,5 +54,17 @@ advisorRoutes.post("/:id/students/:studentId/advise", async (c) => {
 advisorRoutes.post("/:id/students/:studentId/advice/latest", async (c) => {
   const request = await readRequest(c);
   if (request instanceof Response) return request;
-  return c.json(await findAdvice(c.env?.DB, request.datasetId, request.input));
+  const { datasetId, sourceId, input } = request;
+  const saved = await findAdvice(c.env?.DB, datasetId, input);
+  return c.json(findRecordedAdvice(sourceId, input) ? { ...saved, recordingAvailable: true } : saved);
+});
+
+// Claude を呼ばず、同梱の記録を通常の案と同じように記録して返す。
+advisorRoutes.post("/:id/students/:studentId/advice/recorded", async (c) => {
+  const request = await readRequest(c);
+  if (request instanceof Response) return request;
+  const { datasetId, sourceId, input } = request;
+  const advice = findRecordedAdvice(sourceId, input);
+  if (!advice) return c.json({ error: "この学生と回答の記録はありません" }, 404);
+  return c.json({ advice, recordedAt: await recordAdvice(c.env?.DB, datasetId, input, advice) });
 });

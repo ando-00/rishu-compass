@@ -23,6 +23,7 @@ export type Dataset = {
   problems: string[];
   // 職員が確定したルールの対象にだけある
   confirmation?: { proposalId: number; respondent: Respondent; confirmedAt: string };
+  sourceId?: string;
 };
 
 type Source = {
