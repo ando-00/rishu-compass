@@ -1,7 +1,5 @@
 // 本物の SDK を偽の fetch の上で動かし、失敗が種類どおりに返ることを確かめる。API は呼ばない。
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createClaudeModel } from "../rule-extraction/claude";
-import { extractRules } from "../rule-extraction/extract";
 import app from "../index";
 
 const KEY = "test-key-should-not-leak";
