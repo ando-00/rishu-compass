@@ -2,7 +2,9 @@ import type { z } from "zod";
 import { adviseResponseSchema } from "../shared/advise";
 import {
   answerRecordsResponseSchema,
+  confirmResponseSchema,
   datasetsResponseSchema,
+  latestProposalResponseSchema,
   overviewResponseSchema,
   planCheckResponseSchema,
   proposalResponseSchema,
@@ -32,6 +34,24 @@ function post(path: string, body: unknown) {
 
 export async function fetchDatasets() {
   return readJson(await fetch("/api/datasets"), datasetsResponseSchema);
+}
+
+export async function fetchLatestProposal(sourceId: string) {
+  const res = await fetch(`/api/sources/${sourceId}/proposals/latest`);
+  return readJson(res, latestProposalResponseSchema);
+}
+
+export async function confirmProposal(
+  proposalId: number,
+  body: { respondent: Respondent; acceptedRuleIds: string[] },
+) {
+  const res = await post(`/api/proposals/${proposalId}/confirm`, body);
+  return readJson(res, confirmResponseSchema);
+}
+
+export async function withdrawProposal(proposalId: number, respondent: Respondent) {
+  const res = await post(`/api/proposals/${proposalId}/withdraw`, { respondent });
+  if (!res.ok) await readJson(res, confirmResponseSchema);
 }
 
 export async function fetchSources() {

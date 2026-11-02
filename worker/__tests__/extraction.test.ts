@@ -50,6 +50,7 @@ const INPUT: ExtractionInput = {
   handbook: HANDBOOK,
   courses: COURSES,
   students: STUDENTS,
+  cases: [],
 };
 
 type Row = ExtractionOutput["rules"][number];

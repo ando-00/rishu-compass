@@ -6,7 +6,7 @@ import {
   type OverviewResponse,
   type Respondent,
 } from "../shared/api";
-import { fetchAnswerRecords, fetchDatasets, fetchOverview, saveAnswer } from "./api";
+import { fetchAnswerRecords, fetchDatasets, fetchOverview, saveAnswer, withdrawProposal } from "./api";
 import { ExtractionPanel } from "./ExtractionPanel";
 import { OutreachPanel } from "./OutreachPanel";
 import { QuestionsPanel } from "./QuestionsPanel";
@@ -124,10 +124,38 @@ export function App() {
     setSelectedId(null);
   }
 
+  async function reloadDatasets() {
+    const result = await fetchDatasets();
+    setDatasets(result.datasets);
+    return result.datasets;
+  }
+
+  async function openConfirmed(id: string) {
+    try {
+      await reloadDatasets();
+      changeDataset(id);
+      setTab("questions");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "取得に失敗しました。");
+    }
+  }
+
+  async function withdraw(proposalId: number) {
+    try {
+      await withdrawProposal(proposalId, respondent);
+      const [first] = await reloadDatasets();
+      if (first) changeDataset(first.id);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "確定を取り消せませんでした。");
+    }
+  }
+
   function openStudent(studentId: string) {
     setSelectedId(studentId);
     setTab("students");
   }
+
+  const confirmation = datasets.find(({ id }) => id === datasetId)?.confirmation;
 
   return (
     <main>
@@ -162,6 +190,17 @@ export function App() {
           </label>
         </div>
       </header>
+
+      {confirmation && (
+        <p className="confirmation">
+          <span className="muted">
+            {confirmation.respondent}が{new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定したルールです。
+          </span>
+          <button type="button" className="secondary" onClick={() => void withdraw(confirmation.proposalId)}>
+            確定を取り消す
+          </button>
+        </p>
+      )}
 
       {error && <pre role="alert" className="error">{error}</pre>}
       {answerError && <pre role="alert" className="error">{answerError}</pre>}
@@ -218,7 +257,11 @@ export function App() {
 
       {/* 変換には数分かかるので、タブを切り替えても結果を残す */}
       <div hidden={tab !== "import"}>
-        <ExtractionPanel />
+        <ExtractionPanel
+          datasets={datasets}
+          respondent={respondent}
+          onConfirmed={(id) => void openConfirmed(id)}
+        />
       </div>
     </main>
   );

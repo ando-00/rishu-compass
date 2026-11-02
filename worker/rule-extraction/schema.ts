@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Course, RuleSet, Student } from "../../engine";
+import type { CheckCase } from "../../engine/checkCases";
 import type { GateTarget, StudentCondition } from "../../engine/rules";
 
 // Structured Outputs はスキーマの文法の大きさに上限がある。ルールの種類ごとに別の形を書くと
@@ -122,6 +123,7 @@ export type RuleSetMeta = {
 export type ExtractionSource = RuleSetMeta & {
   courses: Course[];
   students: Student[];
+  cases: CheckCase[];
 };
 
 function toCondition(rule: RuleRow, problems: string[]) {

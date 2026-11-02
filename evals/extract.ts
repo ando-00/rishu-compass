@@ -4,12 +4,15 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { kamomeCheckCases } from "../data/fictional/kamome/check-cases";
 import { kamomeCourses } from "../data/fictional/kamome/courses";
 import { kamomeStudents } from "../data/fictional/kamome/students";
+import { sakuradaiCheckCases } from "../data/fictional/sakuradai/check-cases";
 import { sakuradaiCourses } from "../data/fictional/sakuradai/courses";
 import { sakuradaiStudents } from "../data/fictional/sakuradai/students";
 import { ADMISSION_YEARS } from "../data/fictional/students";
 import { computeImpacts, type Course, type RuleSet, type Student } from "../engine";
+import type { CheckCase } from "../engine/checkCases";
 import { createClaudeModel, MODEL_ID } from "../worker/rule-extraction/claude";
 import { extractConsensus, RUN_COUNT } from "../worker/rule-extraction/consensus";
 import type { Attempt } from "../worker/rule-extraction/extract";
@@ -18,9 +21,19 @@ import { compareJudgments } from "./compare";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const SOURCES: Record<string, { name: string; courses: Course[]; students: Student[] }> = {
-  sakuradai: { name: "さくら台大学（架空）", courses: sakuradaiCourses, students: sakuradaiStudents },
-  kamome: { name: "かもめ大学（架空）", courses: kamomeCourses, students: kamomeStudents },
+const SOURCES: Record<string, { name: string; courses: Course[]; students: Student[]; cases: CheckCase[] }> = {
+  sakuradai: {
+    name: "さくら台大学（架空）",
+    courses: sakuradaiCourses,
+    students: sakuradaiStudents,
+    cases: sakuradaiCheckCases,
+  },
+  kamome: {
+    name: "かもめ大学（架空）",
+    courses: kamomeCourses,
+    students: kamomeStudents,
+    cases: kamomeCheckCases,
+  },
 };
 
 // Opus 5.5 の 100万トークンあたりの価格（ドル）
@@ -110,6 +123,7 @@ async function run(id: string, apiKey: string) {
           problems: result.problems,
           disagreements: result.disagreements,
           extraQuestions: result.extraQuestions,
+          caseResults: result.caseResults,
           notes: result.notes,
           impacts:
             result.problems.length === 0

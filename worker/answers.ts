@@ -4,7 +4,8 @@ import {
   type AnswerRecord,
   type AnswerRecordsResponse,
 } from "../shared/api";
-import { datasets, type Dataset } from "./datasets";
+import type { Dataset } from "./datasets";
+import { resolveDataset } from "./ruleSets";
 
 type Row = {
   ambiguity_id: string;
@@ -22,7 +23,7 @@ answerRoutes.onError((cause, c) => {
 });
 
 function findDataset(c: Context) {
-  return datasets.find((dataset) => dataset.id === c.req.param("id"));
+  return resolveDataset(c.env?.DB, c.req.param("id") ?? "");
 }
 
 function findOption(dataset: Dataset, ambiguityId: string, optionId: string) {
@@ -51,13 +52,13 @@ async function currentRecords(db: D1Database, dataset: Dataset): Promise<AnswerR
 }
 
 answerRoutes.get("/:id/answers", async (c) => {
-  const dataset = findDataset(c);
+  const dataset = await findDataset(c);
   if (!dataset) return c.json({ error: "データがありません" }, 404);
   return c.json(await currentRecords(c.env.DB, dataset));
 });
 
 answerRoutes.post("/:id/answers", async (c) => {
-  const dataset = findDataset(c);
+  const dataset = await findDataset(c);
   if (!dataset) return c.json({ error: "データがありません" }, 404);
   const parsed = saveAnswerRequestSchema.safeParse(await c.req.json().catch(() => undefined));
   if (!parsed.success) return c.json({ error: "回答の形式が正しくありません" }, 400);

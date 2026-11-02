@@ -1,5 +1,6 @@
 import { collectQuotes, validateRuleSet, verifyQuotes, type RuleSet } from "../../engine";
 import { listRules } from "../../engine/answers";
+import { runCheckCases } from "../../engine/checkCases";
 import type { ExtractionInput } from "./extract";
 import type { ExtractionNote } from "./schema";
 
@@ -15,6 +16,14 @@ function majorProblems(rules: RuleSet, input: ExtractionInput) {
   return named
     .filter(({ major }) => !majors.has(major))
     .map(({ id, major }) => `${id}: 学生データにない専攻です: ${major}`);
+}
+
+function caseProblems(rules: RuleSet, input: ExtractionInput) {
+  return runCheckCases(rules, input.courses, input.cases)
+    .filter(({ outcome }) => outcome === "failed")
+    .map(
+      ({ id, title, expected, actual }) => `検査用ケース ${id}（${title}）: 期待 ${expected}、結果 ${actual}`,
+    );
 }
 
 // 科目群のない区分には何も算入されず、全員が不足になる。
@@ -86,5 +95,6 @@ export function checkProposal({
     ...gateProblems(rules),
     ...reviewProblems(rules),
     ...ambiguityProblems(rules),
+    ...(problems.length === 0 ? caseProblems(rules, input) : []),
   ];
 }

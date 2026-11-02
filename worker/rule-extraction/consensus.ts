@@ -1,5 +1,6 @@
 import { validateRuleSet, type RuleSet } from "../../engine";
 import { listRules } from "../../engine/answers";
+import { runCheckCases, type CaseResult } from "../../engine/checkCases";
 import { compareRules, patchedTargets, ruleNames } from "../../engine/compareRules";
 import type { Ambiguity } from "../../engine/rules";
 import { extractRules, type Attempt, type AttemptObserver, type ExtractionFailure, type ExtractionInput } from "./extract";
@@ -33,6 +34,7 @@ export type ConsensusResult =
       problems: string[];
       disagreements: Disagreement[];
       extraQuestions: ExtraQuestion[];
+      caseResults: CaseResult[];
       runs: { requested: number; succeeded: number };
       attempts: Attempt[];
     })
@@ -195,6 +197,7 @@ export async function extractConsensus(
     ok: true,
     ...merged,
     problems: [...new Set([...merged.problems, ...validateRuleSet(merged.rules, input.courses)])],
+    caseResults: runCheckCases(merged.rules, input.courses, input.cases),
     runs: { requested: RUN_COUNT, succeeded: proposals.length },
     attempts,
   };

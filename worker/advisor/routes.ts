@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import adviceRules from "../../data/fictional/advice-rules.md?raw";
 import { answersRequestSchema } from "../../shared/api";
 import { claudeKey, FAILURE_STATUS, type ClaudeBindings } from "../claudeAccess";
-import { datasets, isValidAnswers } from "../datasets";
+import { isValidAnswers } from "../datasets";
+import { resolveDataset } from "../ruleSets";
 import { ModelError } from "../rule-extraction/model";
 import { adviseStudent } from "./advise";
 import { createAdvisorLoop } from "./claude";
@@ -12,7 +13,7 @@ export const advisorRoutes = new Hono<{ Bindings: Env & ClaudeBindings }>();
 advisorRoutes.post("/:id/students/:studentId/advise", async (c) => {
   const apiKey = claudeKey(c.env ?? {});
   if (!apiKey) return c.json({ error: "この環境では履修案の作成を使えません" }, 403);
-  const dataset = datasets.find(({ id }) => id === c.req.param("id"));
+  const dataset = await resolveDataset(c.env?.DB, c.req.param("id"));
   if (!dataset) return c.json({ error: "データがありません" }, 404);
   if (dataset.problems.length > 0) {
     return c.json({ error: "ルールに問題があります", problems: dataset.problems }, 422);

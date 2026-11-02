@@ -109,9 +109,21 @@ export const outreachSchema = z.object({
   draft: z.string().nullable(),
 });
 
+export const confirmationSchema = z.object({
+  proposalId: z.number(),
+  respondent: respondentSchema,
+  confirmedAt: z.string(),
+});
+
 export const datasetsResponseSchema = z.object({
   datasets: z.array(
-    z.object({ id: z.string(), name: z.string(), problems: z.array(z.string()) }),
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      problems: z.array(z.string()),
+      // 職員が確定したルールの対象にだけある
+      confirmation: confirmationSchema.optional(),
+    }),
   ),
 });
 
@@ -190,13 +202,21 @@ export const sourcesResponseSchema = z.object({
   sources: z.array(z.object({ id: z.string(), name: z.string(), handbook: z.string() })),
 });
 
-export const proposalResponseSchema = z.object({
+export const storedProposalSchema = z.object({
   // 職員が確定するまでの案。形は engine が定める
   rules: z.custom<RuleSet>((value) => typeof value === "object" && value !== null),
   notes: z.array(z.object({ clause: z.string(), sourceQuote: z.string(), reason: z.string() })),
   problems: z.array(z.string()),
-  // 検査に問題が残る案では人数を計算しない
-  impacts: z.array(impactSchema).nullable(),
+  // pending は未確定のルールで止まっている状態で、誤りではない
+  caseResults: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      outcome: z.enum(["passed", "failed", "pending"]),
+      expected: z.string(),
+      actual: z.string(),
+    }),
+  ),
   runs: z.object({ requested: z.number(), succeeded: z.number() }),
   // 回によって読み取りが割れた項目。関係するルールは要確認にしてある
   disagreements: z.array(
@@ -225,6 +245,26 @@ export const proposalResponseSchema = z.object({
   ),
 });
 
+export const proposalResponseSchema = storedProposalSchema.extend({
+  // 保存できなかった案は確定できない
+  proposalId: z.number().nullable(),
+  // 検査に問題が残る案では人数を計算しない
+  impacts: z.array(impactSchema).nullable(),
+});
+
+export const latestProposalResponseSchema = z.object({
+  proposal: proposalResponseSchema.nullable(),
+});
+
+export const confirmRequestSchema = z.object({
+  respondent: respondentSchema,
+  acceptedRuleIds: z.array(z.string()),
+});
+
+export const confirmResponseSchema = z.object({ datasetId: z.string() });
+
+export const withdrawRequestSchema = z.object({ respondent: respondentSchema });
+
 export type Answers = z.infer<typeof answersSchema>;
 export type Respondent = z.infer<typeof respondentSchema>;
 export type AnswerRecord = z.infer<typeof answerRecordSchema>;
@@ -239,4 +279,7 @@ export type OverviewResponse = z.infer<typeof overviewResponseSchema>;
 export type StudentResponse = z.infer<typeof studentResponseSchema>;
 export type PlanCheckResponse = z.infer<typeof planCheckResponseSchema>;
 export type SourcesResponse = z.infer<typeof sourcesResponseSchema>;
+export type StoredProposal = z.infer<typeof storedProposalSchema>;
 export type ProposalResponse = z.infer<typeof proposalResponseSchema>;
+export type LatestProposalResponse = z.infer<typeof latestProposalResponseSchema>;
+export type ConfirmResponse = z.infer<typeof confirmResponseSchema>;

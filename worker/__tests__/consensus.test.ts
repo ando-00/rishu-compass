@@ -263,6 +263,7 @@ describe("extractConsensus", () => {
     handbook: "合計10単位",
     courses: COURSES,
     students: [STUDENT],
+    cases: [],
   };
   const usage = { inputTokens: 1, outputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 };
   const reply = (totalCredits: number) => ({

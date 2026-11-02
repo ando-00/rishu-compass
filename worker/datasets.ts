@@ -1,13 +1,17 @@
 import { exampleCourses } from "../data/fictional/example/courses";
 import { exampleRules } from "../data/fictional/example/rules";
 import { exampleStudents } from "../data/fictional/example/students";
+import { kamomeCheckCases } from "../data/fictional/kamome/check-cases";
 import { kamomeCourses } from "../data/fictional/kamome/courses";
 import kamomeHandbook from "../data/fictional/kamome/handbook.md?raw";
 import { kamomeStudents } from "../data/fictional/kamome/students";
+import { sakuradaiCheckCases } from "../data/fictional/sakuradai/check-cases";
 import { sakuradaiCourses } from "../data/fictional/sakuradai/courses";
 import sakuradaiHandbook from "../data/fictional/sakuradai/handbook.md?raw";
 import { sakuradaiStudents } from "../data/fictional/sakuradai/students";
 import { ADMISSION_YEARS } from "../data/fictional/students";
+import type { Respondent } from "../shared/api";
+import type { CheckCase } from "../engine/checkCases";
 import { validateRuleSet, type Answers, type Course, type RuleSet, type Student } from "../engine";
 
 export type Dataset = {
@@ -17,6 +21,8 @@ export type Dataset = {
   courses: Course[];
   students: Student[];
   problems: string[];
+  // 職員が確定したルールの対象にだけある
+  confirmation?: { proposalId: number; respondent: Respondent; confirmedAt: string };
 };
 
 type Source = {
@@ -25,6 +31,7 @@ type Source = {
   handbook: string;
   courses: Course[];
   students: Student[];
+  cases: CheckCase[];
 };
 
 const SOURCES: Record<string, Source> = {
@@ -34,6 +41,7 @@ const SOURCES: Record<string, Source> = {
     handbook: sakuradaiHandbook,
     courses: sakuradaiCourses,
     students: sakuradaiStudents,
+    cases: sakuradaiCheckCases,
   },
   kamome: {
     name: "かもめ大学（架空）",
@@ -41,6 +49,7 @@ const SOURCES: Record<string, Source> = {
     handbook: kamomeHandbook,
     courses: kamomeCourses,
     students: kamomeStudents,
+    cases: kamomeCheckCases,
   },
 };
 
@@ -58,7 +67,7 @@ const goldModules = import.meta.glob<{ goldRules: RuleSet }>("../data/fictional/
   eager: true,
 });
 
-function createDataset(id: string, name: string, rules: RuleSet, courses: Course[], students: Student[]) {
+export function createDataset(id: string, name: string, rules: RuleSet, courses: Course[], students: Student[]) {
   return { id, name, rules, courses, students, problems: validateRuleSet(rules, courses) };
 }
 

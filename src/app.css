@@ -295,6 +295,21 @@ blockquote {
   line-height: 1.6;
 }
 
+.check-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.confirmation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
 .table-scroll {
   overflow-x: auto;
 }

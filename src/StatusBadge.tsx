@@ -29,6 +29,12 @@ const REVIEW_LABELS = {
   needs_review: { label: "要確認", tone: "warn" },
 } as const;
 
+const CASE_LABELS = {
+  passed: { label: "通過", tone: "good" },
+  failed: { label: "不一致", tone: "bad" },
+  pending: { label: "保留", tone: "warn" },
+} as const;
+
 function Badge({ label, tone }: { label: string; tone: Tone }) {
   return <span className={`badge badge-${tone}`}>{label}</span>;
 }
@@ -43,6 +49,10 @@ export function StateBadge({ state }: { state: keyof typeof STATE_LABELS }) {
 
 export function ReviewBadge({ review }: { review: keyof typeof REVIEW_LABELS }) {
   return <Badge {...REVIEW_LABELS[review]} />;
+}
+
+export function CaseBadge({ outcome }: { outcome: keyof typeof CASE_LABELS }) {
+  return <Badge {...CASE_LABELS[outcome]} />;
 }
 
 export function PlanBadge({ status }: { status: keyof typeof PLAN_LABELS }) {

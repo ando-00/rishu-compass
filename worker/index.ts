@@ -26,9 +26,16 @@ import {
 import { answerRoutes } from "./answers";
 import { advisorRoutes } from "./advisor/routes";
 import { claudeKey, FAILURE_STATUS, type ClaudeBindings } from "./claudeAccess";
-import { datasets, findSource, isValidAnswers, listSources, type Dataset } from "./datasets";
+import { findSource, isValidAnswers, listSources, type Dataset } from "./datasets";
 import { createClaudeModel } from "./rule-extraction/claude";
 import { extractConsensus } from "./rule-extraction/consensus";
+import {
+  listDatasets,
+  resolveDataset,
+  ruleSetRoutes,
+  saveProposal,
+  toProposalResponse,
+} from "./ruleSets";
 
 const app = new Hono<{ Bindings: Env & ClaudeBindings }>();
 
@@ -38,7 +45,7 @@ async function parseBody<T extends z.ZodType>(c: Context, schema: T) {
 }
 
 function findDataset(c: Context) {
-  return datasets.find((dataset) => dataset.id === c.req.param("id"));
+  return resolveDataset(c.env?.DB, c.req.param("id") ?? "");
 }
 
 function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
@@ -79,9 +86,15 @@ function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
 
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
-app.get("/api/datasets", (c) => {
+app.get("/api/datasets", async (c) => {
+  const listed = await listDatasets(c.env?.DB);
   const body: DatasetsResponse = {
-    datasets: datasets.map(({ id, name, problems }) => ({ id, name, problems })),
+    datasets: listed.map(({ id, name, problems, confirmation }) => ({
+      id,
+      name,
+      problems,
+      ...(confirmation ? { confirmation } : {}),
+    })),
   };
   return c.json(body);
 });
@@ -108,22 +121,14 @@ app.post("/api/sources/:id/extract", async (c) => {
     return c.json({ error: result.failure.message }, FAILURE_STATUS[result.failure.kind]);
   }
 
-  const { rules, notes, problems, attempts, runs, disagreements, extraQuestions } = result;
-  const response: ProposalResponse = {
-    rules,
-    notes,
-    problems,
-    impacts: problems.length === 0 ? computeImpacts(rules, source.courses, source.students, {}) : null,
-    runs,
-    disagreements,
-    extraQuestions,
-    attempts,
-  };
+  const { ok: _ok, ...proposal } = result;
+  const proposalId = await saveProposal(c.env?.DB, source.id, body.handbook, proposal);
+  const response: ProposalResponse = toProposalResponse(proposal, source, proposalId);
   return c.json(response);
 });
 
 app.post("/api/datasets/:id/overview", async (c) => {
-  const dataset = findDataset(c);
+  const dataset = await findDataset(c);
   if (!dataset) return c.json({ error: "データがありません" }, 404);
   if (dataset.problems.length > 0) {
     return c.json({ error: "ルールに問題があります", problems: dataset.problems }, 422);
@@ -136,7 +141,7 @@ app.post("/api/datasets/:id/overview", async (c) => {
 });
 
 app.post("/api/datasets/:id/students/:studentId", async (c) => {
-  const dataset = findDataset(c);
+  const dataset = await findDataset(c);
   if (!dataset) return c.json({ error: "データがありません" }, 404);
   if (dataset.problems.length > 0) {
     return c.json({ error: "ルールに問題があります", problems: dataset.problems }, 422);
@@ -171,7 +176,7 @@ app.post("/api/datasets/:id/students/:studentId", async (c) => {
 });
 
 app.post("/api/datasets/:id/plan-check", async (c) => {
-  const dataset = findDataset(c);
+  const dataset = await findDataset(c);
   if (!dataset) return c.json({ error: "データがありません" }, 404);
   if (dataset.problems.length > 0) {
     return c.json({ error: "ルールに問題があります", problems: dataset.problems }, 422);
@@ -193,5 +198,6 @@ app.post("/api/datasets/:id/plan-check", async (c) => {
 
 app.route("/api/datasets", answerRoutes);
 app.route("/api/datasets", advisorRoutes);
+app.route("/api", ruleSetRoutes);
 
 export default app;

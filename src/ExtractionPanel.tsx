@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import type { Ambiguity } from "../engine/rules";
-import { MAX_HANDBOOK_LENGTH, type ProposalResponse, type SourcesResponse } from "../shared/api";
-import { extractProposal, fetchSources } from "./api";
+import {
+  MAX_HANDBOOK_LENGTH,
+  type DatasetsResponse,
+  type ProposalResponse,
+  type Respondent,
+  type SourcesResponse,
+} from "../shared/api";
+import { confirmProposal, extractProposal, fetchLatestProposal, fetchSources } from "./api";
 import { ChangeList, ImpactCounts } from "./QuestionsPanel";
 import { fieldLabel, summarizeRules, type RuleRow } from "./ruleSummary";
-import { ReviewBadge } from "./StatusBadge";
+import { CaseBadge, ReviewBadge } from "./StatusBadge";
 
 function Questions({ ambiguities, proposal }: { ambiguities: Ambiguity[]; proposal: ProposalResponse }) {
   return (
@@ -137,14 +143,147 @@ function ExtraQuestions({ questions }: { questions: ProposalResponse["extraQuest
   );
 }
 
-function Proposal({ proposal }: { proposal: ProposalResponse }) {
-  const { rules, notes, problems, attempts, runs, extraQuestions } = proposal;
+function CaseResults({ results }: { results: ProposalResponse["caseResults"] }) {
+  if (results.length === 0) return null;
+  const pending = results.filter(({ outcome }) => outcome === "pending").length;
+  return (
+    <>
+      <h3>検査用ケースの結果（{results.length}件）</h3>
+      {pending > 0 && (
+        <p className="muted">保留 {pending}件は、未確定のルールで判定が止まっている状態で、誤りではありません。</p>
+      )}
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>ケース</th>
+              <th>内容</th>
+              <th>期待</th>
+              <th>結果</th>
+              <th>状態</th>
+            </tr>
+          </thead>
+          <tbody>
+            {results.map(({ id, title, expected, actual, outcome }) => (
+              <tr key={id}>
+                <td className="nowrap">{id}</td>
+                <td>{title}</td>
+                <td>{expected}</td>
+                <td>{actual}</td>
+                <td>
+                  <CaseBadge outcome={outcome} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+type ConfirmProps = {
+  proposal: ProposalResponse;
+  rows: RuleRow[];
+  respondent: Respondent;
+  confirmedDatasetId: string | undefined;
+  onConfirmed: (datasetId: string) => void;
+};
+
+function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConfirmed }: ConfirmProps) {
+  const [accepted, setAccepted] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { proposalId, problems, caseResults } = proposal;
+  const reviewRows = rows.filter(({ review }) => review === "needs_review");
+  const failed = caseResults.filter(({ outcome }) => outcome === "failed").length;
+
+  function toggle(id: string, checked: boolean) {
+    setAccepted((current) => (checked ? [...current, id] : current.filter((value) => value !== id)));
+  }
+
+  async function confirm() {
+    if (proposalId === null) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { datasetId } = await confirmProposal(proposalId, { respondent, acceptedRuleIds: accepted });
+      onConfirmed(datasetId);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "確定できませんでした。");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (confirmedDatasetId) {
+    return (
+      <>
+        <h3>職員の確定</h3>
+        <p className="muted">この案は確定済みです。</p>
+        <div className="actions">
+          <button type="button" className="secondary" onClick={() => onConfirmed(confirmedDatasetId)}>
+            判定を見る
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  const blocked =
+    proposalId === null
+      ? "この案は保存できなかったので確定できません。"
+      : problems.length > 0
+        ? "検査の問題が残っているので確定できません。"
+        : failed > 0
+          ? `検査用ケースが ${failed}件一致しないので確定できません。`
+          : null;
+
+  return (
+    <>
+      <h3>職員の確定</h3>
+      <p className="muted">確定すると、このルールで全学生を判定します。確定者として {respondent} を記録します。</p>
+      {reviewRows.length > 0 && (
+        <>
+          <p>
+            要確認のルールが {reviewRows.length}件あります。要項と照らして認めたものだけ選んでください。
+            認めないルールは、確定後も職員確認のままです。
+          </p>
+          {reviewRows.map(({ id, clause, summary }) => (
+            <label className="check-row" key={id}>
+              <input
+                type="checkbox"
+                checked={accepted.includes(id)}
+                onChange={(event) => toggle(id, event.target.checked)}
+              />
+              <span>
+                {clause}: {summary}
+              </span>
+            </label>
+          ))}
+        </>
+      )}
+      {blocked && <p className="notice">{blocked}</p>}
+      <div className="actions">
+        <button type="button" disabled={blocked !== null || saving} onClick={() => void confirm()}>
+          このルール案を確定する
+        </button>
+      </div>
+      {error && <pre role="alert" className="error">{error}</pre>}
+    </>
+  );
+}
+
+type ProposalProps = Omit<ConfirmProps, "rows">;
+
+function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: ProposalProps) {
+  const { rules, notes, problems, attempts, runs, extraQuestions, caseResults } = proposal;
   const rows = summarizeRules(rules);
   return (
     <section>
       <h2>ルール案</h2>
       <p className="notice">
-        この案はまだ判定に使いません。根拠の文が要項にあることは検査しましたが、解釈が正しいことは保証しません。
+        職員が確定するまで、この案は判定に使いません。根拠の文が要項にあることは検査しましたが、解釈が正しいことは保証しません。
       </p>
       <p className="muted">
         ルール {rows.length}件、変換 {runs.succeeded}/{runs.requested}回成功、修正を含む呼び出し {attempts.length}回（モデル {attempts.at(-1)?.model}）
@@ -159,6 +298,7 @@ function Proposal({ proposal }: { proposal: ProposalResponse }) {
           </ul>
         </div>
       )}
+      <CaseResults results={caseResults} />
       <Disagreements proposal={proposal} />
       <Questions ambiguities={rules.ambiguities} proposal={proposal} />
       <ExtraQuestions questions={extraQuestions} />
@@ -176,11 +316,25 @@ function Proposal({ proposal }: { proposal: ProposalResponse }) {
           ))}
         </>
       )}
+      <ConfirmSection
+        key={proposal.proposalId}
+        proposal={proposal}
+        rows={rows}
+        respondent={respondent}
+        confirmedDatasetId={confirmedDatasetId}
+        onConfirmed={onConfirmed}
+      />
     </section>
   );
 }
 
-export function ExtractionPanel() {
+type PanelProps = {
+  datasets: DatasetsResponse["datasets"];
+  respondent: Respondent;
+  onConfirmed: (datasetId: string) => void;
+};
+
+export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProps) {
   const [data, setData] = useState<SourcesResponse | null>(null);
   const [sourceId, setSourceId] = useState("");
   const [handbook, setHandbook] = useState("");
@@ -199,6 +353,22 @@ export function ExtractionPanel() {
       });
   }, []);
 
+  // 費用をかけて作った案を、画面を開き直しても確認できるようにする。
+  useEffect(() => {
+    if (!sourceId) return;
+    let active = true;
+    fetchLatestProposal(sourceId)
+      .then((result) => {
+        if (active) setProposal(result.proposal);
+      })
+      .catch((cause: unknown) => {
+        if (active) setError(cause instanceof Error ? cause.message : "取得に失敗しました。");
+      });
+    return () => {
+      active = false;
+    };
+  }, [sourceId]);
+
   async function run() {
     setRunning(true);
     setError(null);
@@ -212,6 +382,9 @@ export function ExtractionPanel() {
     }
   }
 
+  const confirmedDatasetId = datasets.find(
+    ({ confirmation }) => confirmation && confirmation.proposalId === proposal?.proposalId,
+  )?.id;
   const sample = data?.sources.find(({ id }) => id === sourceId)?.handbook ?? "";
   const tooLong = handbook.length > MAX_HANDBOOK_LENGTH;
   const canRun = Boolean(data?.extractionEnabled) && handbook.trim() !== "" && !tooLong && !running;
@@ -253,7 +426,14 @@ export function ExtractionPanel() {
       </div>
       {running && <p role="status">同じ要項を3回変換して比べています。数分かかることがあります。</p>}
       {error && <pre role="alert" className="error">{error}</pre>}
-      {proposal && <Proposal proposal={proposal} />}
+      {proposal && (
+        <Proposal
+          proposal={proposal}
+          respondent={respondent}
+          confirmedDatasetId={confirmedDatasetId}
+          onConfirmed={onConfirmed}
+        />
+      )}
     </section>
   );
 }
