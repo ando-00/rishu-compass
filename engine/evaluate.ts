@@ -58,6 +58,8 @@ export type PreparedRules = {
   rules: RuleSet;
   catalog: CourseIndex;
   unresolved: Set<string>;
+  // 答えたが判定に反映できない曖昧箇所（unresolved の一部）
+  unreflected: Set<string>;
   problem: string | null;
 };
 
@@ -69,6 +71,12 @@ export type EvaluationContext = PreparedRules & {
 type Pending = { ambiguityIds?: string[]; status?: "confirmed" | "needs_review"; id: string };
 
 const UNRESOLVED_REASON = "未回答の確認事項があるため、職員が確認します。";
+const UNREFLECTED_REASON = "判定に反映できない回答（ルールの形で表せない読み方）があるため、職員が確認します。";
+
+// 止めている曖昧箇所がすべて「答えたが反映できない」ものなら、未回答とは言わない（監査の第2.5回の A25-4）
+function unresolvedReason({ unreflected }: { unreflected: Set<string> }, ids: string[]) {
+  return ids.length > 0 && ids.every((id) => unreflected.has(id)) ? UNREFLECTED_REASON : UNRESOLVED_REASON;
+}
 
 export function prepareRules(baseRules: RuleSet, courses: Course[], answers: Answers): PreparedRules {
   const catalog = indexCourses(courses);
@@ -76,7 +84,7 @@ export function prepareRules(baseRules: RuleSet, courses: Course[], answers: Ans
     return { baseRules, catalog, problem: null, ...resolveRules(baseRules, answers) };
   } catch (cause) {
     const problem = cause instanceof Error ? cause.message : "ルールを適用できません";
-    return { baseRules, rules: baseRules, catalog, unresolved: new Set(), problem };
+    return { baseRules, rules: baseRules, catalog, unresolved: new Set(), unreflected: new Set(), problem };
   }
 }
 
@@ -167,7 +175,7 @@ function judgeCategory(
   };
 
   if (base.ambiguityIds.length > 0) {
-    return { ...base, status: "needs_staff", reason: UNRESOLVED_REASON };
+    return { ...base, status: "needs_staff", reason: unresolvedReason(context, base.ambiguityIds) };
   }
   if (isCategoryMet(category, allocation)) {
     return { ...base, status: "satisfied", reason: "必要な単位を満たしています。" };
@@ -252,7 +260,9 @@ function gateOutcome(gate: Gate, context: EvaluationContext): GateOutcome {
     }
   }
   if (present.satisfied || projected.satisfied) {
-    const reason = `条件を満たせば、${student.studentYear + 1}年次から認められます。`;
+    // 判定の時点の単位数を添える。示す単位数（actual）は今の値なので、読み方で時点が違って見えないようにする（A25-5）
+    const missed = atCheck.missingCourses.length > 0 ? `、未修得: ${atCheck.missingCourses.join("、")}` : "";
+    const reason = `${check}年次の終わりの時点では ${atCheck.actual} 単位${missed}で条件を満たしていませんでした。条件を満たせば、${student.studentYear + 1}年次から認められます。`;
     const eligibleFromYear = student.studentYear + 1;
     return { ...progress(present), status: "expected", reason, eligibleFromYear };
   }
@@ -284,7 +294,7 @@ export function judgeGate(gate: Gate, context: EvaluationContext): Judgment {
       actual: outcome.actual,
       missingCourses: outcome.missingCourses,
       status: "needs_staff",
-      reason: UNRESOLVED_REASON,
+      reason: unresolvedReason(context, ambiguityIds),
       needsContact: false,
     };
   }
@@ -573,7 +583,7 @@ function judgeGraduation(
   };
 
   if (ownIds.length > 0) {
-    return { ...base, status: "needs_staff", reason: UNRESOLVED_REASON };
+    return { ...base, status: "needs_staff", reason: unresolvedReason(context, base.ambiguityIds) };
   }
   // どの区分にも入らない科目は、単位を黙って捨てずに職員が確認する（監査の第1回の A1-26、人の決定）
   if (stray.length > 0) {
@@ -582,7 +592,7 @@ function judgeGraduation(
   }
   if (uncertainIds.length > 0) {
     if (shortCategories.length === 0) {
-      return { ...base, status: "needs_staff", reason: UNRESOLVED_REASON };
+      return { ...base, status: "needs_staff", reason: unresolvedReason(context, base.ambiguityIds) };
     }
     const reason = `${shortCategories.join("、")}に不足があります。`;
     return { ...base, status: "short", reason, needsContact: finalYear };

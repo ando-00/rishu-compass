@@ -73,6 +73,8 @@ export function resolveRules(base: RuleSet, answers: Answers) {
   const rules = structuredClone(base);
   const entries = listRules(rules);
   const unresolved = new Set(rules.ambiguities.map((ambiguity) => ambiguity.id));
+  // 答えたが差分で表せない（判定に反映できない）曖昧箇所。理由の文を「未回答」と分けるために持つ
+  const unreflected = new Set<string>();
 
   for (const [ambiguityId, optionId] of Object.entries(answers)) {
     const ambiguity = rules.ambiguities.find((a) => a.id === ambiguityId);
@@ -81,7 +83,10 @@ export function resolveRules(base: RuleSet, answers: Answers) {
     if (!option) throw new Error(`選択肢がありません: ${ambiguityId} の ${optionId}`);
 
     // 差分で表せない回答は反映できないので、未解決のまま残す。
-    if (option.patches === null) continue;
+    if (option.patches === null) {
+      unreflected.add(ambiguityId);
+      continue;
+    }
     for (const patch of option.patches) {
       const problem = patchProblem(rules, patch);
       if (problem) throw new Error(problem);
@@ -106,5 +111,5 @@ export function resolveRules(base: RuleSet, answers: Answers) {
     }
   }
 
-  return { rules, unresolved };
+  return { rules, unresolved, unreflected };
 }
