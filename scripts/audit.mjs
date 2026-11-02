@@ -108,7 +108,7 @@ function checkCode() {
   const toSrc = git(["grep", "-nE", 'from "(\\.\\./)+src', "--", "engine", "shared", "worker"]).stdout;
   expectEmpty("D3", "依存の向き: engine、shared、worker は src を読まない", toSrc);
 
-  const sdk = lines(git(["grep", "-n", "@anthropic-ai/sdk", "--", ":!package.json", ":!package-lock.json", ":!docs"]).stdout)
+  const sdk = lines(git(["grep", "-n", "@anthropic-ai/sdk", "--", ":!package.json", ":!package-lock.json", ":!docs", ":!scripts/audit.mjs"]).stdout)
     .filter((l) => !l.startsWith("worker/"));
   expectEmpty("X1", "作らない: SDK は worker/ の中だけ", sdk.join("\n"));
   const send = git(["grep", "-nEi", "mailto:|send_email|nodemailer|resend|sendgrid", "--", "src", "worker", "shared", "engine", "wrangler.jsonc"]).stdout;
