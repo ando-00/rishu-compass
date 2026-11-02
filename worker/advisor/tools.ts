@@ -59,11 +59,12 @@ function defineTool<T extends z.ZodType>(
 
 // 下書きの単位数は Claude の計算になるので書かせない。判定の数値は画面の engine の結果を見せる。
 export function draftProblem(draft: string) {
-  if (/[0-9０-９]+\s*単位/.test(draft)) {
-    return "単位数を書かないでください。判定の数値は職員が画面で確認します。";
-  }
-  if (/卒業(でき|可能|不可|確定|が確定)|留年(し|が確定|確定)/.test(draft)) {
-    return "卒業の可否を断定する表現を外してください。「一緒に確認したい」のように書いてください。";
+  const credits = /[0-9０-９]+\s*単位/.exec(draft);
+  if (credits) return `「${credits[0]}」を外してください。単位数は職員が画面で確認します。`;
+  const verdict =
+    /卒業(できます|できません|できない|できる見込み|可能|不可|確定|が確定)|留年(します|が確定|確定)/.exec(draft);
+  if (verdict) {
+    return `「${verdict[0]}」を外してください。卒業の可否を断定せず、「一緒に確認したい」のように書いてください。`;
   }
   return null;
 }
@@ -174,7 +175,7 @@ export function createAdvisorTools(input: AdvisorInput) {
     ),
     defineTool(
       "escalate_to_staff",
-      "案を出さず、職員の確認に回す。判断できないとき、検査に通る案を組めないときに使う。",
+      "案を出さず、職員の確認に回す。検査に通る案を組めないときと、要項の外の事情があるときだけ使う。",
       z.object({ reason: filled.describe("職員に伝える理由。2文までにする。単位数は書かない") }),
       ({ reason }) => {
         state.escalated = reason;
@@ -183,7 +184,7 @@ export function createAdvisorTools(input: AdvisorInput) {
     ),
     defineTool(
       "submit_plan",
-      "検査に通った案と、声かけ文の下書きを職員の画面へ出す。通らない案は違反を返して受け付けない。",
+      "検査に通った案と、声かけ文の下書きを職員の画面へ出す。通らない案や下書きに問題があるときは、理由を返して受け付けない。直すときは案の全体をもう一度送る。",
       z.object({
         plan: planSchema,
         draft: filled.describe("学生に送る声かけ文の下書き"),
