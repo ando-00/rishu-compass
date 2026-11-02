@@ -35,6 +35,12 @@ describe("GET /api/datasets", () => {
     const { datasets } = datasetsResponseSchema.parse(await res.json());
     expect(datasets.find((dataset) => dataset.id === "example")).toMatchObject({ problems: [] });
   });
+
+  it("画面が最初に開く対象はさくら台大学にする", async () => {
+    const res = await app.request("/api/datasets");
+    const { datasets } = datasetsResponseSchema.parse(await res.json());
+    expect(datasets.map(({ id }) => id)).toEqual(["sakuradai", "kamome", "example"]);
+  });
 });
 
 describe("POST /api/datasets/:id/overview", () => {

@@ -86,11 +86,11 @@ export function createDataset(id: string, name: string, rules: RuleSet, courses:
   return { id, name, rules, courses, students, problems: validateRuleSet(rules, courses) };
 }
 
+// 画面は先頭の対象を開くので、SOURCES の順に並べる。
 function goldDatasets() {
-  return Object.entries(goldModules).flatMap(([path, module]) => {
-    const id = path.split("/").at(-2) ?? "";
-    const source = SOURCES[id];
-    if (!source) return [];
+  return Object.entries(SOURCES).flatMap(([id, source]) => {
+    const module = goldModules[`../data/fictional/${id}/gold-rules.ts`];
+    if (!module) return [];
     return [createDataset(id, source.name, module.goldRules, source.courses, source.students)];
   });
 }
