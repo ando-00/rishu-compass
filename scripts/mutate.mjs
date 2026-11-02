@@ -185,7 +185,7 @@ function runTests() {
   const result = spawnSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "--bail=1", "--reporter=dot"], {
     cwd: root,
     encoding: "utf8",
-    timeout: 60000,
+    timeout: 300000,
   });
   return result.status;
 }

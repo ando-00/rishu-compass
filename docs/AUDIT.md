@@ -60,6 +60,28 @@
 
 ## 機械検査
 
+下のコマンドは `scripts/audit.mjs` にまとめてあり、何度でも同じ手順で回せる。Claude を呼ばず、作業ツリーを書き換えない。結果は `evals/tmp/audit/latest.md` に出る。
+
+```bash
+node scripts/audit.mjs          # 約1分。鍵、名前、依存の向き、作らないもの、履歴、フォルダ、build、test、CI
+node scripts/audit.mjs --full   # 約30〜60分。上に加えて clean clone（.dev.vars なし）の ci/build/test、
+                                # 壊す検査、eval:recheck と eval:score の前回との比較、npm audit --omit=dev
+```
+
+`FAIL` があると終了コードが 1 になる。`未検証` は、名前の一覧がない、履歴が浅い clone、`gh` が使えない、など確かめられなかったものを示す。合格にはしない。
+
+### 繰り返しの検査と、監査の回の違い
+
+| | 繰り返しの検査 | 監査の回 |
+|---|---|---|
+| 中身 | `scripts/audit.mjs` とテスト | 下の「体制」のサブエージェント |
+| 回数 | 何度でも。夜間ループは毎周回す | 3回だけ |
+| 指摘の記録 | `FAIL` を直したら `docs/PROGRESS.md` に1行 | `docs/AUDIT_LOG.md` |
+
+夜間ループの手順は `.claude/skills/night-loop/SKILL.md`、拾う作業は `docs/BACKLOG.md` にある。
+
+### コマンドの一覧
+
 Git Bash で実行する。出力の期待値は各行の末尾に書いた。
 
 ```bash

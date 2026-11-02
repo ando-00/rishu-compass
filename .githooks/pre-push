@@ -1,0 +1,29 @@
+#!/bin/sh
+# push の前に、送るコミットの全てに鍵と .dev.vars がないことを確かめる。
+# 履歴を書き換えないので、一度 push した鍵は消せない。
+
+zero=0000000000000000000000000000000000000000
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  for commit in $(git rev-list "$range"); do
+    if git grep -qE 'sk-ant-[A-Za-z0-9_-]{20,}' "$commit" -- . 2>/dev/null; then
+      echo "pre-push: $commit に API キーらしい文字列があるため、push を止めました" >&2
+      status=1
+    fi
+    if git ls-tree -r --name-only "$commit" | grep -E '(^|/)\.dev\.vars$' >/dev/null; then
+      echo "pre-push: $commit に .dev.vars があるため、push を止めました" >&2
+      status=1
+    fi
+    if git log -1 --format=%B "$commit" | grep -qE 'sk-ant-[A-Za-z0-9_-]{20,}'; then
+      echo "pre-push: $commit のメッセージに API キーらしい文字列があるため、push を止めました" >&2
+      status=1
+    fi
+  done
+done
+exit $status

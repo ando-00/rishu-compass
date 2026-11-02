@@ -30,7 +30,8 @@
 | `migrations/` | D1 の表 |
 | `data/fictional/` | 架空データ |
 | `evals/` | 評価の実行と結果 |
-| `scripts/` | 監査の道具 |
+| `scripts/` | 監査の道具。`audit.mjs` が機械検査を繰り返し回す |
+| `.claude/` | Claude Code のフックと夜間ループの手順 |
 
 依存は `src`・`worker` → `shared`・`engine` の向きだけにする。`engine/` から他の層を読まない。
 
@@ -41,6 +42,7 @@
 | `npm run dev` | 開発サーバー |
 | `npm run build` | 型チェックとビルド |
 | `npm test` | 判定エンジンのテスト |
+| `node scripts/audit.mjs` | 機械検査。`--full` で clean clone と壊す検査も回す |
 
 ## 進め方
 
@@ -62,5 +64,6 @@
 - リポジトリの外の仕様文書に基づく変更は、コミットメッセージと `docs/PROGRESS.md` に文書の名前と版を書く
 - 区切りのコミットのあと、`docs/AUDIT.md` の鍵の検査を通して `origin/main` へ push し、CI の結果を確認する。CI が落ちたら次の機能より先に直す
 - push が拒まれたら、`rebase` や `force push` をせず原因を確認する
-- 鍵は `.githooks/pre-commit` でも止める。clone したら `git config core.hooksPath .githooks` を実行する
+- 鍵は `.githooks/pre-commit` と `.githooks/pre-push` でも止める。clone したら `git config core.hooksPath .githooks` を実行する。Claude Code では `.claude/settings.json` の SessionStart フックがこれを行う
+- `.claude/hooks/guard-bash.mjs` が、`git add -A`、`rebase`、`force push`、`--amend`、`reset --hard`、ブランチの作成を止め、コードを含むコミットの前に `npm run build` と `npm test` を回す
 - ビルドで `.dev.vars` が `dist/` にコピーされる。`.dev.vars` がある環境の `dist/` を共有も提出もしない

@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # 機械検査が全ての履歴の鍵を調べる
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -20,3 +23,4 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - run: node scripts/audit.mjs --ci --skip-build
