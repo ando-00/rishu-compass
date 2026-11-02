@@ -470,10 +470,16 @@ function maxRemainingCredits(context: EvaluationContext, deadline: number, maxPe
   const yearLongHalf = registered
     .filter((r) => r.term === "通年" && r.result === "enrolled")
     .reduce((sum, r) => sum + creditsOf(r.course) / 2, 0);
+  // 今年度の残りの学期に登録済みの単位も引く（前期の学生の後期の登録。監査の第2.5回の A25-1）
+  const enrolledIn = (term: "前期" | "後期") =>
+    registered
+      .filter((r) => r.term === term && r.result === "enrolled")
+      .reduce((sum, r) => sum + creditsOf(r.course), 0);
   const perYear = new Map<number, number>();
   for (let term = now + 1; term <= deadline; term += 1) {
     const year = Math.floor(term / 2) + 1;
-    const room = maxPerTerm - (year === student.studentYear ? yearLongHalf : 0);
+    const thisYear = year === student.studentYear;
+    const room = maxPerTerm - (thisYear ? yearLongHalf + enrolledIn(term % 2 === 0 ? "前期" : "後期") : 0);
     perYear.set(year, (perYear.get(year) ?? 0) + Math.max(0, room));
   }
   let total = 0;
