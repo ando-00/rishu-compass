@@ -241,7 +241,50 @@ function checkEvals(clone) {
       record(`E-${name}`, "PASS", `npm run ${script}${previous === null ? "（初回。次回から前回と比べる）" : "（前回と同じ）"}`);
     }
     writeFileSync(previousPath, r.out);
+    if (script === "eval:recheck") checkReadmeNumbers(r.out);
   }
+}
+
+// README の評価の表の数字が、保存した結果を今のコードで検査し直した値（eval:recheck の最新の回）と合うか
+function checkReadmeNumbers(recheckOutput) {
+  const latest = {};
+  let school = null;
+  let inLatest = false;
+  for (const line of recheckOutput.split("\n")) {
+    const head = /^(\w+): 全\d+回/.exec(line);
+    if (head) {
+      school = head[1];
+      inLatest = false;
+      latest[school] = {};
+      continue;
+    }
+    if (line.startsWith("最新:")) inLatest = true;
+    const item = inLatest && school ? /^\s+(.+?): (\d+\/\d+)/.exec(line) : null;
+    if (item) latest[school][item[1]] = item[2];
+  }
+  const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+  const rows = {
+    "ルール変換の項目の一致": "項目の一致",
+    "曖昧箇所の検出": "曖昧箇所の検出",
+    "全学生の判定の一致（未回答）": "判定の一致（未回答）",
+    "根拠の文の実在": "根拠の文の実在",
+  };
+  const problems = [];
+  for (const [label, key] of Object.entries(rows)) {
+    const row = readme.split("\n").find((line) => line.startsWith(`| ${label} |`));
+    if (!row) {
+      problems.push(`README に「${label}」の行がない`);
+      continue;
+    }
+    const [sakuradai, kamome] = row.split("|").slice(2, 4).map((cell) => cell.trim());
+    for (const [name, shown] of [["sakuradai", sakuradai], ["kamome", kamome]]) {
+      const actual = latest[name]?.[key];
+      if (actual !== shown) problems.push(`${label}（${name}）: README ${shown}、eval:recheck ${actual ?? "なし"}`);
+    }
+  }
+  if (problems.length > 0) record("E3", "FAIL", "README の評価の表が eval:recheck の最新の回と合わない", problems.join("\n"));
+  else record("E3", "PASS", `README の評価の表の ${Object.keys(rows).length} 行が eval:recheck の最新の回と合う`);
+  record("E4", "INFO", "README の「仕込んだ曖昧さの検出」の行は、仕込みの一覧がリポジトリにないので照合しない");
 }
 
 function checkMutation(work) {
