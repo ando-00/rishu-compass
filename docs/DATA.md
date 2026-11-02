@@ -6,11 +6,11 @@
 
 次の3件は、イベント開始（2026-11-02 12:30 JST）より前に作り手が作った文章です。公式 FAQ の範囲で、持ち込みの入力データとして使っています。**イベント開始後に作ったコードとは別物です。**
 
-| ファイル | 中身 | SHA-256（先頭12桁） |
-|---|---|---|
-| `data/fictional/sakuradai/handbook.md` | 架空のさくら台大学の履修要項 | `28d6e181bb7a` |
-| `data/fictional/kamome/handbook.md` | 架空のかもめ大学の履修の手引き | `79c994b66095` |
-| `data/fictional/advice-rules.md` | 一般的な履修指導の判断ルール | `e14d36e5fdab` |
+| ファイル | 中身 |
+|---|---|
+| `data/fictional/sakuradai/handbook.md` | 架空のさくら台大学の履修要項 |
+| `data/fictional/kamome/handbook.md` | 架空のかもめ大学の履修の手引き |
+| `data/fictional/advice-rules.md` | 一般的な履修指導の判断ルール |
 
 ## イベント期間中に作るデータ
 
