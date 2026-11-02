@@ -24,7 +24,8 @@ const rules = [
   [/\bgit\s+reset\b[^;&|\n]*\s--hard\b/, "reset --hard は使わない。同じ作業ツリーの別のセッションの変更を消す"],
   [/\bgit\s+filter-(branch|repo)\b/, "履歴を書き換えない"],
   [/\bgit\s+(checkout\s+-[bB]|switch\s+-[cC])\b/, "ブランチを切らない。main に直接コミットする"],
-  [/\bgit\s+config\b[^;&|\n]*core\.hooksPath(?!\s+\.githooks)/, "core.hooksPath は .githooks のままにする"],
+  [/\bgit\s+config\b[^;&|\n]*core\.hooksPath\s+(?!\.githooks\b)[^\s;&|]/, "core.hooksPath は .githooks のままにする"],
+  [/\bgit\s+config\b[^;&|\n]*--unset(-all)?\s+core\.hooksPath/, "core.hooksPath は .githooks のままにする"],
 ];
 
 for (const [pattern, reason] of rules) {
