@@ -11,8 +11,10 @@ import { sakuradaiStudents } from "../data/fictional/sakuradai/students";
 import { ADMISSION_YEARS } from "../data/fictional/students";
 import { computeImpacts, type Course, type RuleSet, type Student } from "../engine";
 import { createClaudeModel, MODEL_ID } from "../worker/rule-extraction/claude";
-import { extractRules, type Attempt } from "../worker/rule-extraction/extract";
-import { compareJudgments, compareRules } from "./compare";
+import { extractConsensus, RUN_COUNT } from "../worker/rule-extraction/consensus";
+import type { Attempt } from "../worker/rule-extraction/extract";
+import { compareRules } from "../engine/compareRules";
+import { compareJudgments } from "./compare";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -71,16 +73,17 @@ async function run(id: string, apiKey: string) {
     handbook: readFileSync(join(ROOT, "data", "fictional", id, "handbook.md"), "utf8"),
   };
 
-  const proposals: RuleSet[] = [];
+  // 回ごとの初回と最後の案を残す
+  const byRun = new Map<number, { first: RuleSet; last: RuleSet; problems: number }>();
   const started = Date.now();
-  const result = await extractRules(createClaudeModel(apiKey), input, ({ rules }) => {
-    proposals.push(rules);
+  const result = await extractConsensus(createClaudeModel(apiKey), input, ({ run, rules, problems }) => {
+    byRun.set(run, { first: byRun.get(run)?.first ?? rules, last: rules, problems: problems.length });
   });
   const seconds = Math.round((Date.now() - started) / 1000);
 
   const gold = await loadGold(id);
-  const lastProposal = proposals.at(-1);
   const compare = (rules: RuleSet | undefined) => (gold && rules ? compareRules(gold, rules) : null);
+  const merged = result.ok ? result.rules : undefined;
   const record = {
     source: id,
     commit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim(),
@@ -88,12 +91,25 @@ async function run(id: string, apiKey: string) {
     seconds,
     costUsd: costOf(result.attempts),
     attempts: result.attempts,
-    comparison: { first: compare(proposals[0]), final: compare(proposals.at(-1)) },
-    judgments: gold && lastProposal ? compareJudgments(gold, lastProposal, source.courses, source.students) : null,
+    perRun: [...byRun].map(([run, { first, last, problems }]) => ({
+      run,
+      problems,
+      ambiguities: last.ambiguities.map(({ id: ambiguityId, clause, question }) => ({
+        ambiguityId,
+        clause,
+        question,
+      })),
+      comparison: { first: compare(first), final: compare(last) },
+    })),
+    comparison: compare(merged),
+    judgments: gold && merged ? compareJudgments(gold, merged, source.courses, source.students) : null,
     ...(result.ok
       ? {
           outcome: "ok",
+          runs: result.runs,
           problems: result.problems,
+          disagreements: result.disagreements,
+          extraQuestions: result.extraQuestions,
           notes: result.notes,
           impacts:
             result.problems.length === 0
@@ -117,11 +133,14 @@ async function run(id: string, apiKey: string) {
   const path = join(dir, `${id}-${stamp()}.json`);
   writeFileSync(path, `${JSON.stringify(record, null, 2)}\n`);
 
-  const { first, final } = record.comparison;
-  console.log(`${id}: ${record.outcome}、${seconds}秒、$${record.costUsd}、${result.attempts.length}回`);
-  console.log(`  回ごとの問題: ${result.attempts.map((attempt) => attempt.problems).join(" → ")}`);
-  if (first && final) {
-    console.log(`  一致率: 初回 ${first.matched}/${first.total}、最終 ${final.matched}/${final.total}`);
+  console.log(`${id}: ${record.outcome}、${RUN_COUNT}回、${seconds}秒、$${record.costUsd}`);
+  for (const { run, comparison, ambiguities } of record.perRun) {
+    const { first, final } = comparison;
+    const rate = first && final ? `一致 初回 ${first.matched}/${first.total}、最終 ${final.matched}/${final.total}、` : "";
+    console.log(`  ${run + 1}回目: ${rate}質問 ${ambiguities.length}件`);
+  }
+  if (result.ok) {
+    console.log(`  統合後: 質問 ${result.rules.ambiguities.length}件、割れた項目 ${result.disagreements.length}件`);
   }
   for (const { scenario, matched, total, differences } of record.judgments ?? []) {
     console.log(`  判定の一致（${scenario}）: ${matched}/${total} ${JSON.stringify(differences)}`);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Gate, RuleSet } from "../../engine/rules";
-import { summarizeRules } from "../ruleSummary";
+import { fieldLabel, summarizeRules } from "../ruleSummary";
 
 const base = { clause: "第1条", sourceQuote: "根拠" };
 
@@ -70,6 +70,16 @@ function withPatch(ruleId: string, field: string): RuleSet {
     ],
   };
 }
+
+describe("fieldLabel", () => {
+  it("項目名を日本語にする", () => {
+    expect(fieldLabel("creditBasis")).toBe("単位の数え方");
+  });
+
+  it("知らない項目はそのまま返す", () => {
+    expect(fieldLabel("存在")).toBe("存在");
+  });
+});
 
 describe("summarizeRules", () => {
   it("超過分の算入先を区分の名前で示す", () => {

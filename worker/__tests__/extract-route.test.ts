@@ -97,6 +97,7 @@ describe("POST /api/sources/:id/extract", () => {
     const body = proposalResponseSchema.parse(await res.json());
     expect(body.impacts).toBeNull();
     expect(body.problems.length).toBeGreaterThan(0);
-    expect(body.attempts).toHaveLength(4);
+    expect(body.runs).toEqual({ requested: 3, succeeded: 3 });
+    expect(body.attempts).toHaveLength(12);
   });
 });

@@ -197,6 +197,20 @@ export const proposalResponseSchema = z.object({
   problems: z.array(z.string()),
   // 検査に問題が残る案では人数を計算しない
   impacts: z.array(impactSchema).nullable(),
+  runs: z.object({ requested: z.number(), succeeded: z.number() }),
+  // 回によって読み取りが割れた項目。関係するルールは要確認にしてある
+  disagreements: z.array(
+    z.object({ item: z.string(), field: z.string(), values: z.array(z.string()) }),
+  ),
+  // 土台の案のルールに結びつけられなかった質問。判定には反映されない
+  extraQuestions: z.array(
+    z.object({
+      clause: z.string(),
+      sourceQuote: z.string(),
+      question: z.string(),
+      options: z.array(z.string()),
+    }),
+  ),
   attempts: z.array(
     z.object({
       problems: z.number(),

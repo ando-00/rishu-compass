@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Course, RuleSet, Student } from "../../engine";
-import { compareJudgments, compareRules } from "../compare";
+import { compareRules } from "../../engine/compareRules";
+import { compareJudgments } from "../compare";
 
 const base = { clause: "第1条", sourceQuote: "根拠" };
 
@@ -105,7 +106,7 @@ describe("compareRules", () => {
     const result = compareRules(GOLD, proposal);
     expect(result.rate).toBeLessThan(1);
     expect(result.mismatches).toEqual([
-      { item: "卒業要件", field: "totalCredits", gold: 10, proposal: 12 },
+      { item: "卒業要件", field: "totalCredits", base: 10, other: 12 },
     ]);
   });
 

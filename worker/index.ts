@@ -26,7 +26,8 @@ import {
 import { answerRoutes } from "./answers";
 import { datasets, findSource, listSources, type Dataset } from "./datasets";
 import { createClaudeModel } from "./rule-extraction/claude";
-import { extractRules, type ExtractionFailure } from "./rule-extraction/extract";
+import { extractConsensus } from "./rule-extraction/consensus";
+import type { ExtractionFailure } from "./rule-extraction/extract";
 
 // 型の定義は .dev.vars から生成されるので、これがない環境でも通るようここに書く。
 type ClaudeBindings = {
@@ -129,17 +130,20 @@ app.post("/api/sources/:id/extract", async (c) => {
   if (!body) return c.json({ error: "要項の形式が正しくありません" }, 400);
 
   const input = { ...source, handbook: body.handbook };
-  const result = await extractRules(createClaudeModel(apiKey), input);
+  const result = await extractConsensus(createClaudeModel(apiKey), input);
   if (!result.ok) {
     return c.json({ error: result.failure.message }, FAILURE_STATUS[result.failure.kind]);
   }
 
-  const { rules, notes, problems, attempts } = result;
+  const { rules, notes, problems, attempts, runs, disagreements, extraQuestions } = result;
   const response: ProposalResponse = {
     rules,
     notes,
     problems,
     impacts: problems.length === 0 ? computeImpacts(rules, source.courses, source.students, {}) : null,
+    runs,
+    disagreements,
+    extraQuestions,
     attempts,
   };
   return c.json(response);

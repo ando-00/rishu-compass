@@ -12,6 +12,32 @@ type RuleHead = Pick<Gate, "id" | "clause" | "sourceQuote" | "status" | "when" |
 
 const PENDING = "確認中";
 
+const FIELD_LABELS: Record<string, string> = {
+  minYears: "在学年数",
+  totalCredits: "合計単位",
+  minCredits: "必要な単位",
+  requireAll: "すべて修得",
+  maxCredits: "算入の上限",
+  overflowTo: "超過分の算入先",
+  subLimits: "科目群の上限",
+  checkAtEndOfYear: "判定の年次",
+  creditBasis: "単位の数え方",
+  requiredCourses: "必要な科目",
+  requiredMayBeEnrolled: "履修中でも可",
+  retryAfterMet: "後からの再判定",
+  maxPerYear: "年間の上限",
+  maxPerTerm: "学期の上限",
+  retakeExclusion: "上限から除く再履修",
+  conditions: "先修条件",
+  allowSameTerm: "同じ学期の履修",
+  forbidBeforeAssignedYear: "配当年次より前の履修",
+  forbidRetakeOfPassed: "修得済みの再履修",
+};
+
+export function fieldLabel(field: string) {
+  return FIELD_LABELS[field] ?? field;
+}
+
 const RETAKE_LABELS = {
   none: "再履修も含める",
   failed: "不合格の再履修を除く",

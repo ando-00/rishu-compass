@@ -3,7 +3,7 @@ import type { Ambiguity } from "../engine/rules";
 import { MAX_HANDBOOK_LENGTH, type ProposalResponse, type SourcesResponse } from "../shared/api";
 import { extractProposal, fetchSources } from "./api";
 import { ChangeList, ImpactCounts } from "./QuestionsPanel";
-import { summarizeRules, type RuleRow } from "./ruleSummary";
+import { fieldLabel, summarizeRules, type RuleRow } from "./ruleSummary";
 import { ReviewBadge } from "./StatusBadge";
 
 function Questions({ ambiguities, proposal }: { ambiguities: Ambiguity[]; proposal: ProposalResponse }) {
@@ -71,8 +71,74 @@ function RuleTable({ rows }: { rows: RuleRow[] }) {
   );
 }
 
+function Disagreements({ proposal }: { proposal: ProposalResponse }) {
+  const { disagreements, runs } = proposal;
+  if (runs.succeeded < 2) {
+    return <p className="notice">変換が {runs.succeeded}回しか成功しなかったため、回ごとの比較はできません。</p>;
+  }
+  if (disagreements.length === 0) {
+    return (
+      <p className="muted">
+        {runs.succeeded}回の変換で項目は割れませんでした。同じ誤りが毎回出た場合は、ここでは見つかりません。
+      </p>
+    );
+  }
+  return (
+    <>
+      <h3>変換の回によって割れた項目（{disagreements.length}件）</h3>
+      <p className="muted">関係するルールは要確認にしてあります。要項を見て確かめてください。</p>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>内容</th>
+              {disagreements[0]?.values.map((_, index) => (
+                <th key={index}>{index === 0 ? "採用した案" : `他の案${index}`}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {disagreements.map(({ item, field, values }) => (
+              <tr key={`${item}-${field}`}>
+                <td>{item}</td>
+                <td>{fieldLabel(field)}</td>
+                {values.map((value, index) => (
+                  <td key={index}>{value}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function ExtraQuestions({ questions }: { questions: ProposalResponse["extraQuestions"] }) {
+  if (questions.length === 0) return null;
+  return (
+    <>
+      <h3>判定に結びつけられなかった質問（{questions.length}件）</h3>
+      <p className="notice">他の回が見つけた質問です。採用した案のルールに対応づけられないので、判定は止まりません。</p>
+      {questions.map(({ clause, sourceQuote, question, options }) => (
+        <article className="card" key={sourceQuote}>
+          <p className="clause">{clause}</p>
+          <h3>{question}</h3>
+          <blockquote>{sourceQuote}</blockquote>
+          <ul>
+            {options.map((option) => (
+              <li key={option}>{option}</li>
+            ))}
+          </ul>
+        </article>
+      ))}
+    </>
+  );
+}
+
 function Proposal({ proposal }: { proposal: ProposalResponse }) {
-  const { rules, notes, problems, attempts } = proposal;
+  const { rules, notes, problems, attempts, runs, extraQuestions } = proposal;
   const rows = summarizeRules(rules);
   return (
     <section>
@@ -81,7 +147,7 @@ function Proposal({ proposal }: { proposal: ProposalResponse }) {
         この案はまだ判定に使いません。根拠の文が要項にあることは検査しましたが、解釈が正しいことは保証しません。
       </p>
       <p className="muted">
-        ルール {rows.length}件、変換 {attempts.length}回（モデル {attempts.at(-1)?.model}）
+        ルール {rows.length}件、変換 {runs.succeeded}/{runs.requested}回成功、修正を含む呼び出し {attempts.length}回（モデル {attempts.at(-1)?.model}）
       </p>
       {problems.length > 0 && (
         <div className="notice" role="alert">
@@ -93,7 +159,9 @@ function Proposal({ proposal }: { proposal: ProposalResponse }) {
           </ul>
         </div>
       )}
+      <Disagreements proposal={proposal} />
       <Questions ambiguities={rules.ambiguities} proposal={proposal} />
+      <ExtraQuestions questions={extraQuestions} />
       <h3>ルールの一覧</h3>
       <RuleTable rows={rows} />
       {notes.length > 0 && (
@@ -183,7 +251,7 @@ export function ExtractionPanel() {
           </button>
         </div>
       </div>
-      {running && <p role="status">変換しています。数分かかることがあります。</p>}
+      {running && <p role="status">同じ要項を3回変換して比べています。数分かかることがあります。</p>}
       {error && <pre role="alert" className="error">{error}</pre>}
       {proposal && <Proposal proposal={proposal} />}
     </section>
