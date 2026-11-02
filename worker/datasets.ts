@@ -25,7 +25,7 @@ const SOURCES: Record<string, { name: string; courses: Course[]; students: Stude
   kamome: { name: "かもめ大学（架空）", courses: kamomeCourses, students: kamomeStudents },
 };
 
-// 人が書いた正解ルールは、ファイルを置くだけで読み込む。
+// 人が決めた正解ルールは、ファイルを置くだけで読み込む。
 const goldModules = import.meta.glob<{ goldRules: RuleSet }>("../data/fictional/*/gold-rules.ts", {
   eager: true,
 });

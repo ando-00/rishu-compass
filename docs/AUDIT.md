@@ -85,7 +85,7 @@ git grep -nE '\bas any\b|: any\b|@ts-ignore|@ts-expect-error' -- '*.ts' '*.tsx' 
 # 正解ルールと履歴
 git grep -n "gold" -- src                                               # 空。画面から読まない
 git grep -ln "gold" -- worker ':!*.test.ts'                             # worker/datasets.ts だけ
-git log --format='%h %an | %(trailers:key=Co-Authored-By,valueonly)' -- 'data/fictional/*/gold*'  # 共著の表示がない
+git log --format='%h %an | %(trailers:key=Co-Authored-By,valueonly)' -- 'data/fictional/*/gold*'  # 共著の表示がある。docs/DATA.md の経緯と合う
 git log --format=%h -- data/fictional/sakuradai/handbook.md data/fictional/kamome/handbook.md data/fictional/advice-rules.md  # 46e408f だけ
 git reflog | grep -E 'rebase|reset|amend'                               # 空
 git merge-base --is-ancestor origin/main HEAD                           # 終了コード 0
@@ -110,7 +110,7 @@ gh run list --limit 1                                                   # 最新
 | 声かけ文は下書き | 送信の経路がなく、画面でも下書きと分かる |
 | 学生の画面とチャットを作らない | 経路と画面に学生向けと相談チャットがない |
 | 架空データだけ | `data/fictional/` の外に大学のデータがない。追加したデータが `docs/DATA.md` と合う |
-| 正解ルールは人が書く | 機械検査の結果に加え、正解ルールの内容が Claude への入力と `dist/client` に入っていない。実行時のルールとして Worker が読むのは設計どおり |
+| 正解ルールは人が決める | 機械検査の結果に加え、`docs/DATA.md` の経緯と提出文が事実と合う。正解ルールの内容が製品の Claude への入力と `dist/client` に入っていない。実行時のルールとして Worker が読むのは設計どおり |
 | 既存コードを流用しない | 他の作品のフォルダは読まない。履歴を見て、説明のない大量の完成コードが1コミットで入っていないかを確認する |
 | 進め方 | UI のステータスが色と文字の併記になっている。`docs/PROGRESS.md` が実際の作業と合う |
 
