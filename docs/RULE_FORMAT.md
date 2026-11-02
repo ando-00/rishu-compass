@@ -28,6 +28,7 @@
 | `prerequisites` | 先修条件 |
 | `enrollment` | 履修の基本ルール（なければ項目ごと消す） |
 | `retake` | 失格の再履修（なければ項目ごと消す） |
+| `timetable` | 時限の重なりの根拠に示す時間割の条文（なければ項目ごと消す）。`id`、`clause`、`sourceQuote` だけを持つ |
 | `ambiguities` | 曖昧な箇所 |
 
 ## すべてのルールに共通

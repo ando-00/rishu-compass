@@ -460,7 +460,8 @@ class PlanChecker {
         if (!overlaps(entry.term, other.term)) continue;
         if (slots.some((a) => (otherCourse.slots ?? []).some((b) => slotsCollide(a, b)))) {
           const message = `${entry.course} と ${other.course} の時限が重なっています。`;
-          this.add("TIME_CONFLICT", TIMETABLE_RULE, message, "どちらかを別の時限へ移してください。", entry.course);
+          const rule = this.context.rules.timetable ?? TIMETABLE_RULE;
+          this.add("TIME_CONFLICT", rule, message, "どちらかを別の時限へ移してください。", entry.course);
         }
       }
     });

@@ -10,6 +10,7 @@ const CHAPTER_3 = "3 副専攻";
 const CHAPTER_4 = "4 進級と卒業研究";
 const CHAPTER_5 = "5 履修上限";
 const CHAPTER_6 = "6 先修条件";
+const CHAPTER_7 = "7 時間割";
 const CHAPTER_8 = "8 科目表";
 
 const MAJORS = [
@@ -406,6 +407,13 @@ export const goldRules: RuleSet = {
     ambiguityIds: ["retake-passed"],
     forbidBeforeAssignedYear: false,
     forbidRetakeOfPassed: false,
+  },
+  // 時限の重なりの根拠に示す（2026-11-02 の作り手の決定）。時限そのものは科目データにある
+  timetable: {
+    id: "timetable",
+    clause: CHAPTER_7,
+    sourceQuote:
+      "授業は月曜から土曜の1限から6限に行います。前期・後期の科目のほかに、1学期を2つに分けたクォーター科目があります。クォーター科目は、第1クォーターと第2クォーターで別の科目を同じ時限に置くことがあります。",
   },
   ambiguities,
 };

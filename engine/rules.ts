@@ -95,6 +95,8 @@ export type AmbiguityOption = {
   patches: RulePatch[] | null;
 };
 
+export type TimetableRule = RuleBase;
+
 export type Ambiguity = {
   id: string;
   clause: string;
@@ -115,5 +117,7 @@ export type RuleSet = {
   prerequisites: Prerequisite[];
   enrollment?: EnrollmentRule;
   retake?: RetakeRule;
+  // 時限の重なりの根拠に示す時間割の条文。値を持たない（時限は科目データにある）
+  timetable?: TimetableRule;
   ambiguities: Ambiguity[];
 };

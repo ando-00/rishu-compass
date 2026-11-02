@@ -29,6 +29,7 @@ const PATCHABLE_FIELDS = {
   prerequisite: { allowSameTerm: "boolean" },
   enrollment: { forbidBeforeAssignedYear: "boolean", forbidRetakeOfPassed: "boolean" },
   retake: { forbidDisqualified: "boolean" },
+  timetable: {},
 } as const satisfies Record<string, Record<string, FieldType>>;
 
 type RuleKind = keyof typeof PATCHABLE_FIELDS;
@@ -44,6 +45,7 @@ export function listRules(rules: RuleSet) {
     ...tagged("prerequisite", rules.prerequisites),
     ...tagged("enrollment", rules.enrollment ? [rules.enrollment] : []),
     ...tagged("retake", rules.retake ? [rules.retake] : []),
+    ...tagged("timetable", rules.timetable ? [rules.timetable] : []),
   ];
 }
 
