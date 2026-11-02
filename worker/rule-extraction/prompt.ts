@@ -169,8 +169,9 @@ function catalogText(courses: Course[]) {
   return [...groups].map(([group, names]) => `- ${group}: ${names.join("、")}`).join("\n");
 }
 
+// 大文字や空白を混ぜた閉じタグでも、囲みの外へ出さない。
 function escapeTag(text: string, tag: string) {
-  return text.replaceAll(`</${tag}>`, `<\\/${tag}>`);
+  return text.replace(new RegExp(`</(${tag})\\s*>`, "gi"), "<\\/$1>");
 }
 
 export type RepairRequest = {
@@ -195,11 +196,11 @@ ${escapeTag(input.handbook, "handbook")}
     ? `前回の案を検査したところ、次の問題が見つかりました。問題を直し、案の全体を返してください。
 
 <problems>
-${repair.problems.map((problem) => `- ${problem}`).join("\n")}
+${escapeTag(repair.problems.map((problem) => `- ${problem}`).join("\n"), "problems")}
 </problems>
 
 <previous_output>
-${repair.output}
+${escapeTag(repair.output, "previous_output")}
 </previous_output>`
     : "この要項をルール案に変換してください。";
 

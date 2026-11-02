@@ -6,6 +6,9 @@ import { extractionOutputSchema } from "./schema";
 
 export const MODEL_ID = "claude-opus-5-5";
 const MAX_TOKENS = 64000;
+// SDK に解析させると、打ち切りや途中の引き継ぎが種類のない例外になる。検査は extract.ts の parseReply が行う。
+const { type, schema } = betaZodOutputFormat(extractionOutputSchema);
+const OUTPUT_FORMAT = { type, schema };
 
 function toParam({ text, cache }: ContentBlock) {
   return {
@@ -39,16 +42,21 @@ export function createClaudeModel(apiKey: string): StructuredModel {
           max_tokens: MAX_TOKENS,
           betas: ["server-side-fallback-2026-07-01"],
           fallbacks: "default",
-          output_config: { effort: "high", format: betaZodOutputFormat(extractionOutputSchema) },
+          output_config: { effort: "high", format: OUTPUT_FORMAT },
           system: [{ type: "text", text: SYSTEM_PROMPT }],
           messages: [{ role: "user", content: content.map(toParam) }],
         })
         .finalMessage();
 
       const { usage } = message;
+      // 別のモデルへ引き継いだときは、引き継いだ後の本文が応答になる。
+      const start = message.content.findLastIndex((block) => block.type === "fallback") + 1;
       return {
         stopReason: message.stop_reason,
-        text: message.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join(""),
+        text: message.content
+          .slice(start)
+          .flatMap((block) => (block.type === "text" ? [block.text] : []))
+          .join(""),
         model: message.model,
         usage: {
           inputTokens: usage.input_tokens,

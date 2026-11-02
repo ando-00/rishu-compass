@@ -276,6 +276,7 @@ export function App() {
       <div hidden={tab !== "import"}>
         <ExtractionPanel
           datasets={datasets}
+          sourceId={datasets.find(({ id }) => id === datasetId)?.sourceId}
           respondent={respondent}
           onConfirmed={(id) => void openConfirmed(id)}
         />

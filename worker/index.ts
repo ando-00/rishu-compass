@@ -95,11 +95,12 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 app.get("/api/datasets", async (c) => {
   const listed = await listDatasets(c.env?.DB);
   const body: DatasetsResponse = {
-    datasets: listed.map(({ id, name, problems, confirmation }) => ({
+    datasets: listed.map(({ id, name, problems, confirmation, sourceId }) => ({
       id,
       name,
       problems,
       ...(confirmation ? { confirmation } : {}),
+      ...(sourceId ? { sourceId } : {}),
     })),
   };
   return c.json(body);

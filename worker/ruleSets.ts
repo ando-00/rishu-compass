@@ -217,7 +217,7 @@ ruleSetRoutes.post("/proposals/:id/confirm", async (c) => {
   if (!parsed.success) return c.json({ error: "確定の形式が正しくありません" }, 400);
 
   const { respondent, acceptedRuleIds } = parsed.data;
-  const { rules, problems } = JSON.parse(row.proposal) as StoredProposal;
+  const { rules, problems, extraQuestions } = JSON.parse(row.proposal) as StoredProposal;
   const reviewable = new Set(needsReviewIds(rules));
   if (!acceptedRuleIds.every((id) => reviewable.has(id))) {
     return c.json({ error: "認められないルールが含まれています" }, 400);
@@ -227,6 +227,8 @@ ruleSetRoutes.post("/proposals/:id/confirm", async (c) => {
   const accepted = acceptRules(rules, acceptedRuleIds);
   const remaining = [
     ...problems,
+    // 判定に結びつけられない質問は未回答のまま残るので、確定させない。
+    ...extraQuestions.map(({ clause, question }) => `${clause}: 判定に結びつけられない質問があります: ${question}`),
     ...validateRuleSet(accepted, source.courses),
     ...verifyQuotes(collectQuotes(accepted), row.handbook).map(
       ({ ruleId, sourceQuote }) => `${ruleId}: 根拠の文が要項にありません: ${sourceQuote}`,

@@ -92,7 +92,7 @@ function goldDatasets() {
   return Object.entries(SOURCES).flatMap(([id, source]) => {
     const module = goldModules[`../data/fictional/${id}/gold-rules.ts`];
     if (!module) return [];
-    return [createDataset(id, source.name, module.goldRules, source.courses, source.students)];
+    return [{ ...createDataset(id, source.name, module.goldRules, source.courses, source.students), sourceId: id }];
   });
 }
 

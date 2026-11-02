@@ -125,6 +125,8 @@ export const datasetsResponseSchema = z.object({
       problems: z.array(z.string()),
       // 職員が確定したルールの対象にだけある
       confirmation: confirmationSchema.optional(),
+      // 要項のある対象にだけある。見本にはない
+      sourceId: z.string().optional(),
     }),
   ),
 });

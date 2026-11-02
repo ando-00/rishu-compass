@@ -98,7 +98,9 @@ function Disagreements({ proposal }: { proposal: ProposalResponse }) {
   return (
     <>
       <h3>変換の回によって割れた項目（{disagreements.length}件）</h3>
-      <p className="muted">関係するルールは要確認にしてあります。要項を見て確かめてください。</p>
+      <p className="muted">
+        採用した案にあるルールは要確認にしてあります。「採用した案」が「なし」の項目は、確定しても判定に入りません。要項を見て確かめてください。
+      </p>
       <div className="table-scroll">
         <table>
           <thead>
@@ -132,7 +134,7 @@ function ExtraQuestions({ questions }: { questions: ProposalResponse["extraQuest
   return (
     <>
       <h3>判定に結びつけられなかった質問（{questions.length}件）</h3>
-      <p className="notice">他の回が見つけた質問です。採用した案のルールに対応づけられないので、判定は止まりません。</p>
+      <p className="notice">他の回が見つけた質問です。採用した案のルールに対応づけられず、回答を判定に反映できないので、この案は確定できません。要項を変換し直してください。</p>
       {questions.map(({ clause, sourceQuote, question, options }) => (
         <article className="card" key={sourceQuote}>
           <p className="clause">{clause}</p>
@@ -241,6 +243,8 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
       ? "この案は保存できなかったので確定できません。"
       : problems.length > 0
         ? "検査の問題が残っているので確定できません。"
+        : proposal.extraQuestions.length > 0
+          ? "判定に結びつけられない質問が残っているので確定できません。"
         : failed > 0
           ? `検査用ケースが ${failed}件一致しないので確定できません。`
           : null;
@@ -248,7 +252,9 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
   return (
     <>
       <h3>職員の確定</h3>
-      <p className="muted">確定すると、このルールで全学生を判定します。確定者として {respondent} を記録します。</p>
+      <p className="muted">
+        確定すると、このルールを新しい版として全学生を判定します。前の版の回答は引き継ぎません。確定者として {respondent} を記録します。
+      </p>
       {reviewRows.length > 0 && (
         <>
           <p>
@@ -341,13 +347,14 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
 
 type PanelProps = {
   datasets: DatasetsResponse["datasets"];
+  // 上の「対象」の大学。大学の指定を1か所にする
+  sourceId: string | undefined;
   respondent: Respondent;
   onConfirmed: (datasetId: string) => void;
 };
 
-export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProps) {
+export function ExtractionPanel({ datasets, sourceId, respondent, onConfirmed }: PanelProps) {
   const [data, setData] = useState<SourcesResponse | null>(null);
-  const [sourceId, setSourceId] = useState("");
   const [handbook, setHandbook] = useState("");
   const [running, setRunning] = useState(false);
   const [proposal, setProposal] = useState<ProposalResponse | null>(null);
@@ -355,10 +362,7 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
 
   useEffect(() => {
     fetchSources()
-      .then((result) => {
-        setData(result);
-        setSourceId(result.sources[0]?.id ?? "");
-      })
+      .then(setData)
       .catch((cause: unknown) => {
         setError(cause instanceof Error ? cause.message : "取得に失敗しました。");
       });
@@ -366,6 +370,8 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
 
   // 費用をかけて作った案を、画面を開き直しても確認できるようにする。
   useEffect(() => {
+    setProposal(null);
+    setHandbook("");
     if (!sourceId) return;
     let active = true;
     fetchLatestProposal(sourceId)
@@ -381,6 +387,7 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
   }, [sourceId]);
 
   async function run() {
+    if (!sourceId) return;
     setRunning(true);
     setError(null);
     setProposal(null);
@@ -394,6 +401,7 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
   }
 
   async function loadRecorded() {
+    if (!sourceId) return;
     setError(null);
     try {
       setProposal(await loadRecordedProposal(sourceId));
@@ -406,6 +414,15 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
     ({ confirmation }) => confirmation && confirmation.proposalId === proposal?.proposalId,
   )?.id;
   const selected = data?.sources.find(({ id }) => id === sourceId);
+  if (data && !selected) {
+    return (
+      <section>
+        <h2>要項の取り込み</h2>
+        <p className="notice">この対象には要項がありません。上の「対象」で大学を選んでください。</p>
+      </section>
+    );
+  }
+
   const sample = selected?.handbook ?? "";
   const tooLong = handbook.length > MAX_HANDBOOK_LENGTH;
   const canRun = Boolean(data?.extractionEnabled) && handbook.trim() !== "" && !tooLong && !running;
@@ -419,16 +436,7 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
         </p>
       )}
       <div className="extract-form">
-        <label>
-          対象の大学
-          <select value={sourceId} onChange={(event) => setSourceId(event.target.value)}>
-            {data?.sources.map((source) => (
-              <option key={source.id} value={source.id}>
-                {source.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <p>対象の大学: {selected?.name}（上の「対象」で変えられます）</p>
         <label>
           要項の文章
           <textarea

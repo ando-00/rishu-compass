@@ -29,7 +29,7 @@ async function readRequest(c: Context<Bindings>) {
   const { id, sourceId, rules, courses } = dataset;
   return {
     datasetId: id,
-    sourceId: sourceId ?? id,
+    sourceId: sourceId ?? "",
     input: { rules, courses, student, answers: body.data.answers },
   };
 }
