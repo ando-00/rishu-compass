@@ -5,5 +5,5 @@
     "types": ["./worker-configuration.d.ts"],
     "tsBuildInfoFile": "node_modules/.tmp/tsconfig.worker.tsbuildinfo"
   },
-  "include": ["worker", "shared", "engine"]
+  "include": ["worker", "shared", "engine", "data/fictional/**/*.ts"]
 }

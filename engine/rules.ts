@@ -1,0 +1,106 @@
+// 履修要項を判定できる形にしたルール。書き方は docs/RULE_FORMAT.md を見る。
+
+export type StudentCondition = {
+  major?: string;
+  hasMinor?: boolean;
+  minStudentYear?: number;
+  minPreviousGpa?: number;
+};
+
+type RuleBase = {
+  id: string;
+  clause: string;
+  when?: StudentCondition;
+  ambiguityIds?: string[];
+};
+
+export type Graduation = RuleBase & {
+  minYears: number;
+  totalCredits: number;
+};
+
+export type SubLimit = {
+  groups: string[];
+  maxCredits: number;
+};
+
+export type Category = RuleBase & {
+  name: string;
+  groups: string[];
+  minCredits: number;
+  requireAll: boolean;
+  maxCredits?: number;
+  overflowTo: string | null;
+  subLimits?: SubLimit[];
+};
+
+export type GateTarget =
+  | { kind: "course"; courses: string[] }
+  | { kind: "promotion"; toYear: number };
+
+export type Gate = RuleBase & {
+  name: string;
+  target: GateTarget;
+  checkAtEndOfYear: number;
+  minCredits?: number;
+  creditBasis?: "earned" | "countable";
+  requiredCourses: string[];
+  retryAfterMet: boolean;
+};
+
+export type LoadLimit = RuleBase & {
+  maxPerYear?: number;
+  maxPerTerm: number;
+  countsRetakes: boolean;
+  countsIntensive: boolean;
+  splitsYearLong: boolean;
+};
+
+export type CourseCountLimit = RuleBase & {
+  group: string;
+  maxPerTerm: number;
+};
+
+export type Prerequisite = RuleBase & {
+  course: string;
+  anyOf: string[];
+  allowSameTerm: boolean;
+};
+
+export type EnrollmentRule = RuleBase & {
+  forbidBeforeAssignedYear: boolean;
+  forbidRetakeOfPassed: boolean;
+};
+
+export type RulePatch = {
+  ruleId: string;
+  field: string;
+  value: string | number | boolean | null;
+};
+
+export type AmbiguityOption = {
+  id: string;
+  label: string;
+  patches: RulePatch[];
+};
+
+export type Ambiguity = {
+  id: string;
+  clause: string;
+  question: string;
+  options: AmbiguityOption[];
+};
+
+export type RuleSet = {
+  id: string;
+  name: string;
+  admissionYears: number[];
+  graduation: Graduation;
+  categories: Category[];
+  gates: Gate[];
+  loadLimits: LoadLimit[];
+  courseCountLimits: CourseCountLimit[];
+  prerequisites: Prerequisite[];
+  enrollment?: EnrollmentRule;
+  ambiguities: Ambiguity[];
+};
