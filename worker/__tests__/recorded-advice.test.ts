@@ -69,6 +69,13 @@ describe("履修案の記録", () => {
     expect((await latest("sakuradai", unrecorded.id, answers)).recordingAvailable).toBeUndefined();
   });
 
+  it("記録にない曖昧箇所にも答えると、前提が違うので記録を出さない", async () => {
+    const other = goldRules.ambiguities.find(({ id }) => !(id in answers))!;
+    const both = { ...answers, [other.id]: other.options[0]!.id };
+    expect((await latest("sakuradai", studentId, both)).recordingAvailable).toBeUndefined();
+    expect((await load("sakuradai", studentId, both)).status).toBe(404);
+  });
+
   it("API キーなしで読み込み、Claude を呼ばずに記録する", async () => {
     const fetchStub = vi.fn();
     vi.stubGlobal("fetch", fetchStub);
