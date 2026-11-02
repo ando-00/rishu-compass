@@ -263,6 +263,8 @@ export const proposalResponseSchema = storedProposalSchema.extend({
   proposalId: z.number().nullable(),
   // 検査に問題が残る案では人数を計算しない
   impacts: z.array(impactSchema).nullable(),
+  // どの区分にも入らない科目。確定は止めないが、修得した学生の卒業要件は職員確認になる
+  strayCourses: z.array(z.string()),
 });
 
 export const latestProposalResponseSchema = z.object({

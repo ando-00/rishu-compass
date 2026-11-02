@@ -110,3 +110,13 @@ export function validateRuleSet(rules: RuleSet, courses: Course[]) {
 
   return problems;
 }
+
+// どの区分の科目群にも入らない科目を返す。修得した学生の卒業要件は職員確認になる（監査の第1回の A1-26）。
+// 確定は止めない警告として使うので、validateRuleSet の問題には入れない。
+export function strayCourses(rules: RuleSet, courses: Course[]) {
+  const categoryGroups = new Set(rules.categories.flatMap((category) => category.groups));
+  return courses
+    .filter((course) => !course.groups.some((group) => categoryGroups.has(group)))
+    .map((course) => course.name)
+    .sort();
+}

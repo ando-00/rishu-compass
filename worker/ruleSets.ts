@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { collectQuotes, computeImpacts, validateRuleSet, verifyQuotes, type RuleSet } from "../engine";
+import { collectQuotes, computeImpacts, strayCourses, validateRuleSet, verifyQuotes, type RuleSet } from "../engine";
 import { runCheckCases } from "../engine/checkCases";
 import {
   confirmRequestSchema,
@@ -180,6 +180,7 @@ export function toProposalResponse(
     ...proposal,
     proposalId,
     impacts: problems.length === 0 ? computeImpacts(rules, source.courses, source.students, {}) : null,
+    strayCourses: strayCourses(rules, source.courses),
   };
 }
 

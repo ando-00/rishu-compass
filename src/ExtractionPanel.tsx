@@ -315,6 +315,14 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
           </ul>
         </div>
       )}
+      {proposal.strayCourses.length > 0 && (
+        <div className="notice" role="status">
+          <p>
+            どの区分にも入らない科目が {proposal.strayCourses.length}件あります。確定はできますが、これらを修得した学生の卒業要件は職員確認になります。
+          </p>
+          <p className="muted">{proposal.strayCourses.join("、")}</p>
+        </div>
+      )}
       <CaseResults results={caseResults} />
       <Disagreements proposal={proposal} />
       <Questions ambiguities={rules.ambiguities} proposal={proposal} />

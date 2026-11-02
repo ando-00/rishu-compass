@@ -545,6 +545,8 @@ function judgeGraduation(
   const ownIds = pendingIds(graduation, unresolved);
   const finalYear = student.studentYear >= graduation.minYears;
   const shortCategories = categories.filter((c) => c.status === "short").map((c) => c.name);
+  // 決定は「修得した学生」について。履修中だけの科目は今までどおり（延期見込みの計算で単位に数えない）
+  const stray = current.uncategorized;
   const base = {
     ruleId: graduation.id,
     kind: "graduation" as const,
@@ -556,13 +558,18 @@ function judgeGraduation(
     enrolled: projected.counted - current.counted,
     earned: current.earned,
     shortCategories,
-    uncountedCourses: current.uncategorized,
+    uncountedCourses: stray,
     ambiguityIds: [...new Set([...ownIds, ...uncertainIds])],
     needsContact: false,
   };
 
   if (ownIds.length > 0) {
     return { ...base, status: "needs_staff", reason: UNRESOLVED_REASON };
+  }
+  // どの区分にも入らない科目は、単位を黙って捨てずに職員が確認する（監査の第1回の A1-26、人の決定）
+  if (stray.length > 0) {
+    const reason = `どの区分にも入らない科目があります（${stray.join("、")}）。卒業に算入できるかを職員が確認します。`;
+    return { ...base, status: "needs_staff", reason };
   }
   if (uncertainIds.length > 0) {
     if (shortCategories.length === 0) {
