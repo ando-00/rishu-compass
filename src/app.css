@@ -417,6 +417,15 @@ button:disabled {
   overflow-x: auto;
 }
 
+.judgment-row td {
+  padding-bottom: 2px;
+  border-bottom: 0;
+}
+
+.judgment-detail td {
+  padding-top: 2px;
+}
+
 .student-filter {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

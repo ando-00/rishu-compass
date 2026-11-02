@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type {
   Answers,
   Judgment,
@@ -204,26 +204,29 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                   <th>結果</th>
                   <th>単位</th>
                   <th>根拠</th>
-                  <th>説明</th>
                 </tr>
               </thead>
               <tbody>
                 {detail.judgments.map((judgment) => (
-                  <tr key={judgment.ruleId}>
-                    <td className="nowrap">{judgment.name}</td>
-                    <td>
-                      <JudgmentBadge status={judgment.status} />
-                    </td>
-                    <td className="nowrap">{credits(judgment)}</td>
-                    <td className="nowrap">{judgment.clause}</td>
-                    <td>
-                      {judgment.reason}
-                      {judgment.missingCourses && judgment.missingCourses.length > 0 && (
-                        <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
-                      )}
-                      <span className="quote">{judgment.sourceQuote}</span>
-                    </td>
-                  </tr>
+                  <Fragment key={judgment.ruleId}>
+                    <tr className="judgment-row">
+                      <td className="nowrap">{judgment.name}</td>
+                      <td>
+                        <JudgmentBadge status={judgment.status} />
+                      </td>
+                      <td className="nowrap">{credits(judgment)}</td>
+                      <td className="nowrap">{judgment.clause}</td>
+                    </tr>
+                    <tr className="judgment-detail">
+                      <td colSpan={4}>
+                        {judgment.reason}
+                        {judgment.missingCourses && judgment.missingCourses.length > 0 && (
+                          <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
+                        )}
+                        <span className="quote">{judgment.sourceQuote}</span>
+                      </td>
+                    </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
