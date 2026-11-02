@@ -120,6 +120,31 @@ describe("履修案の記録", () => {
     });
   });
 
+  it("検査に落ちて直した経過を記録から見せ直す", async () => {
+    scripted.loop = async ({ tools }) => {
+      tools.find(({ name }) => name === "validate_plan")!.run({ plan: [{ course: "存在しない科目", term: "前期" }] });
+      tools.find(({ name }) => name === "submit_plan")!.run({ plan: PLAN, draft: DRAFT });
+      return { stopReason: "end_turn", iterations: 2, usage: USAGE };
+    };
+    await post(`${planned.id}/advise`, allowed);
+    expect((await latest(planned.id, allowed)).advice).toMatchObject({
+      corrections: [{ stage: "plan", messages: [expect.stringContaining("存在しない科目")] }],
+    });
+  });
+
+  it("経過を持たない前の記録も見せられる", async () => {
+    insertRow(store, planned.id, {
+      status: "passed",
+      plan: [{ course: "専門01", term: "前期", credits: 2 }],
+      totalCredits: 2,
+      planningYear: 3,
+      warnings: [],
+      draft: DRAFT,
+      iterations: 1,
+    });
+    expect((await latest(planned.id, allowed)).advice).toMatchObject({ corrections: [] });
+  });
+
   it("記録を読むだけなら ALLOW_CLAUDE がなくても使える", async () => {
     await post(`${planned.id}/advise`, allowed);
     expect((await latest(planned.id, { DB: store.db })).advice).not.toBeNull();

@@ -11,6 +11,7 @@ import {
   type RuleSet,
   type Student,
 } from "../../engine";
+import type { Correction } from "../../shared/advise";
 
 export type AdvisorInput = {
   rules: RuleSet;
@@ -25,6 +26,7 @@ export type PlanInput = Omit<AdvisorInput, "adviceRules">;
 export type AdvisorState = {
   submitted: { plan: PlanEntry[]; draft: string } | null;
   escalated: string | null;
+  corrections: Correction[];
 };
 
 export type AdvisorTool = {
@@ -111,11 +113,21 @@ export function planningTarget({ rules, courses, student, answers }: PlanInput) 
 export function createAdvisorTools(input: AdvisorInput) {
   const { rules, courses, student, answers, adviceRules } = input;
   const { target, lockedNotes } = planningTarget(input);
-  const state: AdvisorState = { submitted: null, escalated: null };
+  const state: AdvisorState = { submitted: null, escalated: null, corrections: [] };
   const check = (plan: PlanEntry[]) => checkPlan(rules, courses, target, plan, answers);
+
+  // 同じ違反を検査と提出で続けて返しても、直した回数は増えないので1回に数える。
+  const noteCorrection = (correction: Correction) => {
+    const last = state.corrections.at(-1);
+    if (JSON.stringify(last) !== JSON.stringify(correction)) state.corrections.push(correction);
+  };
 
   const planCheck = (plan: PlanEntry[]) => {
     const { status, issues, warnings } = check(plan);
+    if (issues.length > 0) {
+      const messages = issues.map(({ message, clause }) => `${message}（${clause}）`);
+      noteCorrection({ stage: "plan", messages });
+    }
     return {
       status,
       issues: issues.map(({ code, course, message, hint, clause }) => ({ code, course, message, hint, clause })),
@@ -217,7 +229,10 @@ export function createAdvisorTools(input: AdvisorInput) {
       ({ plan, draft }) => {
         if (state.escalated !== null) return "職員の確認に回したので、案は受け付けません。";
         const problem = draftProblem(draft);
-        if (problem) return { accepted: false, draftProblem: problem };
+        if (problem) {
+          noteCorrection({ stage: "draft", messages: [problem] });
+          return { accepted: false, draftProblem: problem };
+        }
         if (!isDisplayablePlan(check(plan))) return { accepted: false, ...planCheck(plan) };
         state.submitted = { plan, draft };
         return { accepted: true };

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { AdviseResponse, SavedAdvice } from "../shared/advise";
+import type { AdviseResponse, Correction, SavedAdvice } from "../shared/advise";
 import type { Answers } from "../shared/api";
 import { adviseStudent, fetchLatestAdvice } from "./api";
 import { PlanBadge } from "./StatusBadge";
@@ -10,12 +10,37 @@ type Props = {
   answers: Answers;
 };
 
+const STAGE_LABELS = { plan: "履修案", draft: "声かけ文" } as const;
+
+function Corrections({ corrections }: { corrections: Correction[] }) {
+  if (corrections.length === 0) return <p className="muted">最初の検査で通りました。</p>;
+  return (
+    <div className="corrections">
+      <h4>検査に落ちて直した経過（{corrections.length}回）</h4>
+      <p className="muted">コードの検査が返した内容です。Claude が案を直し、通った案だけを下に表示しています。</p>
+      <ol>
+        {corrections.map(({ stage, messages }, index) => (
+          <li key={index}>
+            <span className="muted">{STAGE_LABELS[stage]}</span>
+            <ul>
+              {messages.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function PlanResult({ result }: { result: Extract<AdviseResponse, { status: "passed" }> }) {
   return (
     <>
       <p>
         {result.planningYear}年次に向けた案です。コードの検査を通りました（合計 {result.totalCredits}単位）。
       </p>
+      <Corrections corrections={result.corrections} />
       <table>
         <thead>
           <tr>

@@ -1,5 +1,5 @@
 import { checkPlan, evaluateStudent, isDisplayablePlan, type PlanEntry } from "../../engine";
-import type { AdviseResponse } from "../../shared/advise";
+import type { AdviseResponse, Correction } from "../../shared/advise";
 import type { ModelUsage } from "../rule-extraction/model";
 import { ADVISOR_SYSTEM_PROMPT, advisorPrompt } from "./prompt";
 import {
@@ -29,7 +29,13 @@ export type AdvisorLoop = (request: LoopRequest) => Promise<LoopResult>;
 const NO_PLAN_REASON = "周回の上限までに検査を通る案を作れなかったので、職員の確認に回します。";
 
 // 画面へ返す案はすべてここを通す。道具の中の検査や保存したときの結果を信じず、今のルールで検査する。
-export function reviewPlan(input: PlanInput, plan: PlanEntry[], draft: string, iterations: number) {
+export function reviewPlan(
+  input: PlanInput,
+  plan: PlanEntry[],
+  draft: string,
+  iterations: number,
+  corrections: Correction[],
+) {
   const { rules, courses, answers } = input;
   const { target, lockedNotes } = planningTarget(input);
   const check = checkPlan(rules, courses, target, plan, answers);
@@ -45,6 +51,7 @@ export function reviewPlan(input: PlanInput, plan: PlanEntry[], draft: string, i
     warnings: [...lockedNotes, ...check.warnings],
     draft,
     iterations,
+    corrections,
   };
 }
 
@@ -66,7 +73,7 @@ export async function adviseStudent(loop: AdvisorLoop, input: AdvisorInput): Pro
 
   const { plan, draft } = state.submitted;
   return (
-    reviewPlan(input, plan, `${DRAFT_LABEL}\n\n${draft}`, iterations) ?? {
+    reviewPlan(input, plan, `${DRAFT_LABEL}\n\n${draft}`, iterations, state.corrections) ?? {
       status: "needs_staff",
       reason: NO_PLAN_REASON,
       iterations,

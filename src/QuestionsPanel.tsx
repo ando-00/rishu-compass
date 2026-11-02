@@ -96,6 +96,16 @@ function AnswerMeta({ record }: { record: AnswerRecord | undefined }) {
   );
 }
 
+function UnreflectedNote({ impact }: { impact: Impact }) {
+  const labels = impact.options.filter(({ reflected }) => !reflected).map(({ label }) => `「${label}」`);
+  if (labels.length === 0) return null;
+  return (
+    <p className="notice">
+      {labels.join("、")}と答えても記録するだけで、判定には反映しません。関わる判定は職員確認のままです。
+    </p>
+  );
+}
+
 export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) {
   const { unanswered, answered } = overview;
   return (
@@ -108,6 +118,7 @@ export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) 
           <h3>{impact.question}</h3>
           <blockquote>{impact.sourceQuote}</blockquote>
           <ImpactCounts impact={impact} />
+          <UnreflectedNote impact={impact} />
           <div className="actions">
             {impact.options.map((option) => (
               <button
@@ -133,6 +144,9 @@ export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) 
             回答: <strong>{impact.options.find((o) => o.id === impact.optionId)?.label}</strong>
             <AnswerMeta record={records.find((r) => r.ambiguityId === impact.ambiguityId)} />
           </p>
+          {impact.options.find((o) => o.id === impact.optionId)?.reflected === false && (
+            <p className="notice">この回答は記録しましたが、判定には反映していません。関わる判定は職員確認のままです。</p>
+          )}
           <ImpactCounts impact={impact} />
           <div className="actions">
             <button type="button" className="secondary" onClick={() => onClear(impact.ambiguityId)}>

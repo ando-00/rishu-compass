@@ -57,6 +57,6 @@ export async function findAdvice(
   const advice = adviseResponseSchema.parse(JSON.parse(row.advice));
   if (advice.status === "needs_staff") return { advice, recordedAt: row.created_at };
   const plan = advice.plan.map(({ course, term }) => ({ course, term }));
-  const reviewed = reviewPlan(input, plan, advice.draft, advice.iterations);
+  const reviewed = reviewPlan(input, plan, advice.draft, advice.iterations, advice.corrections);
   return reviewed ? { advice: reviewed, recordedAt: row.created_at } : NOTHING;
 }

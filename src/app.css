@@ -475,6 +475,28 @@ button:disabled {
   list-style: none;
 }
 
+.corrections {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.corrections .muted {
+  color: inherit;
+}
+
+.corrections ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.corrections ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
 .plan-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

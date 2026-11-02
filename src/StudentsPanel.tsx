@@ -71,7 +71,9 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
   return (
     <div>
       <h3>履修案の検査</h3>
-      <p className="muted">科目名を1行に1つ入力します。</p>
+      <p className="muted">
+        科目名を1行に1つ入力します。「履修案を作る」と同じ前提で検査します。後期の学生は翌年度の案として、履修中の科目を修得した前提で見ます。
+      </p>
       <div className="plan-grid">
         {TERMS.map((term) => (
           <label key={term}>

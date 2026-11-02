@@ -31,6 +31,7 @@ const PASSED: AdviseResponse = {
   warnings: [],
   draft: "",
   iterations: 3,
+  corrections: [],
 };
 const ESCALATED: AdviseResponse = { status: "needs_staff", reason: "確認", iterations: 2 };
 const GOLD: GoldStudent = { shortages: { 自由: 2 }, delay: false, escalate: false, points: [4] };

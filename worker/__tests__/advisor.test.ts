@@ -82,6 +82,52 @@ describe("履修案の結果", () => {
     expect((await adviseStudent(loop, input())).status).toBe("passed");
   });
 
+  it("検査に落ちて直した経過を、engine の検査の文で返す", async () => {
+    const bad = [{ course: "入門A", term: "前期" }];
+    const { loop } = scriptedLoop([
+      ["validate_plan", { plan: bad }],
+      ["submit_plan", { plan: GOOD_PLAN, draft: DRAFT }],
+    ]);
+    const { issues } = runTool("validate_plan", { plan: bad });
+    const result = await adviseStudent(loop, input());
+    if (result.status !== "passed") throw new Error(result.reason);
+    expect(result.corrections).toEqual([
+      { stage: "plan", messages: [`${issues[0].message}（${issues[0].clause}）`] },
+    ]);
+  });
+
+  it("下書きの表現で落ちた経過も返す", async () => {
+    const { loop } = scriptedLoop([
+      ["submit_plan", { plan: GOOD_PLAN, draft: "卒業できません。" }],
+      ["submit_plan", { plan: GOOD_PLAN, draft: DRAFT }],
+    ]);
+    const result = await adviseStudent(loop, input());
+    if (result.status !== "passed") throw new Error(result.reason);
+    expect(result.corrections).toEqual([{ stage: "draft", messages: [expect.stringContaining("卒業できません")] }]);
+  });
+
+  it("同じ案を検査と提出で続けて落としても、経過は1回に数える", async () => {
+    const bad = [{ course: "入門A", term: "前期" }];
+    const { loop } = scriptedLoop([
+      ["validate_plan", { plan: bad }],
+      ["submit_plan", { plan: bad, draft: DRAFT }],
+      ["submit_plan", { plan: GOOD_PLAN, draft: DRAFT }],
+    ]);
+    const result = await adviseStudent(loop, input());
+    if (result.status !== "passed") throw new Error(result.reason);
+    expect(result.corrections).toHaveLength(1);
+  });
+
+  it("最初の検査で通れば、経過は空になる", async () => {
+    const { loop } = scriptedLoop([
+      ["validate_plan", { plan: GOOD_PLAN }],
+      ["submit_plan", { plan: GOOD_PLAN, draft: DRAFT }],
+    ]);
+    const result = await adviseStudent(loop, input());
+    if (result.status !== "passed") throw new Error(result.reason);
+    expect(result.corrections).toEqual([]);
+  });
+
   it("空の案と空の下書きは提出できない", async () => {
     const { tools, state } = createAdvisorTools(input());
     const submit = tools.find((tool) => tool.name === "submit_plan")!;
