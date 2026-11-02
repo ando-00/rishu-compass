@@ -90,8 +90,8 @@ describe("runCheckCases", () => {
   it("履修案に期待の違反があれば通過にする", () => {
     expect(runCheckCases(RULES, COURSES, [OVER])[0]).toMatchObject({
       outcome: "passed",
-      expected: "OVER_LIMIT あり",
-      actual: "OVER_LIMIT あり",
+      expected: "履修上限の超過 あり",
+      actual: "履修上限の超過 あり",
     });
   });
 
@@ -99,7 +99,7 @@ describe("runCheckCases", () => {
     const relaxed = { ...RULES, loadLimits: [{ ...RULES.loadLimits[0]!, maxPerTerm: 10 }] };
     expect(runCheckCases(relaxed, COURSES, [OVER])[0]).toMatchObject({
       outcome: "failed",
-      actual: "OVER_LIMIT なし",
+      actual: "履修上限の超過 なし",
     });
   });
 

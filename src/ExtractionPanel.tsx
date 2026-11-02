@@ -156,7 +156,7 @@ function CaseResults({ results }: { results: ProposalResponse["caseResults"] }) 
         <table>
           <thead>
             <tr>
-              <th>ケース</th>
+              <th className="nowrap">ケース</th>
               <th>内容</th>
               <th>期待</th>
               <th>結果</th>

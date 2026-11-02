@@ -27,6 +27,19 @@ const STATUS_LABELS: Record<JudgmentStatus, string> = {
   needs_staff: "職員確認",
 };
 
+const ISSUE_LABELS: Record<PlanIssueCode, string> = {
+  TIME_CONFLICT: "時間割の重なり",
+  OVER_LIMIT: "履修上限の超過",
+  PREREQUISITE_NOT_MET: "先修条件の未達",
+  NOT_OFFERED: "開講なし",
+  WRONG_YEAR: "配当年次より前の履修",
+  ALREADY_EARNED: "修得済みの再履修",
+  SEMINAR_LOCKED: "履修条件の未達",
+  CATEGORY_LIMIT: "科目数の超過",
+  PENDING_RULE: "未確定のルール",
+  UNKNOWN_COURSE: "科目データにない科目",
+};
+
 function graduationCase(
   rules: RuleSet,
   courses: Course[],
@@ -45,7 +58,7 @@ function planCase(rules: RuleSet, courses: Course[], testCase: Extract<CheckCase
   const { code, expected, plan, student } = testCase;
   const check = checkPlan(rules, courses, student, plan, {});
   const found = check.issues.some((issue) => issue.code === code);
-  const label = (present: boolean) => `${code} ${present ? "あり" : "なし"}`;
+  const label = (present: boolean) => `${ISSUE_LABELS[code]} ${present ? "あり" : "なし"}`;
   return {
     outcome: found === expected ? "passed" : check.status === "needs_staff" ? "pending" : "failed",
     expected: label(expected),
