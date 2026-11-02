@@ -2,10 +2,11 @@
 // Claude Code の PostToolUse フック。git push のあとに、CI の結果を確かめるよう Claude へ伝える。
 // AGENTS.md: push のあと CI の結果を確認し、落ちたら次の機能より先に直す。
 import { readFileSync } from "node:fs";
+import { gitCalls } from "./git-command.mjs";
 
 const input = JSON.parse(readFileSync(0, "utf8") || "{}");
 const command = String(input?.tool_input?.command ?? "");
-if (!/\bgit\s+push\b/.test(command)) process.exit(0);
+if (!gitCalls(command).some((call) => call.sub === "push")) process.exit(0);
 
 console.log(JSON.stringify({
   hookSpecificOutput: {

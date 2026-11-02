@@ -146,7 +146,10 @@ function checkHistory() {
   if (handbook.length === 1 && handbook[0].startsWith("46e408f")) record("G4", "PASS", "持ち込みデータ: 46e408f のあと変えていない");
   else if (handbook.length === 0) record("G4", "未検証", "持ち込みデータ", "履歴が浅い clone では確かめられない");
   else record("G4", "FAIL", "持ち込みデータ: 46e408f のあとに変更がある", handbook.join("\n"));
-  const reflog = lines(git(["reflog"]).stdout).filter((l) => /rebase|reset|amend/.test(l));
+  // git stash は reflog に「reset: moving to HEAD」を残すが、履歴は書き換えない（監査の第2.5回の A25-9）
+  const reflog = lines(git(["reflog"]).stdout).filter(
+    (l) => /rebase|reset|amend/.test(l) && !/reset: moving to HEAD$/.test(l),
+  );
   expectEmpty("H1", "履歴: reflog に rebase、reset、amend がない", reflog.join("\n"));
   const ancestor = git(["merge-base", "--is-ancestor", "origin/main", "HEAD"]);
   if (ancestor.status === 0) record("H2", "PASS", "履歴: origin/main が HEAD の祖先");

@@ -236,9 +236,9 @@
 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
-| A25-7 | S2 | guard-bash が、`git add … && git commit`、`git commit -a`、`git commit -- <path>` のとき build と test を回さない。判定に使う索引が実行の前のもの | .claude/hooks/guard-bash.mjs:55 | 未解決 | |
-| A25-8 | S2 | guard-bash が止めるべき操作を17件通す: `git -C`、`git -c core.hooksPath=…`、`pull --rebase`、`branch <名前>`、`switch --create`、短いオプションのまとめ（`-uf`、`-vA`、`-nm`）、長いオプションの省略（`--amen` など）、`bash -c "…"`、引用符の対応ずれ。逆に `<<"EOF"` のヒアドキュメントの中の文で止める。after-push も `git -C … push` を見ない | .claude/hooks/guard-bash.mjs:19 .claude/hooks/after-push.mjs:8 | 未解決 | |
-| A25-9 | S2 | `git stash` が reflog に `reset: moving to HEAD` を残し、機械検査 H1 が reflog の期限まで FAIL し続ける。Stop フックが毎回止める | scripts/audit.mjs:149 | 未解決 | |
+| A25-7 | S2 | guard-bash が、`git add … && git commit`、`git commit -a`、`git commit -- <path>` のとき build と test を回さない。判定に使う索引が実行の前のもの | .claude/hooks/guard-bash.mjs:55 | 解決 | コミットの前に、索引に加えて未ステージの変更と、同じコマンドで足す新しいファイルを見る。`scripts/__tests__/hooks.test.mjs` |
+| A25-8 | S2 | guard-bash が止めるべき操作を17件通す: `git -C`、`git -c core.hooksPath=…`、`pull --rebase`、`branch <名前>`、`switch --create`、短いオプションのまとめ（`-uf`、`-vA`、`-nm`）、長いオプションの省略（`--amen` など）、`bash -c "…"`、引用符の対応ずれ。逆に `<<"EOF"` のヒアドキュメントの中の文で止める。after-push も `git -C … push` を見ない | .claude/hooks/guard-bash.mjs:19 .claude/hooks/after-push.mjs:8 | 解決 | 正規表現をやめ、引用符とヒアドキュメントを解いて語に分ける `.claude/hooks/git-command.mjs` にした。監査役の17件と通すべき事例を `scripts/__tests__/hooks.test.mjs` に入れ、`npm test` で回す |
+| A25-9 | S2 | `git stash` が reflog に `reset: moving to HEAD` を残し、機械検査 H1 が reflog の期限まで FAIL し続ける。Stop フックが毎回止める | scripts/audit.mjs:149 | 解決 | reflog の `reset: moving to HEAD`（git stash が残すもの）だけを除く。他の reset は今までどおり FAIL |
 | A25-10 | S2 | 壊す検査（一覧にない30か所）で2か所がすり抜けた: 一覧の `dataset.problems` による 422、確定のときの「判定に結びつけられない質問」の検査。後者は未回答のまま残る質問を持つ案の確定を止める守りの線 | worker/index.ts:140 worker/ruleSets.ts:342 | 未解決 | |
 | A25-11 | S3 | stop-audit が、追跡外のファイルの中身の変更と、`tsconfig*.json`、`README.md`、`AGENTS.md`、`docs/` の変更で検査を回し直さない | .claude/hooks/stop-audit.mjs | 対応しない | |
 | A25-12 | S3 | 機械検査 D1 が、engine から `../shared` や `../worker` を読んでも見逃す | scripts/audit.mjs:114 | 対応しない | |
