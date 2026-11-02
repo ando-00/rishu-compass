@@ -144,7 +144,7 @@ const M = [
   ["evaluate", 'const missed = outcome.atRisk === true && student.currentTerm === "後期";', "const missed = false;", "延期: 判定で落ちる学生"],
   ["evaluate", 'const missed = outcome.atRisk === true && student.currentTerm === "後期";', "const missed = outcome.atRisk === true;", "延期: 判定年次の前期はまだ落ちない"],
   ["evaluate", "return yearStart(student.studentYear + (missed ? 2 : 1));", "return yearStart(student.studentYear + 1);", "延期: 落ちたら翌々年次"],
-  ["evaluate", "return incalculable ? pessimistic : tooLate.includes(true);", "return tooLate.includes(true);", "延期: 計算できない科目"],
+  ["evaluate", "tooLate: incalculable ? pessimistic : courses.length > 0,", "tooLate: courses.length > 0,", "延期: 計算できない科目"],
   ["evaluate", "if (byMajor.length > 0 && !byMajor.some(({ when }) => matchesCondition(when, student))) {", "if (false) {", "対象外の専攻"],
   ["evaluate", "const required = gate.requiredMayBeEnrolled ? projected : passed;", "const required = passed;", "条件: 履修中でもよい必要科目"],
   ["evaluate", 'if (delay === "unknown") {', "if (false) {", "卒業: 判定できないときの職員確認"],
