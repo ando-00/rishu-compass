@@ -65,6 +65,7 @@
 ```bash
 node scripts/audit.mjs          # 約1分。鍵、名前、依存の向き、作らないもの、履歴、フォルダ、build、test、CI
 node scripts/audit.mjs --full   # 約30〜60分。上に加えて clean clone（.dev.vars なし）の ci/build/test、
+                                # README の手順1〜9 のヘッドレスの Chromium での操作（scripts/e2e-readme.mjs）、
                                 # 壊す検査、eval:recheck と eval:score の前回との比較、npm audit --omit=dev
 ```
 

@@ -3,7 +3,7 @@
 //
 // 使い方:
 //   node scripts/audit.mjs          # 速い検査: 鍵、名前、依存の向き、作らないもの、履歴、build、test
-//   node scripts/audit.mjs --full   # 上に加えて、clean clone での ci/build/test、壊す検査、評価の検査し直し、npm audit
+//   node scripts/audit.mjs --full   # 上に加えて、clean clone での ci/build/test、README の手順の画面操作、壊す検査、評価の検査し直し、npm audit
 //   --skip-build                    # build と test を飛ばす（CI では別の手順で回す）
 //   --ci                            # GitHub Actions 用。core.hooksPath と CI の結果は見ない
 //
@@ -258,6 +258,14 @@ function checkMutation(work) {
   else record("M2", "PASS", "壊す検査: SKIP なし");
 }
 
+function checkReadme() {
+  const r = run(process.execPath, [join(ROOT, "scripts/e2e-readme.mjs")], { timeout: 15 * 60 * 1000 });
+  const tail = lines(r.out).slice(-14).join("\n");
+  if (r.status === 0) record("U1", "PASS", "README の手順1〜9 を clean clone とヘッドレスの Chromium で通した（evals/tmp/e2e/latest.md）");
+  else if (r.status === 3) record("U1", "未検証", "README の手順", tail);
+  else record("U1", "FAIL", "README の手順が画面で通らない（evals/tmp/e2e/latest.md）", tail);
+}
+
 function checkNpmAudit() {
   const r = run(NPM, ["audit", "--omit=dev", "--json"], { shell: WIN, timeout: 120000 });
   try {
@@ -309,6 +317,7 @@ if (FULL) {
   try {
     const clone = checkCleanClone(work);
     if (clone) checkEvals(clone);
+    checkReadme();
     checkMutation(work);
   } finally {
     rmSync(work, { recursive: true, force: true });
