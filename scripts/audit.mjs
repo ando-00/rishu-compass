@@ -323,7 +323,7 @@ function checkMutation(work) {
 function checkReadme() {
   const r = run(process.execPath, [join(ROOT, "scripts/e2e-readme.mjs")], { timeout: 15 * 60 * 1000 });
   const tail = lines(r.out).slice(-14).join("\n");
-  if (r.status === 0) record("U1", "PASS", "README の手順1〜9 を clean clone とヘッドレスの Chromium で通した（evals/tmp/e2e/latest.md）");
+  if (r.status === 0) record("U1", "PASS", "README の手順1〜10 を clean clone とヘッドレスの Chromium で通した（evals/tmp/e2e/latest.md）");
   else if (r.status === 3) record("U1", "未検証", "README の手順", tail);
   else record("U1", "FAIL", "README の手順が画面で通らない（evals/tmp/e2e/latest.md）", tail);
 }

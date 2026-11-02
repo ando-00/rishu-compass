@@ -190,48 +190,56 @@ async function main() {
     if (!source.includes("正解ルールで判定しています")) throw new Error(`判定に使うルールの表示が「${source}」`);
     await tab("要項の取り込み").click();
   });
-  await step("2 記録を読み込む", async () => {
+  await step("2 先に確認事項を開くと、正解ルールの未回答が2件（第13条と第6条）", async () => {
+    await tab("確認事項").click();
+    await page.getByRole("heading", { name: /未回答の確認事項（2件）/ }).waitFor();
+    const body = await page.locator("main").innerText();
+    for (const word of ["第13条", "第6条"]) if (!body.includes(word)) throw new Error(`${word} が見当たらない`);
+    await tab("要項の取り込み").click();
+  });
+  await step("3 記録を読み込む", async () => {
     await page.getByRole("button", { name: "記録を読み込む" }).first().click();
     await page.getByRole("button", { name: /このルール案を確定する/ }).waitFor();
   });
-  await step("3 根拠の文、検査用ケース、職員に確認する箇所が見える", async () => {
+  await step("4 根拠の文、検査用ケース、職員に確認する箇所が見える", async () => {
     const body = await page.locator("main").innerText();
     const missing = ["第6条", "検査用ケース"].filter((word) => !body.includes(word));
     if (missing.length > 0) throw new Error(`見当たらない: ${missing.join("、")}`);
   });
-  await step("4 このルール案を確定する", async () => {
+  await step("5 このルール案を確定する", async () => {
     await page.getByRole("button", { name: /このルール案を確定する/ }).click();
     await page.getByRole("button", { name: "確定を取り消す" }).waitFor();
     const source = await page.getByTestId("rule-source").innerText();
     if (!/職員が確定したルール案（第\d+版）で判定しています/.test(source)) throw new Error(`判定に使うルールの表示が「${source}」`);
   });
   let before = 0;
-  await step("5 確認事項に、第6条の読み方ごとの人数が出る", async () => {
+  await step("6 確定すると未回答は第6条の1件だけになり（第13条は Claude が見逃した）、読み方ごとの人数が出る", async () => {
     await tab("確認事項").click();
+    await page.getByRole("heading", { name: /未回答の確認事項（1件）/ }).waitFor();
     await page.getByRole("button", { name: /卒業に必要な単位に算入される単位だけを数える/ }).waitFor();
     before = await summary("声かけ");
     return `回答前の声かけ ${before}人、職員確認 ${await summary("職員確認")}人、対応なし ${await summary("対応なし")}人`;
   });
-  await step("6 「卒業に必要な単位に算入される単位だけを数える」で声かけが増える", async () => {
+  await step("7 「卒業に必要な単位に算入される単位だけを数える」で声かけが増える", async () => {
     await page.getByRole("button", { name: /卒業に必要な単位に算入される単位だけを数える/ }).click();
     await page.getByText(/直前 \d+人/).first().waitFor();
     const after = await summary("声かけ");
     if (!(after > before)) throw new Error(`声かけが ${before}人 から ${after}人`);
     return `声かけ ${before}人 → ${after}人`;
   });
-  await step("7 声かけの一覧に理由と根拠の条文がある", async () => {
+  await step("8 声かけの一覧に理由と根拠の条文がある", async () => {
     await tab("声かけ").click();
     await page.getByText("S0095").first().waitFor();
     const body = await page.locator("main").innerText();
     if (!/第\d+条/.test(body)) throw new Error("条文が見当たらない");
   });
-  await step("8 S0095 を開くと区分別の不足と根拠がある", async () => {
+  await step("9 S0095 を開くと区分別の不足と根拠がある", async () => {
     await page.getByText("S0095").first().click();
     await page.getByRole("heading", { name: "履修案", exact: true }).waitFor();
     const body = await page.locator("main").innerText();
     if (!/第\d+条/.test(body)) throw new Error("根拠の条文が見当たらない");
   });
-  await step("9 履修案の記録を読み込むと、検査を通った案と下書きが出る", async () => {
+  await step("10 履修案の記録を読み込むと、検査を通った案と下書きが出る", async () => {
     const panel = page.locator("div").filter({ has: page.getByRole("heading", { name: "履修案", exact: true }) }).last();
     await panel.getByRole("button", { name: "記録を読み込む" }).click();
     const result = panel.locator(".plan-result");

@@ -111,6 +111,9 @@ export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) 
   return (
     <section>
       <h2>未回答の確認事項（{unanswered.length}件）</h2>
+      <p className="muted">
+        下の表の「関わる判定の人数」は判定の件数の内訳です。上の人数（声かけ・職員確認・対応なし）との関係は、延期見込みと最終年次の不足が声かけ、未回答で止まった判定が職員確認、それ以外が対応なしです。
+      </p>
       {unanswered.length === 0 && <p className="muted">未回答の確認事項はありません。</p>}
       {unanswered.map((impact) => (
         <article className="card" key={impact.ambiguityId}>
