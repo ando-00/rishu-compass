@@ -2,7 +2,7 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2023"],
-    "types": ["./worker-configuration.d.ts"],
+    "types": ["./worker-configuration.d.ts", "vite/client"],
     "tsBuildInfoFile": "node_modules/.tmp/tsconfig.worker.tsbuildinfo"
   },
   "include": ["worker", "shared", "engine", "data/fictional/**/*.ts"]
