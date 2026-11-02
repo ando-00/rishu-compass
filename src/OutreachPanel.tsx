@@ -26,7 +26,7 @@ function OutreachCard({ entry, onOpenStudent }: { entry: Outreach; onOpenStudent
           </li>
         ))}
       </ul>
-      {entry.kind === "contact" && (
+      {entry.draft && (
         <details>
           <summary>声かけ文の下書きを見る</summary>
           <pre>{entry.draft}</pre>

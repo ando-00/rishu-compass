@@ -18,6 +18,7 @@ const conditions: [string, Student][] = [
   ),
   ["適用外の入学年度", { ...base, admissionYear: 2020 }],
   ["科目データにない科目", { ...base, records: [...records, ...passed(["不明な科目"], 2)] }],
+  ["対象外の専攻", { ...base, major: "丙専攻" }],
 ];
 
 describe.each(conditions)("%s", (_, student) => {

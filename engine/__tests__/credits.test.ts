@@ -49,6 +49,7 @@ describe("allocateCredits", () => {
   it("算入先がない超過分は算入しない", () => {
     const rules = structuredClone(exampleRules);
     rules.categories[0]!.minCredits = 4;
+    rules.categories[0]!.maxCredits = 4;
     const basic = category(["入門A", "入門B", "基礎C"], "basic-required", rules);
     expect(basic).toMatchObject({ counted: 4, overflowed: 0, lost: 2 });
   });
@@ -57,6 +58,14 @@ describe("allocateCredits", () => {
     const rules = structuredClone(exampleRules);
     rules.categories.reverse();
     expect(category(numberedNames("専門", 18), "free", rules).received).toBe(6);
+  });
+
+  it("複数の区分からの超過分を合算する", () => {
+    const rules = structuredClone(exampleRules);
+    rules.categories[0]!.overflowTo = "free";
+    const names = [...numberedNames("専門", 16), "入門A", "入門B", "基礎C", "基礎D", "基礎E"];
+    rules.categories[0]!.minCredits = 8;
+    expect(category(names, "free", rules).received).toBe(4);
   });
 
   it("修得した全単位と算入した単位を分けて返す", () => {

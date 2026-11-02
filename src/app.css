@@ -258,6 +258,20 @@ pre {
   margin-left: 12px;
 }
 
+.count-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+blockquote {
+  margin: 0 0 8px;
+  padding: 4px 12px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .nowrap {
   white-space: nowrap;
 }

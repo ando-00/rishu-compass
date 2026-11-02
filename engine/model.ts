@@ -23,15 +23,23 @@ export type CourseRecord = {
   course: string;
   studentYear: number;
   term: OfferedTerm;
-  result: "passed" | "failed" | "enrolled";
+  result: "passed" | "failed" | "disqualified" | "enrolled";
 };
 
 export type SpecialStatus = "編入" | "休学" | "留学" | "読替" | "既修得認定";
+
+export type TermPoint = {
+  studentYear: number;
+  term: Term;
+};
 
 export type Student = {
   id: string;
   admissionYear: number;
   studentYear: number;
+  currentTerm: Term;
+  yearsEnrolled: number;
+  expectedGraduation?: TermPoint;
   major?: string;
   hasMinor?: boolean;
   previousGpa?: number;
@@ -53,6 +61,11 @@ export function findCourse(index: CourseIndex, name: string): Course {
   return course;
 }
 
+// GPA は小数の比較で誤差が出ないよう、小数第2位までの整数にして比べる。
+function gpaHundredths(gpa: number) {
+  return Math.round(gpa * 100);
+}
+
 export function matchesCondition(condition: StudentCondition | undefined, student: Student) {
   if (!condition) return true;
   const { major, hasMinor, minStudentYear, minPreviousGpa } = condition;
@@ -60,7 +73,8 @@ export function matchesCondition(condition: StudentCondition | undefined, studen
   if (hasMinor !== undefined && (student.hasMinor ?? false) !== hasMinor) return false;
   if (minStudentYear !== undefined && student.studentYear < minStudentYear) return false;
   if (minPreviousGpa !== undefined) {
-    if (student.previousGpa === undefined || student.previousGpa < minPreviousGpa) return false;
+    if (student.previousGpa === undefined) return false;
+    if (gpaHundredths(student.previousGpa) < gpaHundredths(minPreviousGpa)) return false;
   }
   return true;
 }
@@ -78,4 +92,8 @@ export function passedCourses(
     }
   }
   return names;
+}
+
+export function termIndex({ studentYear, term }: TermPoint) {
+  return (studentYear - 1) * 2 + (term === "後期" ? 1 : 0);
 }

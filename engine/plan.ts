@@ -1,7 +1,13 @@
-import { createContext, exclusionReason, judgeGate, type EvaluationContext } from "./evaluate";
+import {
+  createContext,
+  exclusionReason,
+  judgeGate,
+  pendingIds,
+  prepareRules,
+  type EvaluationContext,
+} from "./evaluate";
 import {
   findCourse,
-  indexCourses,
   matchesCondition,
   passedCourses,
   type Answers,
@@ -17,22 +23,39 @@ export type PlanEntry = {
   term: OfferedTerm;
 };
 
+export type PlanIssueCode =
+  | "TIME_CONFLICT"
+  | "OVER_LIMIT"
+  | "PREREQUISITE_NOT_MET"
+  | "NOT_OFFERED"
+  | "WRONG_YEAR"
+  | "ALREADY_EARNED"
+  | "SEMINAR_LOCKED"
+  | "CATEGORY_LIMIT"
+  | "PENDING_RULE"
+  | "UNKNOWN_COURSE";
+
 export type PlanIssue = {
+  code: PlanIssueCode;
   ruleId: string;
   clause: string;
-  severity: "violation" | "needs_staff";
+  sourceQuote: string;
   course?: string;
   message: string;
+  hint: string;
   ambiguityIds: string[];
 };
 
 export type PlanCheck = {
   status: "passed" | "failed" | "needs_staff";
   issues: PlanIssue[];
+  warnings: string[];
 };
 
-type Rule = { id: string; clause: string; ambiguityIds?: string[] };
+type Rule = { id: string; clause: string; sourceQuote: string; ambiguityIds?: string[]; status?: "confirmed" | "needs_review" };
 
+const DATA_RULE: Rule = { id: "course-data", clause: "科目データ", sourceQuote: "" };
+const TIMETABLE_RULE: Rule = { id: "timetable", clause: "時間割", sourceQuote: "" };
 const UNRESOLVED_MESSAGE = "未回答の確認事項があるため、職員が確認します。";
 
 export function isDisplayablePlan(check: PlanCheck) {
@@ -54,6 +77,7 @@ function slotsCollide(a: CourseSlot, b: CourseSlot) {
 
 class PlanChecker {
   readonly issues: PlanIssue[] = [];
+  readonly warnings: string[] = [];
   private readonly context: EvaluationContext;
   private readonly plan: PlanEntry[];
   private readonly scheduled: PlanEntry[];
@@ -69,35 +93,36 @@ class PlanChecker {
 
     for (const entry of plan) {
       if (!context.catalog.has(entry.course)) {
-        this.addViolation("catalog", "科目データ", `${entry.course} は科目データにありません。`, entry.course);
+        const message = `${entry.course} は科目データにありません。`;
+        this.add("UNKNOWN_COURSE", DATA_RULE, message, "科目名を確認してください。", entry.course);
       }
     }
   }
 
-  private addViolation(ruleId: string, clause: string, message: string, course?: string) {
+  private add(code: PlanIssueCode, rule: Rule, message: string, hint: string, course?: string) {
     this.issues.push({
-      ruleId,
-      clause,
-      severity: "violation",
+      code,
+      ruleId: rule.id,
+      clause: rule.clause,
+      sourceQuote: rule.sourceQuote,
       message,
+      hint,
       ambiguityIds: [],
       ...(course ? { course } : {}),
     });
   }
 
-  private unresolvedOf(rule: Rule) {
-    return (rule.ambiguityIds ?? []).filter((id) => this.context.unresolved.has(id));
-  }
-
   // 未確定のルールは、違反の有無にかかわらず職員確認にする。
   private deferIfUnresolved(rule: Rule, course?: string) {
-    const ambiguityIds = this.unresolvedOf(rule);
+    const ambiguityIds = pendingIds(rule, this.context.unresolved);
     if (ambiguityIds.length === 0) return false;
     this.issues.push({
+      code: "PENDING_RULE",
       ruleId: rule.id,
       clause: rule.clause,
-      severity: "needs_staff",
+      sourceQuote: rule.sourceQuote,
       message: UNRESOLVED_MESSAGE,
+      hint: "曖昧箇所に回答すると検査できます。",
       ambiguityIds,
       ...(course ? { course } : {}),
     });
@@ -113,14 +138,14 @@ class PlanChecker {
     const seen = new Set<string>();
     for (const { course } of this.plan) {
       if (seen.has(course)) {
-        this.addViolation("duplicate", "科目データ", `${course} が重複しています。`, course);
+        this.add("ALREADY_EARNED", DATA_RULE, `${course} が重複しています。`, "1つにしてください。", course);
       }
       seen.add(course);
       const inProgress = student.records.some(
         (record) => record.course === course && record.result === "enrolled",
       );
       if (inProgress) {
-        this.addViolation("duplicate", "科目データ", `${course} は履修中です。`, course);
+        this.add("ALREADY_EARNED", DATA_RULE, `${course} は履修中です。`, "案から外してください。", course);
       }
     }
   }
@@ -129,7 +154,8 @@ class PlanChecker {
     for (const { course, term } of this.plan) {
       const { offeredIn } = this.course(course);
       if (offeredIn !== undefined && offeredIn !== term) {
-        this.addViolation("offering", "科目データ", `${course} は${offeredIn}の科目です。`, course);
+        const message = `${course} は${offeredIn}の科目です。`;
+        this.add("NOT_OFFERED", DATA_RULE, message, `${offeredIn}に入れ直してください。`, course);
       }
     }
   }
@@ -142,10 +168,11 @@ class PlanChecker {
     for (const { course } of this.plan) {
       const { assignedYear } = this.course(course);
       if (rule.forbidBeforeAssignedYear && student.studentYear < assignedYear) {
-        this.addViolation(rule.id, rule.clause, `${course} は${assignedYear}年次からの科目です。`, course);
+        const message = `${course} は${assignedYear}年次からの科目です。`;
+        this.add("WRONG_YEAR", rule, message, `${assignedYear}年次以降に入れてください。`, course);
       }
       if (rule.forbidRetakeOfPassed && passed.has(course)) {
-        this.addViolation(rule.id, rule.clause, `${course} は修得済みです。`, course);
+        this.add("ALREADY_EARNED", rule, `${course} は修得済みです。`, "案から外してください。", course);
       }
     }
   }
@@ -157,19 +184,22 @@ class PlanChecker {
       for (const rule of rules.prerequisites) {
         if (rule.course !== entry.course || !matchesCondition(rule.when, student)) continue;
         if (this.deferIfUnresolved(rule, entry.course)) continue;
-        const satisfied = rule.anyOf.some(
-          (name) =>
-            passed.has(name) ||
-            this.scheduled.some(
-              (other) =>
-                other.course === name &&
-                (isEarlier(other.term, entry.term) ||
-                  (rule.allowSameTerm && overlaps(other.term, entry.term))),
-            ),
-        );
-        if (!satisfied) {
-          const message = `${entry.course} には ${rule.anyOf.join("または")} の修得が必要です。`;
-          this.addViolation(rule.id, rule.clause, message, entry.course);
+
+        const others = (name: string) => this.scheduled.filter((other) => other.course === name);
+        const earlier = (name: string) => others(name).some((o) => isEarlier(o.term, entry.term));
+        const together = (name: string) =>
+          rule.allowSameTerm && others(name).some((o) => overlaps(o.term, entry.term));
+        const available = (name: string) => passed.has(name) || earlier(name) || together(name);
+
+        const met = rule.conditions.find((names) => names.every(available));
+        if (!met) {
+          const need = rule.conditions.map((names) => names.join("と")).join("または");
+          const message = `${entry.course} には ${need} の修得が必要です。`;
+          this.add("PREREQUISITE_NOT_MET", rule, message, `先に ${need} を修得してください。`, entry.course);
+          continue;
+        }
+        for (const name of met.filter((n) => !passed.has(n))) {
+          this.warnings.push(`${entry.course} は ${name} の修得を前提にしています。不合格の場合は組み直しが必要です。`);
         }
       }
     }
@@ -182,70 +212,90 @@ class PlanChecker {
       const { courses } = gate.target;
       for (const { course } of this.plan.filter((entry) => courses.includes(entry.course))) {
         const judgment = judgeGate(gate, this.context);
-        if (judgment.status === "met") continue;
-        this.issues.push({
-          ruleId: gate.id,
-          clause: gate.clause,
-          severity: judgment.status === "needs_staff" ? "needs_staff" : "violation",
-          course,
-          message: judgment.reason,
-          ambiguityIds: judgment.ambiguityIds,
-        });
+        if (judgment.status === "satisfied") continue;
+        if (judgment.status === "needs_staff") {
+          this.issues.push({
+            code: "PENDING_RULE",
+            ruleId: gate.id,
+            clause: gate.clause,
+            sourceQuote: gate.sourceQuote,
+            course,
+            message: judgment.reason,
+            hint: "曖昧箇所に回答すると検査できます。",
+            ambiguityIds: judgment.ambiguityIds,
+          });
+          continue;
+        }
+        const hint = judgment.eligibleFromYear
+          ? `${judgment.eligibleFromYear}年次から履修できます。`
+          : "条件を満たしてから履修してください。";
+        this.add("SEMINAR_LOCKED", gate, judgment.reason, hint, course);
       }
     }
   }
 
+  private isExcludedRetake(limit: LoadLimit, course: string, before: number) {
+    if (limit.retakeExclusion === "none") return false;
+    return this.context.student.records.some((record) => {
+      if (record.course !== course || record.studentYear >= before) return false;
+      if (record.result === "failed") return true;
+      return record.result === "disqualified" && limit.retakeExclusion === "failed_or_disqualified";
+    });
+  }
+
   private loadItems(limit: LoadLimit) {
     const { student } = this.context;
-    const failedEarlier = (course: string, studentYear: number) =>
-      student.records.some(
-        (record) =>
-          record.course === course && record.result === "failed" && record.studentYear < studentYear,
-      );
-    const failedAtAll = (course: string) =>
-      student.records.some((record) => record.course === course && record.result === "failed");
     const registered = student.records.filter((record) => record.studentYear === student.studentYear);
-
     return [
-      ...this.plan.map((entry) => ({ ...entry, retake: failedAtAll(entry.course) })),
-      ...registered.map(({ course, term, studentYear }) => ({
-        course,
-        term,
-        retake: failedEarlier(course, studentYear),
-      })),
-    ].filter(({ course, retake }) => {
-      if (retake && !limit.countsRetakes) return false;
-      return !this.course(course).intensive || limit.countsIntensive;
-    });
+      ...this.plan.filter(
+        (entry) => !this.isExcludedRetake(limit, entry.course, student.studentYear + 1),
+      ),
+      ...registered
+        .filter((record) => !this.isExcludedRetake(limit, record.course, record.studentYear))
+        .map(({ course, term }) => ({ course, term })),
+    ];
   }
 
   checkLoad() {
     const { rules, student } = this.context;
     const applicable = rules.loadLimits.filter((limit) => matchesCondition(limit.when, student));
-    const deferred = applicable.map((limit) => this.deferIfUnresolved(limit)).some(Boolean);
     const limit = applicable.at(-1);
-    if (deferred || !limit) return;
+    if (!limit) {
+      const message = "この学生に適用する履修上限がないため、職員が確認します。";
+      this.issues.push({
+        code: "PENDING_RULE",
+        ruleId: "load-limit",
+        clause: "履修上限",
+        sourceQuote: "",
+        message,
+        hint: "ルールの履修上限を確認してください。",
+        ambiguityIds: [],
+      });
+      return;
+    }
+    const deferred = applicable.map((rule) => this.deferIfUnresolved(rule)).some(Boolean);
+    if (deferred) return;
 
     const load = { 前期: 0, 後期: 0 };
     for (const { course, term } of this.loadItems(limit)) {
       const { credits } = this.course(course);
-      if (term !== "通年") load[term] += credits;
-      else if (limit.splitsYearLong) {
+      if (term === "通年") {
         load.前期 += credits / 2;
         load.後期 += credits / 2;
-      } else load.前期 += credits;
+      } else load[term] += credits;
     }
 
+    const hint = "優先度の低い科目を外してください。";
     for (const term of ["前期", "後期"] as const) {
       if (load[term] > limit.maxPerTerm) {
         const message = `${term}の履修単位 ${load[term]} が上限 ${limit.maxPerTerm} を超えています。`;
-        this.addViolation(limit.id, limit.clause, message);
+        this.add("OVER_LIMIT", limit, message, hint);
       }
     }
     const year = load.前期 + load.後期;
     if (limit.maxPerYear !== undefined && year > limit.maxPerYear) {
       const message = `年間の履修単位 ${year} が上限 ${limit.maxPerYear} を超えています。`;
-      this.addViolation(limit.id, limit.clause, message);
+      this.add("OVER_LIMIT", limit, message, hint);
     }
   }
 
@@ -261,7 +311,7 @@ class PlanChecker {
         const count = inGroup.filter((entry) => overlaps(entry.term, term)).length;
         if (count > rule.maxPerTerm) {
           const message = `${term}の${rule.group}が ${count} 科目で、上限 ${rule.maxPerTerm} を超えています。`;
-          this.addViolation(rule.id, rule.clause, message);
+          this.add("CATEGORY_LIMIT", rule, message, `${rule.group}を別の学期へ移してください。`);
         }
       }
     }
@@ -269,14 +319,16 @@ class PlanChecker {
 
   checkTimetable() {
     this.plan.forEach((entry, index) => {
-      const others = [...this.scheduled.slice(index + 1)];
-      const slots = this.course(entry.course).slots ?? [];
-      for (const other of others) {
-        if (other.course === entry.course || !overlaps(entry.term, other.term)) continue;
-        const otherSlots = this.course(other.course).slots ?? [];
-        if (slots.some((a) => otherSlots.some((b) => slotsCollide(a, b)))) {
+      const course = this.course(entry.course);
+      if (course.intensive) return;
+      const slots = course.slots ?? [];
+      for (const other of this.scheduled.slice(index + 1)) {
+        const otherCourse = this.course(other.course);
+        if (other.course === entry.course || otherCourse.intensive) continue;
+        if (!overlaps(entry.term, other.term)) continue;
+        if (slots.some((a) => (otherCourse.slots ?? []).some((b) => slotsCollide(a, b)))) {
           const message = `${entry.course} と ${other.course} の時限が重なっています。`;
-          this.addViolation("timetable", "時間割", message, entry.course);
+          this.add("TIME_CONFLICT", TIMETABLE_RULE, message, "どちらかを別の時限へ移してください。", entry.course);
         }
       }
     });
@@ -290,19 +342,22 @@ export function checkPlan(
   plan: PlanEntry[],
   answers: Answers,
 ): PlanCheck {
-  const reason = exclusionReason(rules, indexCourses(courses), student);
+  const prepared = prepareRules(rules, courses, answers);
+  const reason = exclusionReason(prepared, student);
   if (reason) {
     const issue: PlanIssue = {
+      code: "PENDING_RULE",
       ruleId: "excluded",
       clause: "作業ルール",
-      severity: "needs_staff",
+      sourceQuote: "",
       message: reason,
+      hint: "職員が確認してください。",
       ambiguityIds: [],
     };
-    return { status: "needs_staff", issues: [issue] };
+    return { status: "needs_staff", issues: [issue], warnings: [] };
   }
 
-  const checker = new PlanChecker(createContext(rules, courses, student, answers), plan);
+  const checker = new PlanChecker(createContext(prepared, student), plan);
   checker.checkDuplicates();
   checker.checkOffering();
   checker.checkEnrollment();
@@ -312,8 +367,10 @@ export function checkPlan(
   checker.checkCourseCounts();
   checker.checkTimetable();
 
-  const { issues } = checker;
-  if (issues.some((issue) => issue.severity === "violation")) return { status: "failed", issues };
-  if (issues.length > 0) return { status: "needs_staff", issues };
-  return { status: "passed", issues };
+  const { issues, warnings } = checker;
+  if (issues.some((issue) => issue.code !== "PENDING_RULE")) {
+    return { status: "failed", issues, warnings };
+  }
+  if (issues.length > 0) return { status: "needs_staff", issues, warnings };
+  return { status: "passed", issues, warnings };
 }

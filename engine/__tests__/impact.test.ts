@@ -3,6 +3,7 @@ import { exampleCourses } from "../../data/fictional/example/courses";
 import { exampleRules } from "../../data/fictional/example/rules";
 import { computeImpact, computeImpacts } from "../impact";
 import { draftOutreachMessage, listOutreach } from "../outreach";
+import { exampleStudents } from "../../data/fictional/example/students";
 import { evaluateStudent } from "../evaluate";
 import type { Answers } from "../model";
 import { makeStudent, numberedNames, passed } from "./helpers";
@@ -32,7 +33,7 @@ describe("computeImpact", () => {
       expect.objectContaining({
         studentId: "S0001",
         ruleId: "gate-seminar",
-        statuses: { include: "met", exclude: "unmet" },
+        statuses: { include: "satisfied", exclude: "short" },
       }),
     ]);
   });
@@ -42,6 +43,7 @@ describe("computeImpact", () => {
     expect(impact.clause).toBe("第3条");
     expect(impact.question).toContain("30単位");
     expect(impact.options.map((option) => option.id)).toEqual(["include", "exclude"]);
+    expect(impact.sourceQuote).toBe("見本の第3条の本文");
   });
 
   it("全判定が職員確認の学生は影響人数に入れない", () => {
@@ -55,19 +57,34 @@ describe("computeImpact", () => {
   });
 
   it("影響人数は回答の前後で全学生を再計算した差と一致する", () => {
+    const population = exampleStudents;
     const statusesOf = (optionId: string) =>
-      students.map((student) => ({
+      population.map((student) => ({
         id: student.id,
         statuses: evaluateStudent(exampleRules, exampleCourses, student, {
           [ID]: optionId,
-        }).judgments.map((j) => j.status),
+        }).judgments.map((j) => `${j.status}:${j.needsContact}`),
       }));
     const included = statusesOf("include");
     const differs = statusesOf("exclude")
       .filter((row, index) => row.statuses.join() !== included[index]!.statuses.join())
       .map((row) => row.id);
-    const impact = computeImpact(exampleRules, exampleCourses, students, {}, ID);
+    const impact = computeImpact(exampleRules, exampleCourses, population, {}, ID);
+    expect(differs.length).toBeGreaterThan(0);
     expect(impact.affectedStudentIds).toEqual(differs);
+  });
+
+  it("状態が同じでも、声かけの対象が変わる学生を影響人数に数える", () => {
+    const rules = structuredClone(exampleRules);
+    rules.ambiguities[0]!.options[0]!.patches = [
+      { ruleId: "gate-seminar", field: "checkAtEndOfYear", value: 2 },
+    ];
+    rules.ambiguities[0]!.options[1]!.patches = [
+      { ruleId: "gate-seminar", field: "checkAtEndOfYear", value: 3 },
+    ];
+    const student = makeStudent({ studentYear: 2, records: passed(BASIC, 1) });
+    const impact = computeImpact(rules, exampleCourses, [student], {}, ID);
+    expect(impact.affectedStudentIds).toEqual([student.id]);
   });
 
   it("存在しない曖昧箇所はエラーにする", () => {
@@ -83,6 +100,7 @@ describe("computeImpacts", () => {
     rules.ambiguities.unshift({
       id: "ambiguity-none",
       clause: "第9条",
+      sourceQuote: "見本の第9条の本文",
       question: "影響のない確認事項",
       options: [{ id: "only", label: "一つだけ", patches: [] }],
     });
@@ -129,6 +147,29 @@ describe("声かけ", () => {
   it("未回答の曖昧箇所だけに関わる学生は職員確認として返す", () => {
     const list = listOutreach(evaluateAll([steady], {}), [steady]);
     expect(list[0]?.kind).toBe("staff_review");
+  });
+
+  it("回答で結果が変わらない学生は、未回答でも職員確認に入れない", () => {
+    expect(listOutreach(evaluateAll([steady], {}), [steady], new Set())).toEqual([]);
+  });
+
+  it("全判定が職員確認の学生は、回答に関係なく職員確認に入れる", () => {
+    const list = listOutreach(evaluateAll([excluded]), [excluded], new Set());
+    expect(list[0]?.kind).toBe("staff_review");
+  });
+
+  it("危険度の高い順に並べる", () => {
+    const risky = makeStudent({ id: "S0005", studentYear: 2, records: passed(BASIC, 1) });
+    const delayed = makeStudent({
+      id: "S0006",
+      studentYear: 4,
+      currentTerm: "前期",
+      expectedGraduation: { studentYear: 4, term: "後期" },
+      records: passed(BASIC, 1),
+    });
+    const list = [risky, swing, delayed];
+    const order = listOutreach(evaluateAll(list), list).map((entry) => entry.studentId);
+    expect(order).toEqual(["S0006", "S0001", "S0005"]);
   });
 
   it("声かけ文は下書きとして作り、根拠を含める", () => {

@@ -34,9 +34,22 @@ describe("resolveRules", () => {
     ).toThrow("unknown");
   });
 
+  it("差分で表せない回答は未解決のまま残す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.ambiguities[0]!.options[0]!.patches = null;
+    const { unresolved } = resolveRules(rules, { "ambiguity-seminar-credits": "include" });
+    expect(unresolved).toEqual(new Set(["ambiguity-seminar-credits"]));
+  });
+
+  it("ambiguityIds がなくても、未解決の差分が指すルールは未確定にする", () => {
+    const rules = structuredClone(exampleRules);
+    delete rules.gates[0]!.ambiguityIds;
+    expect(gate(resolveRules(rules, {}).rules)?.ambiguityIds).toEqual(["ambiguity-seminar-credits"]);
+  });
+
   it("存在しないルールを書き換える選択肢はエラーにする", () => {
     const broken = structuredClone(exampleRules);
-    broken.ambiguities[0]!.options[0]!.patches[0]!.ruleId = "missing";
+    broken.ambiguities[0]!.options[0]!.patches![0]!.ruleId = "missing";
     expect(() =>
       resolveRules(broken, { "ambiguity-seminar-credits": "include" }),
     ).toThrow("missing");

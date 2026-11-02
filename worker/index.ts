@@ -5,9 +5,11 @@ import {
   computeImpacts,
   checkPlan,
   draftOutreachMessage,
+  evaluatePrepared,
   evaluateStudent,
   isDisplayablePlan,
   listOutreach,
+  prepareRules,
 } from "../engine";
 import {
   answersRequestSchema,
@@ -41,20 +43,31 @@ function findDataset(c: Context) {
 
 function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
   const { rules, courses, students } = dataset;
-  const evaluations = students.map((student) => evaluateStudent(rules, courses, student, answers));
-  const outreach = listOutreach(evaluations, students);
+  const prepared = prepareRules(rules, courses, answers);
+  const evaluations = students.map((student) => evaluatePrepared(prepared, student));
+  const unanswered = computeImpacts(rules, courses, students, answers);
+  // 未回答でも結果が変わらない学生は、職員確認の一覧に入れない。
+  const answerSensitive = new Set(
+    unanswered.flatMap((impact) =>
+      impact.computable ? impact.affectedStudentIds : impact.staffReviewStudentIds,
+    ),
+  );
+  const outreach = listOutreach(evaluations, students, answerSensitive);
   const states = new Map(outreach.map((entry) => [entry.studentId, entry.kind]));
   const contact = outreach.filter((entry) => entry.kind === "contact").length;
   const staffReview = outreach.length - contact;
 
   return {
     summary: { total: students.length, contact, staffReview, clear: students.length - outreach.length },
-    unanswered: computeImpacts(rules, courses, students, answers),
+    unanswered,
     answered: Object.entries(answers).map(([ambiguityId, optionId]) => ({
       ...computeImpact(rules, courses, students, answers, ambiguityId),
       optionId,
     })),
-    outreach: outreach.map((entry) => ({ ...entry, draft: draftOutreachMessage(entry) })),
+    outreach: outreach.map((entry) => ({
+      ...entry,
+      draft: entry.kind === "contact" ? draftOutreachMessage(entry) : null,
+    })),
     students: students.map(({ id, studentYear, major }) => ({
       id,
       studentYear,

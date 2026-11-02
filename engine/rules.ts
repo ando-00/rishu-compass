@@ -10,6 +10,8 @@ export type StudentCondition = {
 type RuleBase = {
   id: string;
   clause: string;
+  sourceQuote: string;
+  status?: "confirmed" | "needs_review";
   when?: StudentCondition;
   ambiguityIds?: string[];
 };
@@ -29,7 +31,7 @@ export type Category = RuleBase & {
   groups: string[];
   minCredits: number;
   requireAll: boolean;
-  maxCredits?: number;
+  maxCredits?: number | null;
   overflowTo: string | null;
   subLimits?: SubLimit[];
 };
@@ -45,15 +47,16 @@ export type Gate = RuleBase & {
   minCredits?: number;
   creditBasis?: "earned" | "countable";
   requiredCourses: string[];
+  requiredMayBeEnrolled?: boolean;
   retryAfterMet: boolean;
 };
+
+export type RetakeExclusion = "none" | "failed" | "failed_or_disqualified";
 
 export type LoadLimit = RuleBase & {
   maxPerYear?: number;
   maxPerTerm: number;
-  countsRetakes: boolean;
-  countsIntensive: boolean;
-  splitsYearLong: boolean;
+  retakeExclusion: RetakeExclusion;
 };
 
 export type CourseCountLimit = RuleBase & {
@@ -61,9 +64,10 @@ export type CourseCountLimit = RuleBase & {
   maxPerTerm: number;
 };
 
+// ANDの組をORで並べる。[["A"], ["B", "C"]] は「A または（B かつ C）」。
 export type Prerequisite = RuleBase & {
   course: string;
-  anyOf: string[];
+  conditions: string[][];
   allowSameTerm: boolean;
 };
 
@@ -81,12 +85,14 @@ export type RulePatch = {
 export type AmbiguityOption = {
   id: string;
   label: string;
-  patches: RulePatch[];
+  // null はルールの差分で表せない候補。回答しても判定には反映しない。
+  patches: RulePatch[] | null;
 };
 
 export type Ambiguity = {
   id: string;
   clause: string;
+  sourceQuote: string;
   question: string;
   options: AmbiguityOption[];
 };

@@ -1,6 +1,16 @@
-import { isPatchableField, listRules } from "./answers";
+import { listRules, patchProblem } from "./answers";
+import { sortByOverflow } from "./credits";
 import type { Course } from "./model";
-import type { RuleSet } from "./rules";
+import type { Category, RuleSet } from "./rules";
+
+function overflowProblem(categories: Category[]) {
+  try {
+    sortByOverflow(categories.map((c) => ({ ...c, when: undefined } as Category)));
+    return null;
+  } catch (cause) {
+    return cause instanceof Error ? cause.message : "算入先を確認できません";
+  }
+}
 
 // 型では防げない参照切れを探す。問題の一覧を返し、空なら問題なし。
 export function validateRuleSet(rules: RuleSet, courses: Course[]) {
@@ -22,6 +32,7 @@ export function validateRuleSet(rules: RuleSet, courses: Course[]) {
   for (const { rule } of entries) {
     if (ruleIds.has(rule.id)) problems.push(`${rule.id}: ルールの id が重複しています`);
     ruleIds.add(rule.id);
+    if (rule.sourceQuote.trim() === "") problems.push(`${rule.id}: 根拠の文がありません`);
     for (const id of rule.ambiguityIds ?? []) {
       if (!ambiguityIds.has(id)) problems.push(`${rule.id}: 曖昧箇所がありません: ${id}`);
     }
@@ -36,6 +47,11 @@ export function validateRuleSet(rules: RuleSet, courses: Course[]) {
     category.subLimits?.forEach((limit) => limit.groups.forEach((group) => checkGroup(id, group)));
   }
 
+  if (rules.categories.every(({ overflowTo }) => overflowTo === null || categoryIds.has(overflowTo))) {
+    const problem = overflowProblem(rules.categories);
+    if (problem) problems.push(problem);
+  }
+
   for (const gate of rules.gates) {
     gate.requiredCourses.forEach((name) => checkCourse(gate.id, name));
     if (gate.target.kind === "course") {
@@ -45,19 +61,31 @@ export function validateRuleSet(rules: RuleSet, courses: Course[]) {
 
   for (const prerequisite of rules.prerequisites) {
     checkCourse(prerequisite.id, prerequisite.course);
-    prerequisite.anyOf.forEach((name) => checkCourse(prerequisite.id, name));
+    prerequisite.conditions.flat().forEach((name) => checkCourse(prerequisite.id, name));
+    if (prerequisite.conditions.length === 0 || prerequisite.conditions.some((c) => c.length === 0)) {
+      problems.push(`${prerequisite.id}: 先修の条件が空です`);
+    }
   }
 
   for (const limit of rules.courseCountLimits) checkGroup(limit.id, limit.group);
 
   for (const ambiguity of rules.ambiguities) {
+    if (ambiguity.sourceQuote.trim() === "") problems.push(`${ambiguity.id}: 根拠の文がありません`);
+    const referenced = entries.some(({ rule }) => rule.ambiguityIds?.includes(ambiguity.id));
+    const patched = ambiguity.options.some((option) => (option.patches ?? []).length > 0);
+    if (!referenced && !patched) {
+      problems.push(`${ambiguity.id}: どのルールからも参照されていません`);
+    }
     for (const option of ambiguity.options) {
-      for (const patch of option.patches) {
-        const where = `${ambiguity.id} の ${option.id}`;
-        const target = entries.find(({ rule }) => rule.id === patch.ruleId);
-        if (!target) problems.push(`${where}: ルールがありません: ${patch.ruleId}`);
-        else if (!isPatchableField(target.kind, patch.field)) {
-          problems.push(`${where}: 変更できない項目です: ${patch.ruleId} の ${patch.field}`);
+      const where = `${ambiguity.id} の ${option.id}`;
+      if (option.patches?.length === 0) {
+        problems.push(`${where}: 差分が空です。表せないなら patches を null にしてください`);
+      }
+      for (const patch of option.patches ?? []) {
+        const problem = patchProblem(rules, patch);
+        if (problem) problems.push(`${where}: ${problem}`);
+        if (patch.field === "overflowTo" && patch.value !== null && !categoryIds.has(String(patch.value))) {
+          problems.push(`${where}: 算入先がありません: ${String(patch.value)}`);
         }
       }
     }

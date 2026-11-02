@@ -5,6 +5,7 @@ export const exampleStudents = generateStudents({
   prefix: "E",
   seed: 20261104,
   count: 80,
+  boundary: { every: 12, offset: 2, loadByYear: [8, 12] },
   firstYearAdmission: 2026,
   courses: exampleCourses,
   loadByYear: [8, 12, 8, 4],

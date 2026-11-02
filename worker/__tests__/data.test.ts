@@ -27,6 +27,29 @@ describe("科目データ", () => {
   });
 });
 
+describe("第6条の読み方で判定が変わる型", () => {
+  const credits = new Map(sakuradaiCourses.map((course) => [course.name, course]));
+  const boundary = sakuradaiStudents.filter((student) => {
+    const passed = student.records.filter((r) => r.result === "passed" && r.studentYear <= 2);
+    const earned = passed.reduce((sum, r) => sum + (credits.get(r.course)?.credits ?? 0), 0);
+    const outside = passed.filter((r) => credits.get(r.course)?.groups.includes("他学科"));
+    return student.studentYear >= 3 && earned >= 60 && earned <= 61 && outside.length === 6;
+  });
+
+  it("修得60〜61単位、うち他学科12単位の3年生を一定数入れる", () => {
+    expect(boundary.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("仕様の指定必修を修得している", () => {
+    for (const student of boundary) {
+      const passed = new Set(student.records.filter((r) => r.result === "passed").map((r) => r.course));
+      for (const name of ["基礎演習", "ミクロ経済学Ⅰ", "マクロ経済学Ⅰ", "統計学Ⅰ"]) {
+        expect(passed.has(name)).toBe(true);
+      }
+    }
+  });
+});
+
 describe("見本のルール", () => {
   it("見本の科目データと参照が合う", () => {
     expect(validateRuleSet(exampleRules, exampleCourses)).toEqual([]);
@@ -55,13 +78,14 @@ describe.each(datasets)("%sの学生データ", (_, courses, students) => {
 
   it("学生に氏名の項目がない", () => {
     for (const student of students) {
-      expect(Object.keys(student)).not.toContain("name");
+      expect(Object.keys(student).filter((key) => /name|mail|phone/i.test(key))).toEqual([]);
     }
   });
 
   it("特別な状態の学生と適用外の入学年度の学生を含む", () => {
     expect(students.some((student) => student.specialStatuses.length > 0)).toBe(true);
-    expect(new Set(students.map((student) => student.admissionYear)).size).toBeGreaterThan(4);
+    const inRange = (student: Student) => student.admissionYear === 2027 - student.studentYear;
+    expect(students.some((student) => !inRange(student))).toBe(true);
   });
 });
 

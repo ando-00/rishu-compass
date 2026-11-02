@@ -60,6 +60,20 @@ function directCredits(category: Category, names: string[], catalog: CourseIndex
   return { direct: sum(names) - limitExcess, limitExcess };
 }
 
+// 算入先があれば最低単位までを残して超過分を送る。算入先がなければ上限まで残す。
+function countedCredits(category: Category, total: number) {
+  const fallback = category.overflowTo === null ? Number.POSITIVE_INFINITY : category.minCredits;
+  return Math.min(total, category.maxCredits ?? fallback);
+}
+
+function missingCourses(category: Category, passed: Set<string>, catalog: CourseIndex) {
+  return [...catalog.values()]
+    .filter((course) => course.groups.some((group) => category.groups.includes(group)))
+    .filter((course) => !passed.has(course.name))
+    .map((course) => course.name)
+    .sort();
+}
+
 export function allocateCredits(
   rules: RuleSet,
   catalog: CourseIndex,
@@ -89,7 +103,7 @@ export function allocateCredits(
     const { direct, limitExcess } = directCredits(category, names, catalog);
     const inflow = received.get(category.id) ?? 0;
     const total = direct + inflow;
-    const counted = Math.min(total, category.maxCredits ?? category.minCredits);
+    const counted = countedCredits(category, total);
     const excess = total - counted;
 
     if (category.overflowTo !== null) {
@@ -113,13 +127,6 @@ export function allocateCredits(
     categories: ordered,
     earned,
     counted: ordered.reduce((total, category) => total + category.counted, 0),
-    uncategorized,
+    uncategorized: uncategorized.sort(),
   };
-}
-
-function missingCourses(category: Category, passed: Set<string>, catalog: CourseIndex) {
-  return [...catalog.values()]
-    .filter((course) => course.groups.some((group) => category.groups.includes(group)))
-    .filter((course) => !passed.has(course.name))
-    .map((course) => course.name);
 }

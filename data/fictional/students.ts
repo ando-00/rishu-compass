@@ -13,6 +13,13 @@ export type TakeState = {
   year: number;
 };
 
+// 2年次の終わりの修得単位を loadByYear で固定し、選択の順を逆にして他学科の単位を多く持たせる型。
+export type BoundaryProfile = {
+  every: number;
+  offset: number;
+  loadByYear: [number, number];
+};
+
 export type StudentConfig = {
   prefix: string;
   seed: number;
@@ -23,6 +30,7 @@ export type StudentConfig = {
   loadByYear: [number, number, number, number];
   majors?: string[];
   minorRate?: number;
+  boundary?: BoundaryProfile;
   requiredGroups: (major?: string) => string[];
   electiveGroups: (major?: string, minor?: boolean) => string[];
   canTake?: (course: Course, state: TakeState) => boolean;
@@ -41,6 +49,7 @@ const PROFILES: { share: number; profile: Profile }[] = [
   { share: 0.08, profile: { passRate: 0.97, loadScale: 1, reverseElectives: true } },
 ];
 
+const BOUNDARY_PROFILE: Profile = { passRate: 0.97, loadScale: 1, reverseElectives: true };
 const SPECIAL_STATUSES: SpecialStatus[] = ["編入", "休学", "留学", "読替", "既修得認定"];
 
 function createRandom(seed: number) {
@@ -78,23 +87,34 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
   const studentYear = (index % 4) + 1;
   const major = config.majors?.[index % config.majors.length];
   const hasMinor = random() < (config.minorRate ?? 0);
-  const profile = pickProfile(random());
+  const { boundary } = config;
+  const isBoundary = boundary !== undefined && index % boundary.every === boundary.offset;
+  const profile = isBoundary ? BOUNDARY_PROFILE : pickProfile(random());
   const electives = config.electiveGroups(major, hasMinor);
   const order = [
     ...config.requiredGroups(major),
     ...(profile.reverseElectives ? [...electives].reverse() : electives),
   ];
   const names = new Set(config.courses.map((course) => course.name));
+  const creditsOf = new Map(config.courses.map((course) => [course.name, course.credits]));
   const passed = new Set<string>();
   const records: CourseRecord[] = [];
-  const creditsOf = new Map(config.courses.map((course) => [course.name, course.credits]));
   let earned = 0;
   let previousYearRate: number | undefined;
+
+  const settle = (year: number, term: OfferedTerm) => {
+    for (const record of records) {
+      if (record.studentYear !== year || record.term !== term || record.result !== "passed") continue;
+      if (!passed.has(record.course)) earned += creditsOf.get(record.course) ?? 0;
+      passed.add(record.course);
+    }
+  };
 
   for (let year = 1; year <= studentYear; year += 1) {
     const taken = new Set<string>();
     let attempts = 0;
     let successes = 0;
+    const boundaryYear = isBoundary && year <= 2;
 
     for (const term of ["前期", "後期"] as Term[]) {
       const candidates = config.courses
@@ -102,7 +122,12 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
         .filter((course) => !passed.has(course.name) && !taken.has(course.name))
         .filter((course) => groupRank(course, order) >= 0)
         .filter((course) => course.offeredIn !== "通年" || term === "前期")
-        .filter((course) => course.offeredIn === undefined || course.offeredIn === "通年" || course.offeredIn === term)
+        .filter(
+          (course) =>
+            course.offeredIn === undefined ||
+            course.offeredIn === "通年" ||
+            course.offeredIn === term,
+        )
         .filter((course) => {
           const first = firstPartOf(course.name, names);
           return first === null || passed.has(first);
@@ -111,7 +136,9 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
         .map((course) => ({ course, rank: groupRank(course, order), tie: random() }))
         .sort((a, b) => a.rank - b.rank || a.tie - b.tie);
 
-      const target = Math.round(config.loadByYear[year - 1]! * profile.loadScale);
+      const target = boundaryYear
+        ? boundary.loadByYear[year - 1]!
+        : Math.round(config.loadByYear[year - 1]! * profile.loadScale);
       let load = 0;
       const planned: { course: Course; term: OfferedTerm }[] = [];
       for (const { course } of candidates) {
@@ -122,53 +149,44 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
 
       for (const { course, term: recordTerm } of planned) {
         taken.add(course.name);
-        const inProgress = year === studentYear && recordTerm !== "前期";
-        if (inProgress) {
+        if (year === studentYear && recordTerm !== "前期") {
           records.push({ course: course.name, studentYear: year, term: recordTerm, result: "enrolled" });
           continue;
         }
         attempts += 1;
-        const success = random() < profile.passRate;
+        const success = boundaryYear || random() < profile.passRate;
         if (success) successes += 1;
+        const failure = random() < 0.2 ? "disqualified" : "failed";
         records.push({
           course: course.name,
           studentYear: year,
           term: recordTerm,
-          result: success ? "passed" : "failed",
+          result: success ? "passed" : failure,
         });
       }
 
-      // 通年の科目の結果は年度末に確定するので、後期の履修の判断には前期までの修得だけを使う。
-      for (const record of records) {
-        if (record.studentYear === year && record.term === term && record.result === "passed") {
-          if (!passed.has(record.course)) earned += creditsOf.get(record.course) ?? 0;
-          passed.add(record.course);
-        }
-      }
+      // 通年の科目の結果は年度末に確定するので、学期の途中では前期の修得だけを見る。
+      settle(year, term);
     }
-
-    for (const record of records) {
-      if (record.studentYear === year && record.term === "通年" && record.result === "passed") {
-        if (!passed.has(record.course)) earned += creditsOf.get(record.course) ?? 0;
-        passed.add(record.course);
-      }
-    }
+    settle(year, "通年");
 
     if (year === studentYear - 1) previousYearRate = attempts === 0 ? 0 : successes / attempts;
   }
 
   const special = index % 23 === 7 ? SPECIAL_STATUSES[(index / 23) % 5 | 0] : undefined;
   const outOfRange = index % 97 === 41;
+  const gpa = (1.4 + (previousYearRate ?? 0) * 2.3 + random() * 0.4).toFixed(2);
 
   return {
     id: `${config.prefix}${String(index + 1).padStart(4, "0")}`,
     admissionYear: config.firstYearAdmission - (studentYear - 1) - (outOfRange ? 6 : 0),
     studentYear,
+    currentTerm: "後期",
+    yearsEnrolled: studentYear,
+    expectedGraduation: { studentYear: 4, term: "後期" },
     ...(major ? { major } : {}),
     hasMinor,
-    ...(previousYearRate === undefined
-      ? {}
-      : { previousGpa: Math.round((1.4 + previousYearRate * 2.3 + random() * 0.4) * 10) / 10 }),
+    ...(previousYearRate === undefined ? {} : { previousGpa: Number(gpa) }),
     specialStatuses: special ? [special] : [],
     records,
   };

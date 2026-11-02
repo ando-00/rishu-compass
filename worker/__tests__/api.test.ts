@@ -57,8 +57,27 @@ describe("POST /api/datasets/:id/overview", () => {
 
   it("声かけ文は下書きとして返す", async () => {
     const result = await overview({ [ID]: "exclude" });
-    expect(result.outreach.length).toBeGreaterThan(0);
-    expect(result.outreach.every((entry) => entry.draft.includes("下書き"))).toBe(true);
+    const contact = result.outreach.filter((entry) => entry.kind === "contact");
+    expect(contact.length).toBeGreaterThan(0);
+    expect(contact.every((entry) => entry.draft?.includes("下書き"))).toBe(true);
+  });
+
+  it("職員確認の学生には声かけ文の下書きを作らない", async () => {
+    const result = await overview({ [ID]: "exclude" });
+    const review = result.outreach.filter((entry) => entry.kind === "staff_review");
+    expect(review.length).toBeGreaterThan(0);
+    expect(review.every((entry) => entry.draft === null)).toBe(true);
+  });
+
+  it("未回答でも結果が変わらない学生は、職員確認の一覧に入れない", async () => {
+    const result = await overview({});
+    expect(result.summary.staffReview).toBeLessThan(result.summary.total / 2);
+  });
+
+  it("候補ごとの人数を返す", async () => {
+    const [impact] = (await overview({})).unanswered;
+    expect(impact?.computable).toBe(true);
+    expect(impact?.options.every((option) => option.counts !== null)).toBe(true);
   });
 
   it("存在しない回答は 400 を返す", async () => {

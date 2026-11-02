@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type {
   Answers,
+  Judgment,
   OverviewResponse,
   PlanCheckResponse,
   PlanEntry,
@@ -19,9 +20,10 @@ type Props = {
   onSelect: (studentId: string) => void;
 };
 
-function credits(required?: number, actual?: number) {
+function credits({ required, actual, enrolled }: Judgment) {
   if (required === undefined || actual === undefined) return "";
-  return `${actual} / ${required}単位`;
+  const inProgress = enrolled ? `（履修中 ${enrolled}）` : "";
+  return `${actual} / ${required}単位${inProgress}`;
 }
 
 function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studentId: string; answers: Answers }) {
@@ -87,8 +89,13 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
             {result.issues.map((issue, index) => (
               <li key={`${issue.ruleId}-${index}`}>
                 <span>
-                  {issue.message}（{issue.clause}）
+                  {issue.message}（{issue.clause}）{issue.hint}
                 </span>
+              </li>
+            ))}
+            {result.warnings.map((warning) => (
+              <li key={warning}>
+                <span className="muted">{warning}</span>
               </li>
             ))}
           </ul>
@@ -170,8 +177,8 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                     <td>
                       <JudgmentBadge status={judgment.status} />
                     </td>
-                    <td className="nowrap">{credits(judgment.required, judgment.actual)}</td>
-                    <td className="nowrap">{judgment.clause}</td>
+                    <td className="nowrap">{credits(judgment)}</td>
+                    <td className="nowrap" title={judgment.sourceQuote}>{judgment.clause}</td>
                     <td>
                       {judgment.reason}
                       {judgment.missingCourses && judgment.missingCourses.length > 0 && (

@@ -7,6 +7,7 @@ import type { RuleSet } from "../rules";
 import { enrolled, failed, makeStudent, numberedNames, passed } from "./helpers";
 
 const ANSWERED: Answers = { "ambiguity-seminar-credits": "include" };
+const BASIC = ["入門A", "入門B", "基礎C", "基礎D", "基礎E"];
 const sophomore = makeStudent({ studentYear: 2, records: passed(["入門A", "入門B"]) });
 
 function entries(names: string[], term: OfferedTerm = "前期"): PlanEntry[] {
@@ -26,10 +27,14 @@ function ruleIds(result: ReturnType<typeof check>) {
   return result.issues.map((issue) => issue.ruleId);
 }
 
+function codes(result: ReturnType<typeof check>) {
+  return result.issues.map((issue) => issue.code);
+}
+
 describe("履修案の検査", () => {
   it("問題がなければ通す", () => {
     const result = check(entries(["応用B", "専門01"]));
-    expect(result).toEqual({ status: "passed", issues: [] });
+    expect(result).toMatchObject({ status: "passed", issues: [] });
     expect(isDisplayablePlan(result)).toBe(true);
   });
 
@@ -56,6 +61,30 @@ describe("履修案の検査", () => {
   });
 });
 
+describe("学生の条件", () => {
+  const novice = makeStudent({ studentYear: 2 });
+
+  it("条件に合わない学生には先修条件を適用しない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.prerequisites[0]!.when = { major: "乙専攻" };
+    expect(check(entries(["応用B"]), novice, { rules }).status).toBe("passed");
+  });
+
+  it("条件に合わない学生には科目数の上限を適用しない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.courseCountLimits[0]!.when = { hasMinor: true };
+    rules.courseCountLimits[0]!.maxPerTerm = 0;
+    expect(check(entries(["実習"]), sophomore, { rules }).status).toBe("passed");
+  });
+
+  it("条件に合わない学生には履修条件を適用しない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.gates[0]!.when = { hasMinor: true };
+    const student = makeStudent({ studentYear: 3, records: passed(["入門A"], 2) });
+    expect(ruleIds(check(entries(["ゼミ"], "通年"), student, { rules }))).not.toContain("gate-seminar");
+  });
+});
+
 describe("履修の基本", () => {
   it("配当年次より前の科目は通さない", () => {
     expect(ruleIds(check(entries(["ゼミ"], "通年")))).toContain("enrollment");
@@ -71,8 +100,8 @@ describe("履修の基本", () => {
   });
 
   it("開講学期が違う科目は通さない", () => {
-    expect(ruleIds(check(entries(["実習"], "後期")))).toContain("offering");
-    expect(ruleIds(check(entries(["実習"], "通年")))).toContain("offering");
+    expect(codes(check(entries(["実習"], "後期")))).toContain("NOT_OFFERED");
+    expect(codes(check(entries(["実習"], "通年")))).toContain("NOT_OFFERED");
   });
 });
 
@@ -154,18 +183,34 @@ describe("履修上限", () => {
 
   it("再履修を数えない上限は再履修科目を除く", () => {
     const rules = structuredClone(exampleRules);
-    rules.loadLimits[0]!.countsRetakes = false;
+    rules.loadLimits[0]!.retakeExclusion = "failed";
     const student = { ...sophomore, records: failed(["専門11"]) };
     expect(check(entries(names), student, { rules }).status).toBe("passed");
     expect(check(entries(names), student).status).toBe("failed");
   });
 
-  it("集中講義を数えない上限は集中講義を除く", () => {
+  it("年間の上限ちょうどなら通す", () => {
     const rules = structuredClone(exampleRules);
-    rules.loadLimits[0]!.countsIntensive = false;
-    const plan = entries([...names.slice(0, 10), "集中"]);
+    rules.loadLimits[0]!.maxPerYear = 28;
+    const plan = [...entries(names.slice(0, 8), "前期"), ...entries(numberedNames("他", 6), "後期")];
     expect(check(plan, sophomore, { rules }).status).toBe("passed");
-    expect(check(plan).status).toBe("failed");
+  });
+
+  it("通年の科目は後期にも半分を数える", () => {
+    const student = makeStudent({
+      studentYear: 3,
+      records: passed([...BASIC, ...numberedNames("他", 3), ...numberedNames("乙", 8)], 2),
+    });
+    const plan = [...entries(["ゼミ"], "通年"), ...entries(names.slice(0, 10), "後期")];
+    expect(ruleIds(check(plan, student))).toContain("load-normal");
+  });
+
+  it("適用する上限がない学生は職員確認にする", () => {
+    const rules = structuredClone(exampleRules);
+    rules.loadLimits = rules.loadLimits.slice(1);
+    const result = check(entries(["専門01"]), sophomore, { rules });
+    expect(result.status).toBe("needs_staff");
+    expect(codes(result)).toEqual(["PENDING_RULE"]);
   });
 });
 
@@ -183,6 +228,14 @@ describe("科目数の上限と時間割", () => {
 
   it("同じ時限の科目は通さない", () => {
     expect(ruleIds(check(entries(["実習", "講読"])))).toContain("timetable");
+  });
+
+  it("別の学期なら同じ時限でも通す", () => {
+    const courses = exampleCourses.map((course) =>
+      course.name === "講読" ? { ...course, offeredIn: "後期" as const } : course,
+    );
+    const plan = [...entries(["実習"], "前期"), ...entries(["講読"], "後期")];
+    expect(check(plan, sophomore, { courses }).status).toBe("passed");
   });
 
   it("別のクォーターなら同じ時限でも通す", () => {
@@ -215,7 +268,7 @@ describe("履修条件", () => {
     expect(result.status).toBe("needs_staff");
     expect(result.issues[0]).toMatchObject({
       ruleId: "gate-seminar",
-      severity: "needs_staff",
+      code: "PENDING_RULE",
       ambiguityIds: ["ambiguity-seminar-credits"],
     });
   });
@@ -236,6 +289,25 @@ describe("未確定のルール", () => {
     const rules = structuredClone(exampleRules);
     rules.loadLimits[0]!.ambiguityIds = ["ambiguity-seminar-credits"];
     expect(check(entries(["専門01"]), sophomore, { rules, answers: {} }).status).toBe("needs_staff");
+  });
+
+  it("未確定の履修の基本は職員確認を返す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.enrollment!.ambiguityIds = ["ambiguity-seminar-credits"];
+    expect(check(entries(["専門01"]), sophomore, { rules, answers: {} }).status).toBe("needs_staff");
+  });
+
+  it("未確定の科目数の上限は、その科目群を入れたときに職員確認を返す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.courseCountLimits[0]!.ambiguityIds = ["ambiguity-seminar-credits"];
+    expect(check(entries(["実習"]), sophomore, { rules, answers: {} }).status).toBe("needs_staff");
+    expect(check(entries(["専門01"]), sophomore, { rules, answers: {} }).status).toBe("passed");
+  });
+
+  it("要確認のルールは職員確認を返す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.prerequisites[0]!.status = "needs_review";
+    expect(check(entries(["応用B"]), sophomore, { rules }).status).toBe("needs_staff");
   });
 
   it("確定の違反があれば職員確認より不可を優先する", () => {

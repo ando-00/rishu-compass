@@ -15,19 +15,31 @@ export const planCheckRequestSchema = z.object({
   answers: answersSchema,
 });
 
-export const judgmentStatusSchema = z.enum(["met", "unmet", "pending", "needs_staff"]);
+export const judgmentStatusSchema = z.enum([
+  "satisfied",
+  "expected",
+  "short",
+  "delay_risk",
+  "needs_staff",
+]);
 
 export const judgmentSchema = z.object({
   ruleId: z.string(),
   kind: z.enum(["graduation", "category", "gate"]),
   name: z.string(),
   clause: z.string(),
+  sourceQuote: z.string(),
   status: judgmentStatusSchema,
   reason: z.string(),
   ambiguityIds: z.array(z.string()),
+  needsContact: z.boolean(),
   required: z.number().optional(),
   actual: z.number().optional(),
+  enrolled: z.number().optional(),
+  earned: z.number().optional(),
   missingCourses: z.array(z.string()).optional(),
+  shortCategories: z.array(z.string()).optional(),
+  uncountedCourses: z.array(z.string()).optional(),
   atRisk: z.boolean().optional(),
   eligibleFromYear: z.number().optional(),
 });
@@ -35,8 +47,16 @@ export const judgmentSchema = z.object({
 export const impactSchema = z.object({
   ambiguityId: z.string(),
   clause: z.string(),
+  sourceQuote: z.string(),
   question: z.string(),
-  options: z.array(z.object({ id: z.string(), label: z.string() })),
+  computable: z.boolean(),
+  options: z.array(
+    z.object({
+      id: z.string(),
+      label: z.string(),
+      counts: z.partialRecord(judgmentStatusSchema, z.number()).nullable(),
+    }),
+  ),
   affectedStudentIds: z.array(z.string()),
   staffReviewStudentIds: z.array(z.string()),
   changes: z.array(
@@ -54,16 +74,19 @@ export const outreachSchema = z.object({
   studentId: z.string(),
   studentYear: z.number(),
   kind: z.enum(["contact", "staff_review"]),
+  severity: z.number(),
   reasons: z.array(
     z.object({
       ruleId: z.string(),
       name: z.string(),
       clause: z.string(),
+      sourceQuote: z.string(),
       status: judgmentStatusSchema,
       detail: z.string(),
     }),
   ),
-  draft: z.string(),
+  // 声かけの対象にだけ下書きを作る
+  draft: z.string().nullable(),
 });
 
 export const datasetsResponseSchema = z.object({
@@ -109,14 +132,28 @@ export const planCheckResponseSchema = z.object({
   status: z.enum(["passed", "failed", "needs_staff"]),
   issues: z.array(
     z.object({
+      code: z.enum([
+        "TIME_CONFLICT",
+        "OVER_LIMIT",
+        "PREREQUISITE_NOT_MET",
+        "NOT_OFFERED",
+        "WRONG_YEAR",
+        "ALREADY_EARNED",
+        "SEMINAR_LOCKED",
+        "CATEGORY_LIMIT",
+        "PENDING_RULE",
+        "UNKNOWN_COURSE",
+      ]),
       ruleId: z.string(),
       clause: z.string(),
-      severity: z.enum(["violation", "needs_staff"]),
+      sourceQuote: z.string(),
       course: z.string().optional(),
       message: z.string(),
+      hint: z.string(),
       ambiguityIds: z.array(z.string()),
     }),
   ),
+  warnings: z.array(z.string()),
   // 検査に通った履修案だけを返す
   plan: z.array(planEntrySchema).nullable(),
 });

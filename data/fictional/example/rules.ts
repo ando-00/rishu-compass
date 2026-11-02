@@ -5,11 +5,18 @@ export const exampleRules: RuleSet = {
   id: "example",
   name: "見本大学 見本学部",
   admissionYears: [2023, 2024, 2025, 2026],
-  graduation: { id: "graduation", clause: "第1条", minYears: 4, totalCredits: 50 },
+  graduation: {
+    id: "graduation",
+    clause: "第1条",
+    sourceQuote: "見本の第1条の本文",
+    minYears: 4,
+    totalCredits: 50,
+  },
   categories: [
     {
       id: "basic-required",
       clause: "第1条",
+      sourceQuote: "見本の第1条の本文",
       name: "基礎 必修",
       groups: ["基礎/必修"],
       minCredits: 10,
@@ -19,6 +26,7 @@ export const exampleRules: RuleSet = {
     {
       id: "major-a-no-minor",
       clause: "第1条",
+      sourceQuote: "見本の第1条の本文",
       when: { major: "甲専攻", hasMinor: false },
       name: "専攻（副専攻なし）",
       groups: ["甲専攻/選択"],
@@ -29,6 +37,7 @@ export const exampleRules: RuleSet = {
     {
       id: "major-a-with-minor",
       clause: "第1条",
+      sourceQuote: "見本の第1条の本文",
       when: { major: "甲専攻", hasMinor: true },
       name: "専攻（副専攻あり）",
       groups: ["甲専攻/選択"],
@@ -39,6 +48,7 @@ export const exampleRules: RuleSet = {
     {
       id: "minor-a",
       clause: "第1条",
+      sourceQuote: "見本の第1条の本文",
       when: { major: "甲専攻", hasMinor: true },
       name: "副専攻",
       groups: ["乙専攻/選択"],
@@ -49,6 +59,7 @@ export const exampleRules: RuleSet = {
     {
       id: "free",
       clause: "第2条",
+      sourceQuote: "見本の第2条の本文",
       name: "自由",
       groups: ["他学部"],
       minCredits: 10,
@@ -62,6 +73,7 @@ export const exampleRules: RuleSet = {
     {
       id: "gate-seminar",
       clause: "第3条",
+      sourceQuote: "見本の第3条の本文",
       name: "ゼミの履修条件",
       target: { kind: "course", courses: ["ゼミ"] },
       checkAtEndOfYear: 2,
@@ -74,6 +86,7 @@ export const exampleRules: RuleSet = {
     {
       id: "gate-promotion",
       clause: "第4条",
+      sourceQuote: "見本の第4条の本文",
       name: "2年次への進級",
       target: { kind: "promotion", toYear: 2 },
       checkAtEndOfYear: 1,
@@ -86,37 +99,52 @@ export const exampleRules: RuleSet = {
     {
       id: "load-normal",
       clause: "第5条",
+      sourceQuote: "見本の第5条の本文",
       maxPerYear: 40,
       maxPerTerm: 20,
-      countsRetakes: true,
-      countsIntensive: true,
-      splitsYearLong: true,
+      retakeExclusion: "none",
     },
     {
       id: "load-relaxed",
       clause: "第6条",
+      sourceQuote: "見本の第6条の本文",
       when: { minStudentYear: 2, minPreviousGpa: 3.5 },
       maxPerYear: 44,
       maxPerTerm: 22,
-      countsRetakes: true,
-      countsIntensive: true,
-      splitsYearLong: true,
+      retakeExclusion: "none",
     },
   ],
-  courseCountLimits: [{ id: "count-seminar", clause: "第7条", group: "演習", maxPerTerm: 1 }],
+  courseCountLimits: [
+    {
+      id: "count-seminar",
+      clause: "第7条",
+      sourceQuote: "見本の第7条の本文",
+      group: "演習",
+      maxPerTerm: 1,
+    },
+  ],
   prerequisites: [
-    { id: "prereq-b", clause: "第8条", course: "応用B", anyOf: ["入門B"], allowSameTerm: false },
+    {
+      id: "prereq-b",
+      clause: "第8条",
+      sourceQuote: "見本の第8条の本文",
+      course: "応用B",
+      conditions: [["入門B"]],
+      allowSameTerm: false,
+    },
     {
       id: "prereq-c",
       clause: "第8条",
+      sourceQuote: "見本の第8条の本文",
       course: "応用C",
-      anyOf: ["入門A", "入門B"],
+      conditions: [["入門A"], ["入門B"]],
       allowSameTerm: true,
     },
   ],
   enrollment: {
     id: "enrollment",
     clause: "第9条",
+    sourceQuote: "見本の第9条の本文",
     forbidBeforeAssignedYear: true,
     forbidRetakeOfPassed: true,
   },
@@ -124,6 +152,7 @@ export const exampleRules: RuleSet = {
     {
       id: "ambiguity-seminar-credits",
       clause: "第3条",
+      sourceQuote: "見本の第3条の本文",
       question: "ゼミの条件の30単位に、卒業に算入されない単位を含みますか。",
       options: [
         {
