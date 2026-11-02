@@ -162,7 +162,16 @@ export function App() {
     setTab("students");
   }
 
-  const confirmation = datasets.find(({ id }) => id === datasetId)?.confirmation;
+  const current = datasets.find(({ id }) => id === datasetId);
+  const confirmation = current?.confirmation;
+  // どのルールで判定しているかを常に示す（監査の A25-19、P3-14。3役が「初期の数字が何のルールか分からない」と挙げた）
+  const ruleSource = !current
+    ? null
+    : confirmation
+      ? `職員が確定したルール案（第${confirmation.proposalId}版）で判定しています。`
+      : current.sourceId
+        ? "作り手が要項を読んで決めた正解ルールで判定しています。職員がルール案を確定すると、その版に切り替わります。"
+        : "見本のルールで判定しています。";
 
   return (
     <main>
@@ -198,14 +207,18 @@ export function App() {
         </div>
       </header>
 
-      {confirmation && (
-        <p className="confirmation">
+      {ruleSource && (
+        <p className="confirmation" data-testid="rule-source">
           <span className="muted">
-            {confirmation.respondent}が{new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定したルールです。
+            {ruleSource}
+            {confirmation &&
+              `${confirmation.respondent}が${new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定しました。`}
           </span>
-          <button type="button" className="secondary" onClick={() => void withdraw(confirmation.proposalId)}>
-            確定を取り消す
-          </button>
+          {confirmation && (
+            <button type="button" className="secondary" onClick={() => void withdraw(confirmation.proposalId)}>
+              確定を取り消す
+            </button>
+          )}
         </p>
       )}
 

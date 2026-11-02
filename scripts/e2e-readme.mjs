@@ -186,6 +186,8 @@ async function main() {
     await page.waitForFunction(() => (document.querySelector("select")?.options.length ?? 0) > 0);
     const selected = await select.evaluate((el) => el.options[el.selectedIndex]?.text ?? "");
     if (!selected.includes("さくら台大学")) throw new Error(`対象が「${selected}」`);
+    const source = await page.getByTestId("rule-source").innerText();
+    if (!source.includes("正解ルールで判定しています")) throw new Error(`判定に使うルールの表示が「${source}」`);
     await tab("要項の取り込み").click();
   });
   await step("2 記録を読み込む", async () => {
@@ -200,6 +202,8 @@ async function main() {
   await step("4 このルール案を確定する", async () => {
     await page.getByRole("button", { name: /このルール案を確定する/ }).click();
     await page.getByRole("button", { name: "確定を取り消す" }).waitFor();
+    const source = await page.getByTestId("rule-source").innerText();
+    if (!/職員が確定したルール案（第\d+版）で判定しています/.test(source)) throw new Error(`判定に使うルールの表示が「${source}」`);
   });
   let before = 0;
   await step("5 確認事項に、第6条の読み方ごとの人数が出る", async () => {
