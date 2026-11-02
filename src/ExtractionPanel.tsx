@@ -98,7 +98,7 @@ function Proposal({ proposal }: { proposal: ProposalResponse }) {
       <RuleTable rows={rows} />
       {notes.length > 0 && (
         <>
-          <h3>ルールにしなかった箇所（{notes.length}件）</h3>
+          <h3>ルールへ反映できなかった箇所（{notes.length}件）</h3>
           {notes.map((note) => (
             <article className="card" key={`${note.clause}-${note.sourceQuote}`}>
               <p className="clause">{note.clause}</p>
