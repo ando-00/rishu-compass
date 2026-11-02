@@ -4,7 +4,7 @@ import type { RuleSet } from "../../../engine/rules";
 export const exampleRules: RuleSet = {
   id: "example",
   name: "見本大学 見本学部",
-  admissionYears: [2024],
+  admissionYears: [2023, 2024, 2025, 2026],
   graduation: { id: "graduation", clause: "第1条", minYears: 4, totalCredits: 50 },
   categories: [
     {
