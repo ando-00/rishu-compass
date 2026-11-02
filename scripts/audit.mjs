@@ -237,7 +237,7 @@ function checkEvals(clone) {
 function checkMutation(work) {
   const copy = join(work, "mutate");
   mkdirSync(copy);
-  for (const entry of ["engine", "data", "worker", "shared", "evals", "src", "vitest.config.ts", "package.json"]) {
+  for (const entry of ["engine", "data", "worker", "shared", "evals", "src", "migrations", "vitest.config.ts", "package.json"]) {
     cpSync(join(ROOT, entry), join(copy, entry), { recursive: true, filter: (p) => !p.includes(`${"evals"}/tmp`) });
   }
   linkModules(copy);
@@ -279,7 +279,9 @@ function checkCi() {
     if (!latest) throw new Error("no runs");
     const same = latest.headSha === head;
     const ok = latest.conclusion === "success";
-    record("CI", ok && same ? "PASS" : latest.status !== "completed" ? "WARN" : "FAIL", `CI: ${latest.status} ${latest.conclusion ?? ""} ${latest.headSha.slice(0, 7)}${same ? "" : `（origin/main は ${head.slice(0, 7)}）`}`);
+    // 最新の push の実行がまだ一覧にないか、走っている途中なら WARN。終わって赤なら FAIL
+    const status = !same || latest.status !== "completed" ? "WARN" : ok ? "PASS" : "FAIL";
+    record("CI", status, `CI: ${latest.status} ${latest.conclusion ?? ""} ${latest.headSha.slice(0, 7)}${same ? "" : `（origin/main は ${head.slice(0, 7)}。実行の完了を待つ）`}`);
   } catch {
     record("CI", "未検証", "CI の結果", "gh で取れない。GitHub の Actions で origin/main の最新の結果を確かめる");
   }
