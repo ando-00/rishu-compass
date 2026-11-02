@@ -1,10 +1,11 @@
-import type { Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
+import type { AnswerRecord, Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
 import { JudgmentBadge } from "./StatusBadge";
 
 const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
 
 type Props = {
   overview: OverviewResponse;
+  records: AnswerRecord[];
   onAnswer: (ambiguityId: string, optionId: string) => void;
   onClear: (ambiguityId: string) => void;
 };
@@ -82,7 +83,17 @@ export function ChangeList({ impact }: { impact: Impact }) {
   );
 }
 
-export function QuestionsPanel({ overview, onAnswer, onClear }: Props) {
+function AnswerMeta({ record }: { record: AnswerRecord | undefined }) {
+  if (!record) return null;
+  const answeredAt = new Date(record.answeredAt).toLocaleString("ja-JP");
+  return (
+    <span className="muted counts-note">
+      {record.respondent}、{answeredAt}
+    </span>
+  );
+}
+
+export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) {
   const { unanswered, answered } = overview;
   return (
     <section>
@@ -117,6 +128,7 @@ export function QuestionsPanel({ overview, onAnswer, onClear }: Props) {
           <blockquote>{impact.sourceQuote}</blockquote>
           <p>
             回答: <strong>{impact.options.find((o) => o.id === impact.optionId)?.label}</strong>
+            <AnswerMeta record={records.find((r) => r.ambiguityId === impact.ambiguityId)} />
           </p>
           <ImpactCounts impact={impact} />
           <div className="actions">

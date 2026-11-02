@@ -165,6 +165,12 @@ pre {
   justify-content: space-between;
 }
 
+.page-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
 .page-head label {
   min-width: 220px;
   color: var(--muted);

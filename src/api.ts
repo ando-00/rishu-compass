@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import {
+  answerRecordsResponseSchema,
   datasetsResponseSchema,
   overviewResponseSchema,
   planCheckResponseSchema,
@@ -8,6 +9,7 @@ import {
   studentResponseSchema,
   type Answers,
   type PlanEntry,
+  type Respondent,
 } from "../shared/api";
 
 async function readJson<T extends z.ZodType>(res: Response, schema: T): Promise<z.infer<T>> {
@@ -38,6 +40,18 @@ export async function fetchSources() {
 export async function extractProposal(sourceId: string, handbook: string) {
   const res = await post(`/api/sources/${sourceId}/extract`, { handbook });
   return readJson(res, proposalResponseSchema);
+}
+
+export async function fetchAnswerRecords(datasetId: string) {
+  return readJson(await fetch(`/api/datasets/${datasetId}/answers`), answerRecordsResponseSchema);
+}
+
+export async function saveAnswer(
+  datasetId: string,
+  answer: { ambiguityId: string; optionId: string | null; respondent: Respondent },
+) {
+  const res = await post(`/api/datasets/${datasetId}/answers`, answer);
+  return readJson(res, answerRecordsResponseSchema);
 }
 
 export async function fetchOverview(datasetId: string, answers: Answers) {

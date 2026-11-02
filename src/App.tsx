@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
-import type { Answers, DatasetsResponse, OverviewResponse } from "../shared/api";
-import { fetchDatasets, fetchOverview } from "./api";
+import { useEffect, useMemo, useState } from "react";
+import {
+  respondentSchema,
+  type AnswerRecord,
+  type DatasetsResponse,
+  type OverviewResponse,
+  type Respondent,
+} from "../shared/api";
+import { fetchAnswerRecords, fetchDatasets, fetchOverview, saveAnswer } from "./api";
 import { ExtractionPanel } from "./ExtractionPanel";
 import { OutreachPanel } from "./OutreachPanel";
 import { QuestionsPanel } from "./QuestionsPanel";
@@ -17,22 +23,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "students", label: "学生別" },
 ];
 
-function loadAnswers(datasetId: string): Answers {
-  try {
-    return JSON.parse(localStorage.getItem(`answers:${datasetId}`) ?? "{}") as Answers;
-  } catch {
-    return {};
-  }
-}
-
-function saveAnswers(datasetId: string, answers: Answers) {
-  try {
-    localStorage.setItem(`answers:${datasetId}`, JSON.stringify(answers));
-  } catch {
-    // 保存できない環境でも、画面の中では回答を使える
-  }
-}
-
 function SummaryCell({ label, value, previous }: { label: string; value: number; previous?: number }) {
   return (
     <div className="summary-cell">
@@ -48,22 +38,25 @@ function SummaryCell({ label, value, previous }: { label: string; value: number;
 export function App() {
   const [datasets, setDatasets] = useState<DatasetsResponse["datasets"]>([]);
   const [datasetId, setDatasetId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Answers>({});
+  const [records, setRecords] = useState<AnswerRecord[] | null>(null);
+  const [respondent, setRespondent] = useState<Respondent>("教務職員A");
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [previous, setPrevious] = useState<Summary | null>(null);
   const [tab, setTab] = useState<Tab>("questions");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [answerError, setAnswerError] = useState<string | null>(null);
+  const answers = useMemo(
+    () => Object.fromEntries((records ?? []).map((r) => [r.ambiguityId, r.optionId])),
+    [records],
+  );
 
   useEffect(() => {
     fetchDatasets()
       .then((result) => {
         setDatasets(result.datasets);
         const first = result.datasets[0];
-        if (first) {
-          setAnswers(loadAnswers(first.id));
-          setDatasetId(first.id);
-        }
+        if (first) setDatasetId(first.id);
       })
       .catch((cause: unknown) => {
         setError(cause instanceof Error ? cause.message : "取得に失敗しました。");
@@ -72,6 +65,24 @@ export function App() {
 
   useEffect(() => {
     if (!datasetId) return;
+    let active = true;
+    fetchAnswerRecords(datasetId)
+      .then((result) => {
+        if (active) setRecords(result.records);
+      })
+      .catch((cause: unknown) => {
+        if (!active) return;
+        // 読めないときは未回答として扱い、関わる判定を職員確認に倒す。
+        setRecords([]);
+        setAnswerError(cause instanceof Error ? cause.message : "回答を読み込めませんでした。");
+      });
+    return () => {
+      active = false;
+    };
+  }, [datasetId]);
+
+  useEffect(() => {
+    if (!datasetId || records === null) return;
     let active = true;
     fetchOverview(datasetId, answers)
       .then((result) => {
@@ -89,18 +100,25 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [datasetId, answers]);
+  }, [datasetId, records, answers]);
 
-  function updateAnswers(next: Answers) {
+  // 記録できた回答だけを判定に使う。
+  async function submitAnswer(ambiguityId: string, optionId: string | null) {
     if (!datasetId) return;
-    setPrevious(overview?.summary ?? null);
-    setAnswers(next);
-    saveAnswers(datasetId, next);
+    try {
+      const result = await saveAnswer(datasetId, { ambiguityId, optionId, respondent });
+      setPrevious(overview?.summary ?? null);
+      setRecords(result.records);
+      setAnswerError(null);
+    } catch (cause) {
+      setAnswerError(cause instanceof Error ? cause.message : "回答を記録できませんでした。");
+    }
   }
 
   function changeDataset(id: string) {
     setDatasetId(id);
-    setAnswers(loadAnswers(id));
+    setRecords(null);
+    setAnswerError(null);
     setOverview(null);
     setPrevious(null);
     setSelectedId(null);
@@ -118,19 +136,35 @@ export function App() {
           <h1>履修コンパス</h1>
           <p className="muted">職員向けの判定案を作る試作品です。データはすべて架空です。</p>
         </div>
-        <label>
-          対象
-          <select value={datasetId ?? ""} onChange={(event) => changeDataset(event.target.value)}>
-            {datasets.map((dataset) => (
-              <option key={dataset.id} value={dataset.id}>
-                {dataset.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="page-controls">
+          <label>
+            対象
+            <select value={datasetId ?? ""} onChange={(event) => changeDataset(event.target.value)}>
+              {datasets.map((dataset) => (
+                <option key={dataset.id} value={dataset.id}>
+                  {dataset.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            回答者
+            <select
+              value={respondent}
+              onChange={(event) => setRespondent(respondentSchema.parse(event.target.value))}
+            >
+              {respondentSchema.options.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </header>
 
       {error && <pre role="alert" className="error">{error}</pre>}
+      {answerError && <pre role="alert" className="error">{answerError}</pre>}
 
       {overview && (
         <>
@@ -162,11 +196,9 @@ export function App() {
           {tab === "questions" && (
             <QuestionsPanel
               overview={overview}
-              onAnswer={(id, optionId) => updateAnswers({ ...answers, [id]: optionId })}
-              onClear={(id) => {
-                const { [id]: _removed, ...rest } = answers;
-                updateAnswers(rest);
-              }}
+              records={records ?? []}
+              onAnswer={(id, optionId) => void submitAnswer(id, optionId)}
+              onClear={(id) => void submitAnswer(id, null)}
             />
           )}
           {tab === "outreach" && (

@@ -5,6 +5,25 @@ export const answersSchema = z.record(z.string(), z.string());
 
 export const answersRequestSchema = z.object({ answers: answersSchema });
 
+// 回答者は役割名から選ばせ、実名が入らないようにする。
+export const respondentSchema = z.enum(["教務職員A", "教務職員B", "教務職員C"]);
+
+export const saveAnswerRequestSchema = z.object({
+  ambiguityId: z.string().min(1),
+  // null は回答の取り消し
+  optionId: z.string().min(1).nullable(),
+  respondent: respondentSchema,
+});
+
+export const answerRecordSchema = z.object({
+  ambiguityId: z.string(),
+  optionId: z.string(),
+  respondent: respondentSchema,
+  answeredAt: z.string(),
+});
+
+export const answerRecordsResponseSchema = z.object({ records: z.array(answerRecordSchema) });
+
 export const planEntrySchema = z.object({
   course: z.string().min(1),
   term: z.enum(["前期", "後期", "通年"]),
@@ -193,6 +212,9 @@ export const proposalResponseSchema = z.object({
 });
 
 export type Answers = z.infer<typeof answersSchema>;
+export type Respondent = z.infer<typeof respondentSchema>;
+export type AnswerRecord = z.infer<typeof answerRecordSchema>;
+export type AnswerRecordsResponse = z.infer<typeof answerRecordsResponseSchema>;
 export type PlanEntry = z.infer<typeof planEntrySchema>;
 export type JudgmentStatus = z.infer<typeof judgmentStatusSchema>;
 export type Judgment = z.infer<typeof judgmentSchema>;

@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "predev": "wrangler d1 migrations apply DB --local",
     "dev": "vite",
     "types": "wrangler types",
     "build": "npm run types && tsc -b && vite build",

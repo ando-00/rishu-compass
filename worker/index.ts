@@ -23,6 +23,7 @@ import {
   type SourcesResponse,
   type StudentResponse,
 } from "../shared/api";
+import { answerRoutes } from "./answers";
 import { datasets, findSource, listSources, type Dataset } from "./datasets";
 import { createClaudeModel } from "./rule-extraction/claude";
 import { extractRules, type ExtractionFailure } from "./rule-extraction/extract";
@@ -212,5 +213,7 @@ app.post("/api/datasets/:id/plan-check", async (c) => {
   };
   return c.json(response);
 });
+
+app.route("/api/datasets", answerRoutes);
 
 export default app;
