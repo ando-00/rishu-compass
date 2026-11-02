@@ -21,7 +21,8 @@
 | `data/fictional/sakuradai/courses.ts` | さくら台大学の科目 | 要項の科目表から機械的に変換 |
 | `data/fictional/kamome/courses.ts` | かもめ大学の科目 | 手引きの科目表から機械的に変換。配当年次の記載がないため 1 とした |
 | `data/fictional/students.ts` | 学生データの生成器 | 固定のシードで同じ学生を再現する |
-| `data/fictional/sakuradai/students.ts` `data/fictional/kamome/students.ts` | 各大学の架空の学生 200 人 | 生成器で作る。氏名は持たず ID だけにする |
+| `data/fictional/sakuradai/students.ts` | さくら台大学の架空の学生 300 人 | 生成器で作る。氏名は持たず ID だけにする。第6条の読み方で判定が変わる型を一定数入れる |
+| `data/fictional/kamome/students.ts` | かもめ大学の架空の学生 200 人 | 生成器で作る。氏名は持たず ID だけにする |
 | `data/fictional/example/` | 書式と動作確認のための見本 | どの要項の内容でもない値で手作りした |
 
 かもめ大学の科目データでは、名前に「演習」を含む科目に科目群「演習」を付けました。これは名前からの機械的な分類で、手引きの「演習科目」の解釈を確定するものではありません。
