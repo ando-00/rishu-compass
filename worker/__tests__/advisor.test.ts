@@ -103,7 +103,9 @@ describe("履修案の結果", () => {
     ]);
     const result = await adviseStudent(loop, input());
     if (result.status !== "passed") throw new Error(result.reason);
-    expect(result.corrections).toEqual([{ stage: "draft", messages: [expect.stringContaining("卒業できません")] }]);
+    // 経過には検査の文だけを残し、Claude の書いた表現を写さない（A2-11）
+    expect(result.corrections).toEqual([{ stage: "draft", messages: [expect.stringContaining("下書きに")] }]);
+    expect(JSON.stringify(result.corrections)).not.toContain("卒業できません");
   });
 
   it("同じ案を検査と提出で続けて落としても、経過は1回に数える", async () => {

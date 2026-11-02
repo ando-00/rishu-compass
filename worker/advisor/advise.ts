@@ -1,6 +1,6 @@
 import { checkPlan, evaluateStudent, isDisplayablePlan, type PlanEntry } from "../../engine";
 import type { AdviseResponse, Correction } from "../../shared/advise";
-import type { ModelUsage } from "../rule-extraction/model";
+import { ModelError, type ModelUsage } from "../rule-extraction/model";
 import { ADVISOR_SYSTEM_PROMPT, advisorPrompt } from "./prompt";
 import {
   createAdvisorTools,
@@ -62,14 +62,21 @@ export async function adviseStudent(loop: AdvisorLoop, input: AdvisorInput): Pro
   if (excludedReason) return { status: "needs_staff", reason: excludedReason, iterations: 0 };
 
   const { tools, state, target } = createAdvisorTools(input);
-  const { iterations } = await loop({
+  const { iterations, stopReason } = await loop({
     system: ADVISOR_SYSTEM_PROMPT,
     prompt: advisorPrompt(student.id, target.studentYear),
     tools,
   });
 
   if (state.escalated !== null) return { status: "needs_staff", reason: state.escalated, iterations };
-  if (!state.submitted) return { status: "needs_staff", reason: NO_PLAN_REASON, iterations };
+  if (!state.submitted) {
+    // 拒否と打ち切りは職員に回す判断ではないので、失敗として返す。
+    if (stopReason === "refusal") throw new ModelError("refusal", "Claude が履修案の作成を断りました。");
+    if (stopReason === "max_tokens" || stopReason === "model_context_window_exceeded") {
+      throw new ModelError("truncated", `応答が途中で終わりました（${stopReason}）。`);
+    }
+    return { status: "needs_staff", reason: NO_PLAN_REASON, iterations };
+  }
 
   const { plan, draft } = state.submitted;
   return (

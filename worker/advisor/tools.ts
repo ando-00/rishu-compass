@@ -76,16 +76,35 @@ function defineTool<T extends z.ZodType>(
   };
 }
 
-const NUMBER = "[0-9０-９〇一二三四五六七八九十百]+";
+export const MAX_DRAFT_LENGTH = 600;
+export const MAX_REASON_LENGTH = 200;
+
+const DRAFT_CORRECTION = "下書きに、書かない決まりの数値か、卒業や進級の断定が含まれていました。";
+
+// 「一緒に」を数と取り違えないよう、語の後ろの数には単独の「一」を含めない。
+const NUMBER = "[0-9〇一二三四五六七八九十百]+";
+const NUMBER_AFTER = "(?:[0-9]+|[〇二三四五六七八九十百][〇一二三四五六七八九十百]*)";
 const COUNTS = new RegExp(
-  `${NUMBER}\\s*単位|単位(数)?(は|が)\\s*${NUMBER}|(あと|残り)\\s*${NUMBER}\\s*科目|GPA\\s*(は|が)?\\s*[0-9０-９]`,
+  [
+    `${NUMBER}\\s*単\\s*位`,
+    `${NUMBER}\\s*科目(?!でも)`,
+    `${NUMBER}\\s*credits?`,
+    `単位[^。\\n]{0,8}?${NUMBER_AFTER}`,
+    `(?:あと|残り|不足)[^。\\n]{0,6}?${NUMBER_AFTER}(?:\\s*単\\s*位|\\s*科目)?`,
+    `GPA[^。\\n]{0,6}?[0-9]`,
+  ].join("|"),
   "i",
 );
-const VERDICTS =
-  /卒業(は|が)?(できます|できません|できない|できる見込み|可能|不可|無理|難しい|確定|が確定)|進級(は|が)?(できません|できない|不可|無理|難しい)|留年(します|が確定|確定|の見込み|見込み)/;
+// 「卒業できるよう」「留年しないように」は相談の文なので止めない。
+const OUTCOMES = "(?:(?:でき|出来)(?!るよう)[ぁ-ん]*|可能(?!性)|不可|無理|難し|確定|間に合|延期|見込み)";
+const VERDICTS = new RegExp(`(?:卒業|進級)[^。\\n]{0,12}?${OUTCOMES}|要件を満たして|留年(?!しない)`);
+const STUDENT_ID = /\b[SKE]\d{4}\b/;
 
 // 単位数と判定の値は Claude の計算になるので書かせない。判定の数値は画面の engine の結果を見せる。
-export function draftProblem(draft: string) {
+export function draftProblem(text: string, limit = MAX_DRAFT_LENGTH) {
+  if (text.length > limit) return `${limit}字以内にしてください。`;
+  const draft = text.normalize("NFKC");
+  if (STUDENT_ID.test(draft)) return "学生の番号を外してください。宛名は職員が入れます。";
   const counts = COUNTS.exec(draft);
   if (counts) return `「${counts[0]}」を外してください。単位数や成績の値は職員が画面で確認します。`;
   const verdict = VERDICTS.exec(draft);
@@ -143,7 +162,10 @@ export function createAdvisorTools(input: AdvisorInput) {
   const planCheck = (plan: PlanEntry[]) => {
     const { status, issues, warnings } = check(plan);
     if (issues.length > 0) {
-      const messages = issues.map(({ message, clause }) => `${message}（${clause}）`);
+      // 検査の文だけを経過に残す。科目名は Claude の入力なので、知らない名前は写さない。
+      const messages = issues.map(({ code, message, clause }) =>
+        code === "UNKNOWN_COURSE" ? "科目データにない科目が入っていました。" : `${message}（${clause}）`,
+      );
       noteCorrection({ stage: "plan", messages });
     }
     return {
@@ -231,7 +253,7 @@ export function createAdvisorTools(input: AdvisorInput) {
         reason: filled.describe("職員に伝える理由。2文までにする。単位数と卒業の可否は書かない"),
       }),
       ({ reason }) => {
-        const problem = draftProblem(reason);
+        const problem = draftProblem(reason, MAX_REASON_LENGTH);
         if (problem) return { accepted: false, reasonProblem: problem };
         state.escalated = reason;
         return "職員の確認に回しました。ここで終えてください。";
@@ -248,7 +270,7 @@ export function createAdvisorTools(input: AdvisorInput) {
         if (state.escalated !== null) return "職員の確認に回したので、案は受け付けません。";
         const problem = draftProblem(draft);
         if (problem) {
-          noteCorrection({ stage: "draft", messages: [problem] });
+          noteCorrection({ stage: "draft", messages: [DRAFT_CORRECTION] });
           return { accepted: false, draftProblem: problem };
         }
         if (!isDisplayablePlan(check(plan))) return { accepted: false, ...planCheck(plan) };

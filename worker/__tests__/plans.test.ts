@@ -128,7 +128,7 @@ describe("履修案の記録", () => {
     };
     await post(`${planned.id}/advise`, allowed);
     expect((await latest(planned.id, allowed)).advice).toMatchObject({
-      corrections: [{ stage: "plan", messages: [expect.stringContaining("存在しない科目")] }],
+      corrections: [{ stage: "plan", messages: [expect.stringContaining("科目データにない")] }],
     });
   });
 
