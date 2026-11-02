@@ -56,3 +56,8 @@
 - `data/fictional/*/gold*` をコミットしない。人が自分でコミットする
 - 作業の区切りごとに `docs/PROGRESS.md` を更新し、同じコミットに含める。Claude Code をどの作業でどう使ったかも1行書く
 - 監査の指摘を直したら、`docs/AUDIT_LOG.md` の状態を同じコミットで更新する
+- リポジトリの外の仕様文書に基づく変更は、コミットメッセージと `docs/PROGRESS.md` に文書の名前と版を書く
+- 区切りのコミットのあと、`docs/AUDIT.md` の鍵の検査を通して `origin/main` へ push し、CI の結果を確認する。CI が落ちたら次の機能より先に直す
+- push が拒まれたら、`rebase` や `force push` をせず原因を確認する
+- 鍵は `.githooks/pre-commit` でも止める。clone したら `git config core.hooksPath .githooks` を実行する
+- ビルドで `.dev.vars` が `dist/` にコピーされる。`.dev.vars` がある環境の `dist/` を共有も提出もしない

@@ -49,7 +49,7 @@
 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
-| A0-24 | S2 | 実際の API キーが `dist/rishu_compass/.dev.vars` にある。git の履歴と `dist/client` にはない | dist/ | 未解決 | `dist/` を提出物に含めない |
+| A0-24 | S2 | 実際の API キーが `dist/rishu_compass/.dev.vars` にある。git の履歴と `dist/client` にはない | dist/ | 運用で対応 | `AGENTS.md` で `dist/` の共有と提出を禁じた。第3回で提出物を確認する |
 | A0-25 | S2 | ローカルのコミットを push しておらず、CI の最新の成功は 85d1dff のまま | origin/main | 未解決 | |
 | A0-26 | S3 | `migrations/` が空で、`AGENTS.md` の表になく、DB の設定もない | migrations/ | 未解決 | 回答者と日時を残す D1 の表で使う予定 |
 | A0-27 | S3 | `evals/` が空で、`tsconfig` と `vitest.config.ts` の対象に入っていない | evals/ | 未解決 | |
