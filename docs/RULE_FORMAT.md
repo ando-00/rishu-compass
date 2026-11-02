@@ -4,7 +4,7 @@
 
 ## 始め方
 
-1. `engine/__tests__/fixtures/example-rules.ts` を `data/fictional/sakuradai/gold-rules.ts` にコピーする
+1. `data/fictional/example/rules.ts` を `data/fictional/sakuradai/gold-rules.ts` にコピーする
 2. 1行目を `import type { RuleSet } from "../../../engine/rules";` に変える
 3. `exampleRules` を `goldRules` に変え、要項を見ながら中身を書き換える
 

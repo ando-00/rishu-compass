@@ -1,4 +1,4 @@
-import type { RuleSet } from "../../rules";
+import type { RuleSet } from "../../../engine/rules";
 
 // 書式の見本。値はすべて説明用で、どの要項の内容でもない。
 export const exampleRules: RuleSet = {
@@ -33,6 +33,16 @@ export const exampleRules: RuleSet = {
       name: "専攻（副専攻あり）",
       groups: ["甲専攻/選択"],
       minCredits: 20,
+      requireAll: false,
+      overflowTo: "free",
+    },
+    {
+      id: "minor-a",
+      clause: "第1条",
+      when: { major: "甲専攻", hasMinor: true },
+      name: "副専攻",
+      groups: ["乙専攻/選択"],
+      minCredits: 10,
       requireAll: false,
       overflowTo: "free",
     },
