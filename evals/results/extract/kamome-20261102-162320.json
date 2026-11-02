@@ -1,0 +1,17 @@
+{
+  "source": "kamome",
+  "commit": "3b8e167e29784cbfa90cd11ef0309a7d504a17b7",
+  "requestedModel": "claude-opus-5-5",
+  "seconds": 0,
+  "costUsd": 0,
+  "attempts": [],
+  "comparison": {
+    "first": null,
+    "final": null
+  },
+  "outcome": "failed",
+  "failure": {
+    "kind": "api_error",
+    "message": "API の呼び出しに失敗しました: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The compiled grammar is too large, which would cause performance issues. Simplify your tool schemas or reduce the number of strict tools.\"},\"request_id\":\"req_011CgdhaRFprucACk6Jv2HoT\"}"
+  }
+}

@@ -42,7 +42,7 @@ rules の各行の kind は次のどれかです。
 | id | ルールの名前。半角英数字とハイフン。重複させない |
 | clause | 根拠の条文。要項の条番号や節の見出しを短く書く |
 | sourceQuote | 根拠の文 |
-| status | 要項から値を確定できるなら confirmed、確定できないなら needs_review |
+| status | 通常は confirmed。曖昧箇所に結びつくルールも confirmed にする（未回答の間は ambiguityIds で止まり、回答すれば動く）。曖昧箇所の質問では解決できず、値を確定できないときだけ needs_review |
 | when | 適用する学生の条件。全学生に適用するなら空の配列 |
 | ambiguityIds | 関係する曖昧箇所の id。なければ空の配列 |
 | detail | kind ごとの項目を1つの JSON オブジェクトにして、文字列で書く。下の各節の項目をすべて書き、それ以外の項目を書かない |
@@ -76,7 +76,7 @@ minYears は卒業に必要な在学年数、totalCredits は合計単位です�
 
 | 要項の内容 | 書き方 |
 |---|---|
-| 超過分を別の区分へ移す | overflowTo に移す先の id を書く |
+| 超過分を別の区分へ移す | overflowTo に移す先の id を書き、maxCredits は null にする |
 | 超過分を卒業単位に数えない | overflowTo を null にして maxCredits に数える上限を書く |
 | 算入に上限がない | overflowTo と maxCredits を null にする |
 

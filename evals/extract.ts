@@ -12,7 +12,7 @@ import { ADMISSION_YEARS } from "../data/fictional/students";
 import { computeImpacts, type Course, type RuleSet, type Student } from "../engine";
 import { createClaudeModel, MODEL_ID } from "../worker/rule-extraction/claude";
 import { extractRules, type Attempt } from "../worker/rule-extraction/extract";
-import { compareRules } from "./compare";
+import { compareJudgments, compareRules } from "./compare";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -79,6 +79,7 @@ async function run(id: string, apiKey: string) {
   const seconds = Math.round((Date.now() - started) / 1000);
 
   const gold = await loadGold(id);
+  const lastProposal = proposals.at(-1);
   const compare = (rules: RuleSet | undefined) => (gold && rules ? compareRules(gold, rules) : null);
   const record = {
     source: id,
@@ -88,6 +89,7 @@ async function run(id: string, apiKey: string) {
     costUsd: costOf(result.attempts),
     attempts: result.attempts,
     comparison: { first: compare(proposals[0]), final: compare(proposals.at(-1)) },
+    judgments: gold && lastProposal ? compareJudgments(gold, lastProposal, source.courses, source.students) : null,
     ...(result.ok
       ? {
           outcome: "ok",
@@ -120,6 +122,9 @@ async function run(id: string, apiKey: string) {
   console.log(`  回ごとの問題: ${result.attempts.map((attempt) => attempt.problems).join(" → ")}`);
   if (first && final) {
     console.log(`  一致率: 初回 ${first.matched}/${first.total}、最終 ${final.matched}/${final.total}`);
+  }
+  for (const { scenario, matched, total, differences } of record.judgments ?? []) {
+    console.log(`  判定の一致（${scenario}）: ${matched}/${total} ${JSON.stringify(differences)}`);
   }
   console.log(`  保存先: ${path}`);
 }

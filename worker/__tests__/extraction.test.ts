@@ -359,6 +359,25 @@ describe("checkProposal", () => {
     expect(problemsOf(output)[0]).toContain("gate-advanced");
   });
 
+  it("曖昧箇所に関わるルールが needs_review なら落ちる", () => {
+    const output = changeRule("gate-advanced", (rule) => ({ ...rule, status: "needs_review" }));
+    expect(problemsOf(output)[0]).toContain("gate-advanced");
+  });
+
+  it("差分でだけ曖昧箇所に結びつくルールでも、needs_review なら落ちる", () => {
+    const output = changeRule("gate-advanced", (rule) => ({
+      ...rule,
+      status: "needs_review",
+      ambiguityIds: [],
+    }));
+    expect(problemsOf(output)[0]).toContain("gate-advanced");
+  });
+
+  it("曖昧箇所に関わらないルールは needs_review でもよい", () => {
+    const output = changeRule("load", (rule) => ({ ...rule, status: "needs_review" }));
+    expect(problemsOf(output)).toEqual([]);
+  });
+
   it("選択肢が1つの曖昧箇所は落ちる", () => {
     const ambiguity = OUTPUT.ambiguities[0]!;
     const output = {

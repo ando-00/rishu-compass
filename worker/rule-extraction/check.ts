@@ -24,6 +24,22 @@ function gateProblems(rules: RuleSet) {
     .map((gate) => `${gate.id}: 単位の条件に数え方（creditBasis）がありません`);
 }
 
+// needs_review は回答しても解除されない。曖昧箇所に結びつくルールに付くと、答えても判定が動かない。
+function reviewProblems(rules: RuleSet) {
+  const patched = new Set(
+    rules.ambiguities.flatMap(({ options }) =>
+      options.flatMap(({ patches }) => (patches ?? []).map(({ ruleId }) => ruleId)),
+    ),
+  );
+  return listRules(rules)
+    .filter(({ rule }) => rule.status === "needs_review")
+    .filter(({ rule }) => (rule.ambiguityIds?.length ?? 0) > 0 || patched.has(rule.id))
+    .map(
+      ({ rule }) =>
+        `${rule.id}: 曖昧箇所に関わるルールは status を confirmed にしてください。needs_review のままだと職員が回答しても判定が止まります`,
+    );
+}
+
 function ambiguityProblems(rules: RuleSet) {
   const ids = rules.ambiguities.map(({ id }) => id);
   return [
@@ -60,6 +76,7 @@ export function checkProposal({
     ),
     ...majorProblems(rules, input),
     ...gateProblems(rules),
+    ...reviewProblems(rules),
     ...ambiguityProblems(rules),
   ];
 }
