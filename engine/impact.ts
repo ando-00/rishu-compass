@@ -16,6 +16,7 @@ export type AmbiguityImpact = {
   question: string;
   options: { id: string; label: string }[];
   affectedStudentIds: string[];
+  staffReviewStudentIds: string[];
   changes: ImpactChange[];
 };
 
@@ -31,6 +32,7 @@ export function computeImpact(
   if (!ambiguity) throw new Error(`曖昧箇所がありません: ${ambiguityId}`);
 
   const changes: ImpactChange[] = [];
+  const needsStaff = new Set<string>();
   for (const student of students) {
     const byRule = new Map<string, ImpactChange>();
     for (const option of ambiguity.options) {
@@ -48,6 +50,7 @@ export function computeImpact(
         };
         change.statuses[option.id] = status;
         byRule.set(ruleId, change);
+        if (status === "needs_staff") needsStaff.add(student.id);
       }
     }
     for (const change of byRule.values()) {
@@ -55,12 +58,14 @@ export function computeImpact(
     }
   }
 
+  const affected = new Set(changes.map((change) => change.studentId));
   return {
     ambiguityId,
     clause: ambiguity.clause,
     question: ambiguity.question,
     options: ambiguity.options.map(({ id, label }) => ({ id, label })),
-    affectedStudentIds: [...new Set(changes.map((change) => change.studentId))],
+    affectedStudentIds: [...affected],
+    staffReviewStudentIds: [...needsStaff].filter((id) => !affected.has(id)),
     changes,
   };
 }

@@ -54,6 +54,22 @@ describe("computeImpact", () => {
     expect(impact.affectedStudentIds).toEqual(["S0001"]);
   });
 
+  it("影響人数は回答の前後で全学生を再計算した差と一致する", () => {
+    const statusesOf = (optionId: string) =>
+      students.map((student) => ({
+        id: student.id,
+        statuses: evaluateStudent(exampleRules, exampleCourses, student, {
+          [ID]: optionId,
+        }).judgments.map((j) => j.status),
+      }));
+    const included = statusesOf("include");
+    const differs = statusesOf("exclude")
+      .filter((row, index) => row.statuses.join() !== included[index]!.statuses.join())
+      .map((row) => row.id);
+    const impact = computeImpact(exampleRules, exampleCourses, students, {}, ID);
+    expect(impact.affectedStudentIds).toEqual(differs);
+  });
+
   it("存在しない曖昧箇所はエラーにする", () => {
     expect(() => computeImpact(exampleRules, exampleCourses, students, {}, "unknown")).toThrow(
       "unknown",

@@ -50,12 +50,18 @@ export type EvaluationContext = {
 
 const UNRESOLVED_REASON = "未回答の確認事項があるため、職員が確認します。";
 
-export function exclusionReason(rules: RuleSet, student: Student) {
+export function exclusionReason(rules: RuleSet, catalog: CourseIndex, student: Student) {
   if (student.specialStatuses.length > 0) {
     return `${student.specialStatuses.join("、")}に該当するため、職員が確認します。`;
   }
   if (!rules.admissionYears.includes(student.admissionYear)) {
     return `入学年度 ${student.admissionYear} はこの要項の適用外のため、職員が確認します。`;
+  }
+  const unknown = [...new Set(student.records.map((record) => record.course))].filter(
+    (name) => !catalog.has(name),
+  );
+  if (unknown.length > 0) {
+    return `科目データにない科目（${unknown.join("、")}）があるため、職員が確認します。`;
   }
   return null;
 }
@@ -316,7 +322,7 @@ export function evaluateStudent(
   student: Student,
   answers: Answers,
 ): StudentEvaluation {
-  const reason = exclusionReason(baseRules, student);
+  const reason = exclusionReason(baseRules, indexCourses(courses), student);
   if (reason) {
     const { rules } = resolveRules(baseRules, answers);
     return {

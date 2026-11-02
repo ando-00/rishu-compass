@@ -1,6 +1,7 @@
 import { createContext, exclusionReason, judgeGate, type EvaluationContext } from "./evaluate";
 import {
   findCourse,
+  indexCourses,
   matchesCondition,
   passedCourses,
   type Answers,
@@ -289,7 +290,7 @@ export function checkPlan(
   plan: PlanEntry[],
   answers: Answers,
 ): PlanCheck {
-  const reason = exclusionReason(rules, student);
+  const reason = exclusionReason(rules, indexCourses(courses), student);
   if (reason) {
     const issue: PlanIssue = {
       ruleId: "excluded",
