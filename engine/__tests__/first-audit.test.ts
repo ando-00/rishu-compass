@@ -176,6 +176,17 @@ describe("未回答の項目を今の値のまま延期見込みに使わない�
     expect(judge(rules, miniCourses, third, {}).status).toBe("needs_staff");
   });
 
+  it("要確認の先修は、間に合わない計算になっても延期見込みにせず職員確認にする", () => {
+    const rules = miniRules({
+      prerequisites: [
+        { id: "pre", clause: "第2条", sourceQuote: "本文", course: "Y", conditions: [["X"]], allowSameTerm: true, status: "needs_review" },
+      ],
+    });
+    // X は4年次後期で終わり、前期の Y は5年次になる。ただし要確認の先修が正しいとは限らない。
+    const courses = miniCourses.map((course) => (course.name === "X" ? { ...course, offeredIn: "後期" as const } : course));
+    expect(judge(rules, courses, third, {}).status).toBe("needs_staff");
+  });
+
   it("循環した先修は計算できないので、延期見込みにしない", () => {
     const rules = miniRules({
       prerequisites: [
@@ -390,6 +401,129 @@ describe("影響の表示（A1-13）", () => {
     held.ambiguities[0]!.options[0]!.patches = null;
     const impact = computeImpact(held, exampleCourses, [], {}, ID);
     expect(impact.options.map((option) => option.reflected)).toEqual([false, true]);
+  });
+});
+
+describe("延期見込みの計算（A1-27、A1-28）", () => {
+  const base = { clause: "第1条", sourceQuote: "本文" };
+  const course = (name: string, credits: number, offeredIn: Course["offeredIn"], group = "必修"): Course => ({
+    name,
+    credits,
+    assignedYear: 1,
+    groups: [group],
+    offeredIn,
+    slots: [{ day: "月", period: 1 }],
+  });
+  const rulesFor = (minCredits: number, requireAll: boolean, overrides: Partial<RuleSet> = {}) =>
+    miniRules({
+      graduation: { ...miniRules().graduation, totalCredits: minCredits },
+      categories: [{ ...miniRules().categories[0]!, minCredits, requireAll }],
+      ...overrides,
+    });
+  const spring = {
+    ...third,
+    studentYear: 4,
+    yearsEnrolled: 4,
+    currentTerm: "前期" as const,
+    expectedGraduation: { studentYear: 4, term: "後期" as const },
+  };
+  const beforeFinalSpring = { ...third, expectedGraduation: { studentYear: 4, term: "前期" as const } };
+
+  it("条件に合う上限のうち最後のものを使う", () => {
+    const rules = rulesFor(20, false, {
+      loadLimits: [
+        { id: "wide", ...base, maxPerTerm: 24, retakeExclusion: "none" },
+        { id: "narrow", ...base, when: { minStudentYear: 3 }, maxPerTerm: 8, retakeExclusion: "none" },
+      ],
+    });
+    // 残りは4年次の2学期なので、最後の上限なら16単位で不足20単位に足りない。
+    expect(judge(rules, [course("Y", 20, "前期")], third, {}).status).toBe("delay_risk");
+  });
+
+  it("後期だけの必修は、卒業予定が4年次前期なら間に合わない", () => {
+    const rules = rulesFor(2, true);
+    expect(judge(rules, [course("Y", 2, "後期")], beforeFinalSpring, {}).status).toBe("delay_risk");
+    expect(judge(rules, [course("Y", 2, "前期")], beforeFinalSpring, {}).status).toBe("short");
+  });
+
+  it("通年の必修は2学期かかる", () => {
+    const rules = rulesFor(2, true);
+    expect(judge(rules, [course("Y", 2, "通年")], beforeFinalSpring, {}).status).toBe("delay_risk");
+  });
+
+  it("履修中の通年の先修は年度の終わりまで終わらない", () => {
+    const rules = rulesFor(4, true, {
+      prerequisites: [{ id: "pre", ...base, course: "Y", conditions: [["Z"]], allowSameTerm: false }],
+    });
+    const courses = [course("Z", 2, "通年"), course("Y", 2, "後期")];
+    const student = { ...spring, records: enrolled(["Z"], 4, "通年") };
+    expect(judge(rules, courses, student, {}).status).toBe("delay_risk");
+  });
+
+  const gate = {
+    id: "gate",
+    ...base,
+    name: "Y の条件",
+    target: { kind: "course" as const, courses: ["Y"] },
+    checkAtEndOfYear: 2,
+    minCredits: 0,
+    creditBasis: "earned" as const,
+    requiredCourses: [],
+    retryAfterMet: true,
+  };
+
+  it("差分で表せない候補がある条件は見込みを出さず、職員確認にする", () => {
+    const rules = rulesFor(2, true, {
+      gates: [{ ...gate, ambiguityIds: ["held"] }],
+      ambiguities: [
+        ambiguity("held", [
+          { id: "plain", label: "表せる", patches: [{ ruleId: "gate", field: "minCredits", value: 0 }] },
+          { id: "held", label: "表せない", patches: null },
+        ]),
+      ],
+    });
+    expect(judge(rules, [course("Y", 2, "前期")], third, {}).status).toBe("needs_staff");
+  });
+
+  it("要確認の条件は見込みを出さず、職員確認にする", () => {
+    const rules = rulesFor(2, true, { gates: [{ ...gate, status: "needs_review" }] });
+    expect(judge(rules, [course("Y", 2, "前期")], third, {}).status).toBe("needs_staff");
+  });
+
+  it("今年度の登録済みを年間の上限から引く", () => {
+    const rules = rulesFor(10, false, {
+      loadLimits: [{ id: "load", ...base, maxPerTerm: 20, maxPerYear: 24, retakeExclusion: "none" }],
+    });
+    const courses = [course("Y", 10, "後期"), course("他", 20, "前期", "他")];
+    const student = { ...spring, records: enrolled(["他"], 4, "前期") };
+    // 年間24単位のうち20単位を登録済みなので、後期は4単位しか取れず不足10単位に足りない。
+    expect(judge(rules, courses, student, {}).status).toBe("delay_risk");
+  });
+
+  it("合計が足りていても、区分の不足で最大単位を比べる", () => {
+    const rules = miniRules({
+      graduation: { ...miniRules().graduation, totalCredits: 10 },
+      categories: [
+        { id: "other", ...base, name: "他", groups: ["他"], minCredits: 2, requireAll: false, overflowTo: null },
+        { id: "req", ...base, name: "必修", groups: ["必修"], minCredits: 30, requireAll: false, overflowTo: null },
+      ],
+      loadLimits: [{ id: "load", ...base, maxPerTerm: 20, retakeExclusion: "none" }],
+    });
+    const courses = [course("他", 10, "前期", "他"), course("Y", 30, "後期")];
+    const student = { ...spring, records: passed(["他"]) };
+    expect(judge(rules, courses, student, {}).status).toBe("delay_risk");
+  });
+});
+
+describe("計算できない候補の人数（A1-28）", () => {
+  it("別の曖昧箇所で職員確認の学生を数えない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.categories.find((category) => category.id === "minor-a")!.ambiguityIds = ["held"];
+    rules.ambiguities.push(ambiguity("held", [{ id: "held", label: "表せない", patches: null }]));
+    const student = makeStudent({ studentYear: 3, records: passed(BASIC) });
+    const impact = computeImpact(rules, exampleCourses, [student], {}, "held");
+    expect(impact.computable).toBe(false);
+    expect(impact.staffReviewStudentIds).toEqual([]);
   });
 });
 

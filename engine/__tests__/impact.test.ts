@@ -56,7 +56,7 @@ describe("computeImpact", () => {
     expect(impact.affectedStudentIds).toEqual(["S0001"]);
   });
 
-  it("影響人数は回答の前後で全学生を再計算した差と一致する", () => {
+  it("影響人数は読み方どうしで全学生を再計算した差と一致する", () => {
     const population = exampleStudents;
     const statusesOf = (optionId: string) =>
       population.map((student) => ({

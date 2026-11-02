@@ -56,6 +56,17 @@ describe("さくら台の全学生の集計（A1-1、A1-3）", () => {
     }
   });
 
+  it("回答の前後で状態が変わる学生は、影響人数に含まれる", async () => {
+    const before = await overview({});
+    const states = new Map(before.students.map(({ id, state }) => [id, state]));
+    for (const option of ambiguity.options) {
+      const after = await overview({ [ambiguity.id]: option.id });
+      const moved = after.students.filter(({ id, state }) => states.get(id) !== state).map(({ id }) => id);
+      expect(moved.length).toBeGreaterThan(0);
+      expect(before.unanswered[0]?.affectedStudentIds).toEqual(expect.arrayContaining(moved));
+    }
+  });
+
   it("「対応なし」の学生は、どの読み方でも職員確認と声かけが残らない", async () => {
     const before = await overview({});
     const clear = before.students.filter((student) => student.state === "clear");
