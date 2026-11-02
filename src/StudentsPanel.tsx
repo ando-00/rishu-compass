@@ -13,6 +13,15 @@ import { JudgmentBadge, PlanBadge, StateBadge } from "./StatusBadge";
 
 const TERMS = ["前期", "後期", "通年"] as const;
 
+const STATE_FILTERS = [
+  { id: "all", label: "すべて" },
+  { id: "contact", label: "声かけ" },
+  { id: "staff_review", label: "職員確認" },
+  { id: "clear", label: "対応なし" },
+] as const;
+
+type StateFilter = (typeof STATE_FILTERS)[number]["id"];
+
 type Props = {
   datasetId: string;
   answers: Answers;
@@ -109,6 +118,12 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
 export function StudentsPanel({ datasetId, answers, students, selectedId, onSelect }: Props) {
   const [detail, setDetail] = useState<StudentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<StateFilter>("all");
+  const [keyword, setKeyword] = useState("");
+  const shown = students.filter(
+    ({ id, state }) =>
+      (filter === "all" || state === filter) && id.toLowerCase().includes(keyword.trim().toLowerCase()),
+  );
 
   useEffect(() => {
     if (!selectedId) return;
@@ -130,22 +145,41 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
 
   return (
     <section className="students">
-      <ul className="student-list" aria-label="学生の一覧">
-        {students.map((student) => (
-          <li key={student.id}>
-            <button
-              type="button"
-              className={student.id === selectedId ? "row selected" : "row"}
-              aria-current={student.id === selectedId}
-              onClick={() => onSelect(student.id)}
-            >
-              <span>{student.id}</span>
-              <span className="muted">{student.studentYear}年次</span>
-              <StateBadge state={student.state} />
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div>
+        <div className="student-filter">
+          <label>
+            絞り込み
+            <select value={filter} onChange={(event) => setFilter(event.target.value as StateFilter)}>
+              {STATE_FILTERS.map(({ id, label }) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            学生 ID
+            <input value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+          </label>
+          <p className="muted">{shown.length}人</p>
+        </div>
+        <ul className="student-list" aria-label="学生の一覧">
+          {shown.map((student) => (
+            <li key={student.id}>
+              <button
+                type="button"
+                className={student.id === selectedId ? "row selected" : "row"}
+                aria-current={student.id === selectedId}
+                onClick={() => onSelect(student.id)}
+              >
+                <span>{student.id}</span>
+                <span className="muted">{student.studentYear}年次</span>
+                <StateBadge state={student.state} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="student-detail">
         {!selectedId && <p className="muted">学生を選んでください。</p>}
@@ -174,17 +208,18 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
               <tbody>
                 {detail.judgments.map((judgment) => (
                   <tr key={judgment.ruleId}>
-                    <td>{judgment.name}</td>
+                    <td className="nowrap">{judgment.name}</td>
                     <td>
                       <JudgmentBadge status={judgment.status} />
                     </td>
                     <td className="nowrap">{credits(judgment)}</td>
-                    <td className="nowrap" title={judgment.sourceQuote}>{judgment.clause}</td>
+                    <td className="nowrap">{judgment.clause}</td>
                     <td>
                       {judgment.reason}
                       {judgment.missingCourses && judgment.missingCourses.length > 0 && (
                         <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
                       )}
+                      <span className="quote">{judgment.sourceQuote}</span>
                     </td>
                   </tr>
                 ))}

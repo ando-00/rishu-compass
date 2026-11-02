@@ -18,6 +18,8 @@ export type { OutreachEntry, OutreachReason } from "./outreach";
 export { checkPlan, isDisplayablePlan, lockedEnrollments, planningStudent } from "./plan";
 export type { PlanCheck, PlanEntry, PlanIssue, PlanIssueCode } from "./plan";
 export type { RuleSet } from "./rules";
+export { diffStudentStates } from "./stateChanges";
+export type { StateChange, StudentState } from "./stateChanges";
 export { validateRuleSet } from "./validate";
 export { collectQuotes, verifyQuotes } from "./verifyQuotes";
 export type { Quote } from "./verifyQuotes";

@@ -6,7 +6,9 @@ import {
   type OverviewResponse,
   type Respondent,
 } from "../shared/api";
+import { diffStudentStates } from "../engine/stateChanges";
 import { fetchAnswerRecords, fetchDatasets, fetchOverview, saveAnswer, withdrawProposal } from "./api";
+import { ChangesPanel } from "./ChangesPanel";
 import { ExtractionPanel } from "./ExtractionPanel";
 import { OutreachPanel } from "./OutreachPanel";
 import { QuestionsPanel } from "./QuestionsPanel";
@@ -14,7 +16,6 @@ import { StudentsPanel } from "./StudentsPanel";
 import "./app.css";
 
 type Tab = "import" | "questions" | "outreach" | "students";
-type Summary = OverviewResponse["summary"];
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "import", label: "要項の取り込み" },
@@ -29,7 +30,7 @@ function SummaryCell({ label, value, previous }: { label: string; value: number;
       <p className="muted">{label}</p>
       <p className="summary-value">{value}人</p>
       {previous !== undefined && previous !== value && (
-        <p className="muted">回答前 {previous}人</p>
+        <p className="muted">直前 {previous}人</p>
       )}
     </div>
   );
@@ -41,7 +42,7 @@ export function App() {
   const [records, setRecords] = useState<AnswerRecord[] | null>(null);
   const [respondent, setRespondent] = useState<Respondent>("教務職員A");
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
-  const [previous, setPrevious] = useState<Summary | null>(null);
+  const [previous, setPrevious] = useState<OverviewResponse | null>(null);
   const [tab, setTab] = useState<Tab>("questions");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,10 @@ export function App() {
   const answers = useMemo(
     () => Object.fromEntries((records ?? []).map((r) => [r.ambiguityId, r.optionId])),
     [records],
+  );
+  const changes = useMemo(
+    () => (previous && overview ? diffStudentStates(previous.students, overview.students) : null),
+    [previous, overview],
   );
 
   useEffect(() => {
@@ -107,7 +112,7 @@ export function App() {
     if (!datasetId) return;
     try {
       const result = await saveAnswer(datasetId, { ambiguityId, optionId, respondent });
-      setPrevious(overview?.summary ?? null);
+      setPrevious(overview);
       setRecords(result.records);
       setAnswerError(null);
     } catch (cause) {
@@ -209,14 +214,22 @@ export function App() {
         <>
           <div className="summary">
             <SummaryCell label="学生" value={overview.summary.total} />
-            <SummaryCell label="声かけ" value={overview.summary.contact} previous={previous?.contact} />
+            <SummaryCell label="声かけ" value={overview.summary.contact} previous={previous?.summary.contact} />
             <SummaryCell
               label="職員確認"
               value={overview.summary.staffReview}
-              previous={previous?.staffReview}
+              previous={previous?.summary.staffReview}
             />
-            <SummaryCell label="対応なし" value={overview.summary.clear} previous={previous?.clear} />
+            <SummaryCell label="対応なし" value={overview.summary.clear} previous={previous?.summary.clear} />
           </div>
+
+          {changes && tab !== "import" && (
+            <ChangesPanel
+              changes={changes}
+              onOpenStudent={openStudent}
+              onOpenOutreach={() => setTab("outreach")}
+            />
+          )}
 
           <nav className="tabs" aria-label="画面の切り替え">
             {TABS.map(({ id, label }) => (
@@ -241,7 +254,11 @@ export function App() {
             />
           )}
           {tab === "outreach" && (
-            <OutreachPanel outreach={overview.outreach} onOpenStudent={openStudent} />
+            <OutreachPanel
+              outreach={overview.outreach}
+              changes={changes ?? []}
+              onOpenStudent={openStudent}
+            />
           )}
           {tab === "students" && datasetId && (
             <StudentsPanel

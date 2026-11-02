@@ -417,6 +417,64 @@ button:disabled {
   overflow-x: auto;
 }
 
+.student-filter {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.student-filter label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.student-filter input {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.student-filter p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.quote {
+  display: block;
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.changes {
+  margin: 0 0 20px;
+}
+
+.changes h2 {
+  margin-top: 0;
+}
+
+.change-group p {
+  margin-bottom: 4px;
+}
+
+.change-students {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
 .plan-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
