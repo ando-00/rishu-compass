@@ -379,7 +379,28 @@ describe("checkProposal", () => {
     expect(problemsOf(output)).toEqual([]);
   });
 
-  it("科目群のない区分は落ちる", () => {
+  it("科目群がなくても、超過分の算入先の区分は通す", () => {
+    const empty = {
+      name: "自由",
+      groups: [],
+      minCredits: 2,
+      requireAll: false,
+      maxCredits: null,
+      overflowTo: null,
+      subLimits: [],
+    };
+    const output = changeRule("category-advanced", (rule) => ({
+      ...rule,
+      detail: JSON.stringify({ ...JSON.parse(rule.detail), overflowTo: "category-free" }),
+    }));
+    const withFree = {
+      ...output,
+      rules: [...output.rules, row("category", "category-free", "第1条", "| 応用 | 4 |", empty)],
+    };
+    expect(problemsOf(withFree)).toEqual([]);
+  });
+
+  it("科目群も算入元もない区分は落ちる", () => {
     const output = changeRule("category-common", (rule) => ({
       ...rule,
       detail: JSON.stringify({

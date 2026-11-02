@@ -26,11 +26,12 @@ function caseProblems(rules: RuleSet, input: ExtractionInput) {
     );
 }
 
-// 科目群のない区分には何も算入されず、全員が不足になる。
+// 科目群がなく、超過分の算入先でもない区分には何も算入されず、全員が不足になる。
 function categoryProblems(rules: RuleSet) {
+  const targets = new Set(rules.categories.map(({ overflowTo }) => overflowTo));
   return rules.categories
-    .filter(({ groups }) => groups.length === 0)
-    .map(({ id }) => `${id}: 区分に科目群がありません`);
+    .filter(({ id, groups }) => groups.length === 0 && !targets.has(id))
+    .map(({ id }) => `${id}: 区分に科目群がなく、算入元もありません`);
 }
 
 function gateProblems(rules: RuleSet) {
