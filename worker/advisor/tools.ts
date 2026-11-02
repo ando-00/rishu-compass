@@ -45,6 +45,18 @@ const planSchema = z
   .array(z.object({ course: z.string(), term: z.enum(["前期", "後期", "通年"]) }))
   .refine((plan) => plan.length >= 1 && plan.length <= 40, "科目は1〜40件にしてください");
 
+// Claude が日本語を \uXXXX の文字列のまま道具へ渡すことがある。科目名が合わず検査に落ちるので、元の文字に戻す。
+function decodeEscapes(value: unknown): unknown {
+  if (typeof value === "string") {
+    return value.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+  }
+  if (Array.isArray(value)) return value.map(decodeEscapes);
+  if (typeof value === "object" && value !== null) {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, decodeEscapes(entry)]));
+  }
+  return value;
+}
+
 function defineTool<T extends z.ZodType>(
   name: string,
   description: string,
@@ -56,7 +68,7 @@ function defineTool<T extends z.ZodType>(
     description,
     inputSchema,
     run: (input) => {
-      const result = run(inputSchema.parse(input));
+      const result = run(inputSchema.parse(decodeEscapes(input)));
       return typeof result === "string" ? result : JSON.stringify(result);
     },
   };

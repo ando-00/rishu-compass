@@ -128,6 +128,15 @@ describe("履修案の結果", () => {
     expect(result.corrections).toEqual([]);
   });
 
+  it("科目名が \\uXXXX の文字列で届いても、元の文字に戻して検査する", async () => {
+    const escaped = [{ course: "\\u5c02\\u958001", term: "前期" }];
+    expect(runTool("validate_plan", { plan: escaped }).status).toBe("passed");
+
+    const { loop } = scriptedLoop([["submit_plan", { plan: escaped, draft: DRAFT }]]);
+    const result = await adviseStudent(loop, input());
+    expect(result).toMatchObject({ status: "passed", plan: [{ course: "専門01" }], corrections: [] });
+  });
+
   it("空の案と空の下書きは提出できない", async () => {
     const { tools, state } = createAdvisorTools(input());
     const submit = tools.find((tool) => tool.name === "submit_plan")!;
