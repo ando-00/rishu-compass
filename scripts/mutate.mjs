@@ -146,6 +146,8 @@ const M = [
   ["evaluate", "return yearStart(student.studentYear + (missed ? 2 : 1));", "return yearStart(student.studentYear + 1);", "延期: 落ちたら翌々年次"],
   ["evaluate", "tooLate: incalculable ? pessimistic : courses.length > 0,", "tooLate: courses.length > 0,", "延期: 計算できない科目"],
   ["evaluate", "if (stray.length > 0) {", "if (false) {", "卒業: 区分に入らない科目を職員確認に（A1-26）"],
+  ["impact", "if ((beforeState === \"contact\") !== hasContact) moved = true;", "", "影響: 回答の前後で声かけが変わる学生（A25-2）"],
+  ["impact", "(!beforeStates || beforeState === \"staff_review\")", "true", "影響: 別途の職員確認を一覧の職員確認に限る（A25-3）"],
   ["evaluate", "yearLongHalf + enrolledIn(term % 2 === 0 ? \"前期\" : \"後期\")", "yearLongHalf", "延期: 今年度の残りの学期の登録済みを引く（A25-1）"],
   ["evaluate", "gate.enrolledThroughCheckOnly && throughYear !== undefined", "false", "条件: 履修中を判定の時点までに限る（A1-16）"],
   ["evaluate", "if (byMajor.length > 0 && !byMajor.some(({ when }) => matchesCondition(when, student))) {", "if (false) {", "対象外の専攻"],

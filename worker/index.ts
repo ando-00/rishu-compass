@@ -11,6 +11,7 @@ import {
   listOutreach,
   prepareRules,
   settledStudentIds,
+  type StudentState,
 } from "../engine";
 import {
   answersRequestSchema,
@@ -54,7 +55,6 @@ function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
   const { rules, courses, students } = dataset;
   const prepared = prepareRules(rules, courses, answers);
   const evaluations = students.map((student) => evaluatePrepared(prepared, student));
-  const unanswered = computeImpacts(rules, courses, students, answers);
   const pending = new Set(
     evaluations
       .filter(({ judgments }) => judgments.some(({ status }) => status === "needs_staff"))
@@ -66,7 +66,10 @@ function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
     students,
     settledStudentIds(rules, courses, candidates, answers),
   );
-  const states = new Map(outreach.map((entry) => [entry.studentId, entry.kind]));
+  const states = new Map<string, StudentState>(outreach.map((entry) => [entry.studentId, entry.kind]));
+  for (const { id } of students) if (!states.has(id)) states.set(id, "clear");
+  // 影響人数は、一覧での今の対応を回答の前の状態として数える（A25-2）
+  const unanswered = computeImpacts(rules, courses, students, answers, states);
   const contact = outreach.filter((entry) => entry.kind === "contact").length;
   const staffReview = outreach.length - contact;
 
@@ -74,7 +77,7 @@ function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
     summary: { total: students.length, contact, staffReview, clear: students.length - outreach.length },
     unanswered,
     answered: Object.entries(answers).map(([ambiguityId, optionId]) => ({
-      ...computeImpact(rules, courses, students, answers, ambiguityId),
+      ...computeImpact(rules, courses, students, answers, ambiguityId, states),
       optionId,
     })),
     outreach: outreach.map((entry) => ({

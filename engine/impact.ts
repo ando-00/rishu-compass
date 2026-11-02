@@ -2,6 +2,7 @@ import { listRules } from "./answers";
 import { evaluatePrepared, prepareRules, type Judgment, type JudgmentStatus } from "./evaluate";
 import type { Answers, Course, Student } from "./model";
 import type { RuleSet } from "./rules";
+import type { StudentState } from "./stateChanges";
 
 export type ImpactChange = {
   studentId: string;
@@ -58,6 +59,8 @@ export function computeImpact(
   students: Student[],
   answers: Answers,
   ambiguityId: string,
+  // 一覧での今の対応（声かけ・職員確認・対応なし）。渡されれば回答の前の状態として使う
+  beforeStates?: Map<string, StudentState>,
 ): AmbiguityImpact {
   const ambiguity = rules.ambiguities.find((a) => a.id === ambiguityId);
   if (!ambiguity) throw new Error(`曖昧箇所がありません: ${ambiguityId}`);
@@ -108,16 +111,35 @@ export function computeImpact(
   }));
 
   const changes: ImpactChange[] = [];
-  const needsStaff = new Set<string>();
+  const affected = new Set<string>();
+  const stuck = new Set<string>();
   for (const student of students) {
+    const beforeState: StudentState = beforeStates?.get(student.id) ?? "clear";
+
     const byRule = new Map<string, ImpactChange>();
     const shown = new Map<string, Set<string>>();
+    let moved = false;
     for (const { option, rules: resolved, counts } of prepared) {
       const { judgments } = evaluatePrepared(resolved, student);
       // 履修上限のように判定を持たないルールは、学生の全判定の中で数える。
       const related = judgments.filter((judgment) => linked.has(judgment.ruleId));
       const worst = worstStatus(related.length > 0 ? related : judgments);
       if (worst) counts[worst] = (counts[worst] ?? 0) + 1;
+
+      // 回答の前後で職員の対応が変わるか。声かけの有無は確定で分かる。職員確認が残るかは、他の曖昧箇所の
+      // 読み方次第で対応なしになる場合があるので、確定で消えるときだけ変わったと数える
+      // 一覧の状態を渡されていないときは、仮の状態では「対応なし」と「職員確認」を見分けられないので比べない
+      if (beforeStates) {
+        const hasContact = judgments.some((j) => j.needsContact);
+        const hasStaff = judgments.some((j) => j.status === "needs_staff");
+        if ((beforeState === "contact") !== hasContact) moved = true;
+        if (beforeState === "staff_review" && !hasContact && !hasStaff) moved = true;
+      }
+      // 回答しても職員確認が残る学生（A25-3）。一覧の状態を渡されていれば、今の一覧で職員確認の学生に限る。
+      // 渡されていないと、どの読み方でも対応が要らない学生を見分けられないので、従来どおり全員を数える
+      if (judgments.some((j) => j.status === "needs_staff") && (!beforeStates || beforeState === "staff_review")) {
+        stuck.add(student.id);
+      }
 
       for (const { ruleId, name, clause, status, needsContact } of judgments) {
         const change = byRule.get(ruleId) ?? {
@@ -131,15 +153,16 @@ export function computeImpact(
         byRule.set(ruleId, change);
         // 状態が同じでも、声かけの対象が変われば判定が変わったものとして数える。
         shown.set(ruleId, (shown.get(ruleId) ?? new Set()).add(`${status}:${needsContact}`));
-        if (status === "needs_staff") needsStaff.add(student.id);
       }
     }
     for (const change of byRule.values()) {
-      if ((shown.get(change.ruleId)?.size ?? 0) > 1) changes.push(change);
+      const differs = (shown.get(change.ruleId)?.size ?? 0) > 1;
+      // 読み方どうしで違う判定と、回答の前後で対応が変わる学生の関わる判定を、変わる学生の一覧に出す
+      if (differs || (moved && linked.has(change.ruleId))) changes.push(change);
     }
+    if (moved || byRule.size > 0 && changes.some((c) => c.studentId === student.id)) affected.add(student.id);
   }
 
-  const affected = new Set(changes.map((change) => change.studentId));
   return {
     ...common,
     options: prepared.map(({ option, counts }) => ({
@@ -148,8 +171,8 @@ export function computeImpact(
       counts,
       reflected: true,
     })),
-    affectedStudentIds: [...affected],
-    staffReviewStudentIds: [...needsStaff].filter((id) => !affected.has(id)),
+    affectedStudentIds: students.map((s) => s.id).filter((id) => affected.has(id)),
+    staffReviewStudentIds: students.map((s) => s.id).filter((id) => stuck.has(id) && !affected.has(id)),
     changes,
   };
 }
@@ -184,9 +207,10 @@ export function computeImpacts(
   courses: Course[],
   students: Student[],
   answers: Answers,
+  beforeStates?: Map<string, StudentState>,
 ) {
   return rules.ambiguities
     .filter((ambiguity) => !(ambiguity.id in answers))
-    .map((ambiguity) => computeImpact(rules, courses, students, answers, ambiguity.id))
+    .map((ambiguity) => computeImpact(rules, courses, students, answers, ambiguity.id, beforeStates))
     .sort((a, b) => b.affectedStudentIds.length - a.affectedStudentIds.length);
 }
