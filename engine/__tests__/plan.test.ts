@@ -59,6 +59,11 @@ describe("履修案の検査", () => {
     const student = { ...sophomore, records: [...sophomore.records, ...enrolled(["専門01"], 2)] };
     expect(check(entries(["専門01"]), student).status).toBe("failed");
   });
+
+  it("前の年次の履修中の記録は今年度の時間割に数えない", () => {
+    const student = { ...sophomore, records: [...sophomore.records, ...enrolled(["実習"], 1)] };
+    expect(ruleIds(check(entries(["講読"]), student))).not.toContain("timetable");
+  });
 });
 
 describe("学生の条件", () => {
@@ -97,6 +102,20 @@ describe("履修の基本", () => {
   it("不合格の科目は再履修できる", () => {
     const student = { ...sophomore, records: failed(["基礎C"]) };
     expect(check(entries(["基礎C"]), student).status).toBe("passed");
+  });
+
+  it("配当年次の制限がないルールでは、配当年次より前でも通す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.enrollment!.forbidBeforeAssignedYear = false;
+    const freshman = makeStudent({ studentYear: 1 });
+    expect(ruleIds(check(entries(["専門01"]), freshman))).toContain("enrollment");
+    expect(check(entries(["専門01"]), freshman, { rules }).status).toBe("passed");
+  });
+
+  it("再履修の禁止がないルールでは、修得済みの科目も通す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.enrollment!.forbidRetakeOfPassed = false;
+    expect(check(entries(["入門A"]), sophomore, { rules }).status).toBe("passed");
   });
 
   it("開講学期が違う科目は通さない", () => {
@@ -205,6 +224,24 @@ describe("履修上限", () => {
     expect(check(entries(names), student).status).toBe("failed");
   });
 
+  it("再履修を数えない上限でも、今年度の初回の不合格は数える", () => {
+    const rules = structuredClone(exampleRules);
+    rules.loadLimits[0]!.retakeExclusion = "failed";
+    const student = { ...sophomore, records: [...sophomore.records, ...failed(names.slice(0, 8), 2)] };
+    expect(ruleIds(check(entries(names.slice(8, 11)), student, { rules }))).toContain("load-normal");
+  });
+
+  it("再履修を数えない上限は、登録済みの再履修科目も除く", () => {
+    const rules = structuredClone(exampleRules);
+    rules.loadLimits[0]!.retakeExclusion = "failed";
+    const student = {
+      ...sophomore,
+      records: [...failed(names.slice(0, 8), 1), ...enrolled(names.slice(0, 8), 2)],
+    };
+    expect(check(entries(names.slice(8, 11)), student, { rules }).status).toBe("passed");
+    expect(check(entries(names.slice(8, 11)), student).status).toBe("failed");
+  });
+
   it("年間の上限ちょうどなら通す", () => {
     const rules = structuredClone(exampleRules);
     rules.loadLimits[0]!.maxPerYear = 28;
@@ -219,6 +256,15 @@ describe("履修上限", () => {
     });
     const plan = [...entries(["ゼミ"], "通年"), ...entries(names.slice(0, 10), "後期")];
     expect(ruleIds(check(plan, student))).toContain("load-normal");
+  });
+
+  it("通年の科目の半分と後期の科目で上限ちょうどなら通す", () => {
+    const student = makeStudent({
+      studentYear: 3,
+      records: passed([...BASIC, ...numberedNames("他", 3), ...numberedNames("乙", 8)], 2),
+    });
+    const plan = [...entries(["ゼミ"], "通年"), ...entries(names.slice(0, 9), "後期")];
+    expect(check(plan, student).status).toBe("passed");
   });
 
   it("適用する上限がない学生は職員確認にする", () => {
@@ -246,6 +292,11 @@ describe("科目数の上限と時間割", () => {
     expect(ruleIds(check(entries(["実習", "講読"])))).toContain("timetable");
   });
 
+  it("今年度に履修中の科目と同じ時限なら通さない", () => {
+    const student = { ...sophomore, records: [...sophomore.records, ...enrolled(["実習"], 2)] };
+    expect(ruleIds(check(entries(["講読"]), student))).toContain("timetable");
+  });
+
   it("集中講義は、履修案のどの位置にあっても時間割の重なりを判定しない", () => {
     const courses = exampleCourses.map((course) =>
       course.name === "集中" ? { ...course, slots: [{ day: "月", period: 1 }] } : course,
@@ -269,6 +320,15 @@ describe("科目数の上限と時間割", () => {
       { name: "第二", credits: 1, assignedYear: 1, groups: [], slots: [{ day: "火", period: 2, quarter: 2 }] },
     ];
     expect(check(entries(["第一", "第二"]), sophomore, { courses }).status).toBe("passed");
+  });
+
+  it("クォーターの指定がない科目は、同じ時限のどのクォーターの科目とも重なる", () => {
+    const courses: Course[] = [
+      ...exampleCourses,
+      { name: "第一", credits: 1, assignedYear: 1, groups: [], slots: [{ day: "火", period: 2, quarter: 1 }] },
+      { name: "毎週", credits: 1, assignedYear: 1, groups: [], slots: [{ day: "火", period: 2 }] },
+    ];
+    expect(ruleIds(check(entries(["第一", "毎週"]), sophomore, { courses }))).toContain("timetable");
   });
 });
 
@@ -313,6 +373,14 @@ describe("未確定のルール", () => {
     const rules = structuredClone(exampleRules);
     rules.loadLimits[0]!.ambiguityIds = ["ambiguity-seminar-credits"];
     expect(check(entries(["専門01"]), sophomore, { rules, answers: {} }).status).toBe("needs_staff");
+  });
+
+  it("未確定の履修上限は、上限を超える案でも不可にせず職員確認を返す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.loadLimits[0]!.ambiguityIds = ["ambiguity-seminar-credits"];
+    const result = check(entries(numberedNames("専門", 11)), sophomore, { rules, answers: {} });
+    expect(result.status).toBe("needs_staff");
+    expect(codes(result)).toEqual(["PENDING_RULE"]);
   });
 
   it("未確定の履修の基本は職員確認を返す", () => {

@@ -105,6 +105,14 @@ describe("履修条件と進級条件の判定", () => {
     expect(judgment(student, "gate-promotion").status).toBe("satisfied");
   });
 
+  it("進級先の年次になったばかりの学生の進級条件も充足", () => {
+    const student = makeStudent({ studentYear: 2, records: passed(["入門A"], 1) });
+    expect(judgment(student, "gate-promotion")).toMatchObject({
+      status: "satisfied",
+      reason: "進級済みです。",
+    });
+  });
+
   it("進級済みの学生の進級条件は、未回答の曖昧箇所があっても充足", () => {
     const rules = structuredClone(exampleRules);
     rules.gates.find((gate) => gate.id === "gate-promotion")!.ambiguityIds = [ID];
@@ -155,6 +163,18 @@ describe("履修条件と進級条件の判定", () => {
     expect(judgment({ ...student, studentYear: 4 }, "gate-seminar")).toMatchObject({
       status: "satisfied",
       eligibleFromYear: 4,
+    });
+  });
+
+  it("判定時点を過ぎて履修中を含めて満たすなら、見込みで次の年度から認める", () => {
+    const student = makeStudent({
+      studentYear: 3,
+      records: [...passed(BASIC, 2), ...enrolled(numberedNames("専門", 13), 3)],
+    });
+    expect(judgment(student, "gate-seminar")).toMatchObject({
+      status: "expected",
+      eligibleFromYear: 4,
+      needsContact: false,
     });
   });
 
