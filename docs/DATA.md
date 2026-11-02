@@ -31,6 +31,7 @@
 
 | `data/fictional/sakuradai/gold-rules.ts` | さくら台大学の正解ルール | 下の「正解ルールの作り方」のとおり |
 | `data/fictional/kamome/gold-rules.ts` | かもめ大学の正解ルール | 下の「かもめ大学の正解ルール」のとおり |
+| `data/fictional/*/recorded-proposal.json` | API キーなしで試すための、実際の変換の記録 | `evals/results/extract/` の最新の記録から `npm run record:proposal` で作る。Claude の出力で、正解ではない |
 
 かもめ大学の科目データでは、名前に「演習」を含む科目に科目群「演習」を付けました。これは名前からの機械的な分類で、手引きの「演習科目」の解釈を確定するものではありません。
 

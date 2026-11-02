@@ -10,7 +10,7 @@ import {
   type Respondent,
   type StoredProposal,
 } from "../shared/api";
-import { createDataset, datasets, findSource, type Dataset } from "./datasets";
+import { createDataset, datasets, findRecordedProposal, findSource, type Dataset } from "./datasets";
 
 type Source = NonNullable<ReturnType<typeof findSource>>;
 
@@ -195,6 +195,16 @@ ruleSetRoutes.get("/sources/:id/proposals/latest", async (c) => {
   const body: LatestProposalResponse = {
     proposal: row ? toProposalResponse(JSON.parse(row.proposal) as StoredProposal, source, row.id) : null,
   };
+  return c.json(body);
+});
+
+// Claude を呼ばず、同梱の記録を新しい案として保存する。確定の検査は通常の案と同じ。
+ruleSetRoutes.post("/sources/:id/proposals/recorded", async (c) => {
+  const source = findSource(c.req.param("id"));
+  const recorded = source && findRecordedProposal(source.id);
+  if (!source || !recorded) return c.json({ error: "記録がありません" }, 404);
+  const proposalId = await saveProposal(c.env.DB, source.id, source.handbook, recorded);
+  const body: ProposalResponse = toProposalResponse(recorded, source, proposalId);
   return c.json(body);
 });
 

@@ -63,6 +63,11 @@ export async function extractProposal(sourceId: string, handbook: string) {
   return readJson(res, proposalResponseSchema);
 }
 
+export async function loadRecordedProposal(sourceId: string) {
+  const res = await post(`/api/sources/${sourceId}/proposals/recorded`, {});
+  return readJson(res, proposalResponseSchema);
+}
+
 export async function fetchAnswerRecords(datasetId: string) {
   return readJson(await fetch(`/api/datasets/${datasetId}/answers`), answerRecordsResponseSchema);
 }

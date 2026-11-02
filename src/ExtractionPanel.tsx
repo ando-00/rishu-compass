@@ -7,7 +7,13 @@ import {
   type Respondent,
   type SourcesResponse,
 } from "../shared/api";
-import { confirmProposal, extractProposal, fetchLatestProposal, fetchSources } from "./api";
+import {
+  confirmProposal,
+  extractProposal,
+  fetchLatestProposal,
+  fetchSources,
+  loadRecordedProposal,
+} from "./api";
 import { ChangeList, ImpactCounts } from "./QuestionsPanel";
 import { fieldLabel, summarizeRules, type RuleRow } from "./ruleSummary";
 import { CaseBadge, ReviewBadge } from "./StatusBadge";
@@ -277,7 +283,7 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
 type ProposalProps = Omit<ConfirmProps, "rows">;
 
 function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: ProposalProps) {
-  const { rules, notes, problems, attempts, runs, extraQuestions, caseResults } = proposal;
+  const { rules, notes, problems, attempts, runs, extraQuestions, caseResults, recording } = proposal;
   const rows = summarizeRules(rules);
   return (
     <section>
@@ -285,6 +291,11 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
       <p className="notice">
         職員が確定するまで、この案は判定に使いません。根拠の文が要項にあることは検査しましたが、解釈が正しいことは保証しません。
       </p>
+      {recording && (
+        <p className="notice">
+          {recording.recordedAt} に {recording.model} で変換した記録を読み込みました。今回は Claude を呼んでいません。
+        </p>
+      )}
       <p className="muted">
         ルール {rows.length}件、変換 {runs.succeeded}/{runs.requested}回成功、修正を含む呼び出し {attempts.length}回（モデル {attempts.at(-1)?.model}）
       </p>
@@ -382,10 +393,20 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
     }
   }
 
+  async function loadRecorded() {
+    setError(null);
+    try {
+      setProposal(await loadRecordedProposal(sourceId));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "記録を読み込めませんでした。");
+    }
+  }
+
   const confirmedDatasetId = datasets.find(
     ({ confirmation }) => confirmation && confirmation.proposalId === proposal?.proposalId,
   )?.id;
-  const sample = data?.sources.find(({ id }) => id === sourceId)?.handbook ?? "";
+  const selected = data?.sources.find(({ id }) => id === sourceId);
+  const sample = selected?.handbook ?? "";
   const tooLong = handbook.length > MAX_HANDBOOK_LENGTH;
   const canRun = Boolean(data?.extractionEnabled) && handbook.trim() !== "" && !tooLong && !running;
 
@@ -393,7 +414,9 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
     <section>
       <h2>要項の取り込み</h2>
       {data && !data.extractionEnabled && (
-        <p className="notice">この環境では要項の変換を使えません。</p>
+        <p className="notice">
+          この環境では要項の変換を使えません。「記録を読み込む」を押すと、実際の変換の記録で確定から判定までを試せます。
+        </p>
       )}
       <div className="extract-form">
         <label>
@@ -422,6 +445,11 @@ export function ExtractionPanel({ datasets, respondent, onConfirmed }: PanelProp
           <button type="button" disabled={!canRun} onClick={() => void run()}>
             ルール案を作る
           </button>
+          {selected?.recorded && (
+            <button type="button" className="secondary" disabled={running} onClick={() => void loadRecorded()}>
+              記録を読み込む
+            </button>
+          )}
         </div>
       </div>
       {running && <p role="status">同じ要項を3回変換して比べています。数分かかることがあります。</p>}

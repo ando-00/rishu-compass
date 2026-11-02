@@ -10,7 +10,7 @@ import { sakuradaiCourses } from "../data/fictional/sakuradai/courses";
 import sakuradaiHandbook from "../data/fictional/sakuradai/handbook.md?raw";
 import { sakuradaiStudents } from "../data/fictional/sakuradai/students";
 import { ADMISSION_YEARS } from "../data/fictional/students";
-import type { Respondent } from "../shared/api";
+import type { Respondent, StoredProposal } from "../shared/api";
 import type { CheckCase } from "../engine/checkCases";
 import { validateRuleSet, type Answers, type Course, type RuleSet, type Student } from "../engine";
 
@@ -58,8 +58,23 @@ export function findSource(id: string) {
   return source ? { ...source, id } : undefined;
 }
 
+// API キーなしで試せるよう、実際の変換の記録を同梱する。作り方は evals/record-proposal.ts にある。
+const recordedModules = import.meta.glob<StoredProposal>("../data/fictional/*/recorded-proposal.json", {
+  eager: true,
+  import: "default",
+});
+
+export function findRecordedProposal(id: string) {
+  return recordedModules[`../data/fictional/${id}/recorded-proposal.json`];
+}
+
 export function listSources() {
-  return Object.entries(SOURCES).map(([id, { name, handbook }]) => ({ id, name, handbook }));
+  return Object.entries(SOURCES).map(([id, { name, handbook }]) => ({
+    id,
+    name,
+    handbook,
+    recorded: findRecordedProposal(id) !== undefined,
+  }));
 }
 
 // 人が決めた正解ルールは、ファイルを置くだけで読み込む。

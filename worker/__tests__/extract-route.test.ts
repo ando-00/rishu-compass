@@ -33,6 +33,7 @@ describe("GET /api/sources", () => {
     const body = sourcesResponseSchema.parse(await res.json());
     expect(body.extractionEnabled).toBe(false);
     expect(body.sources.map(({ id }) => id)).toEqual(["sakuradai", "kamome"]);
+    expect(body.sources.every(({ recorded }) => recorded)).toBe(true);
   });
 
   it("開けた環境では変換を使えると返す", async () => {

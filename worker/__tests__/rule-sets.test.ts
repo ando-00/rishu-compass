@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sakuradaiCourses } from "../../data/fictional/sakuradai/courses";
 import { goldRules } from "../../data/fictional/sakuradai/gold-rules";
 import handbook from "../../data/fictional/sakuradai/handbook.md?raw";
@@ -9,6 +9,7 @@ import {
   datasetsResponseSchema,
   latestProposalResponseSchema,
   overviewResponseSchema,
+  proposalResponseSchema,
   type StoredProposal,
 } from "../../shared/api";
 import app from "../index";
@@ -89,6 +90,45 @@ describe("ルール案の保存", () => {
 
   it("DB がない環境では保存しない", async () => {
     expect(await saveProposal(undefined, "sakuradai", handbook, proposal())).toBeNull();
+  });
+});
+
+describe("POST /api/sources/:id/proposals/recorded", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each(["sakuradai", "kamome"])("API キーなしで %s の記録を読み込み、確定まで進める", async (id) => {
+    const fetchStub = vi.fn();
+    vi.stubGlobal("fetch", fetchStub);
+
+    const res = await post(`/api/sources/${id}/proposals/recorded`, {});
+    expect(res.status).toBe(200);
+    const body = proposalResponseSchema.parse(await res.json());
+    expect(body.recording?.model).toBeTruthy();
+    expect(body.problems).toEqual([]);
+    expect(body.impacts).not.toBeNull();
+
+    // 読み込んだだけでは判定の対象にならない
+    const before = await datasetList();
+    expect(before.some(({ confirmation }) => confirmation)).toBe(false);
+
+    const confirmed = await confirm(body.proposalId!);
+    expect(confirmed.status).toBe(200);
+    const { datasetId } = confirmResponseSchema.parse(await confirmed.json());
+    expect((await datasetList()).map((dataset) => dataset.id)).toContain(datasetId);
+    expect(fetchStub).not.toHaveBeenCalled();
+  });
+
+  it("開き直しても記録の案だと分かる", async () => {
+    await post("/api/sources/sakuradai/proposals/recorded", {});
+    const res = await app.request("/api/sources/sakuradai/proposals/latest", undefined, env);
+    expect(latestProposalResponseSchema.parse(await res.json()).proposal?.recording).toBeDefined();
+  });
+
+  it("対象がなければ 404 を返す", async () => {
+    const res = await post("/api/sources/unknown/proposals/recorded", {});
+    expect(res.status).toBe(404);
   });
 });
 

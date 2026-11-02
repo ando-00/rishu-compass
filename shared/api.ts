@@ -199,7 +199,9 @@ export const extractRequestSchema = z.object({
 
 export const sourcesResponseSchema = z.object({
   extractionEnabled: z.boolean(),
-  sources: z.array(z.object({ id: z.string(), name: z.string(), handbook: z.string() })),
+  sources: z.array(
+    z.object({ id: z.string(), name: z.string(), handbook: z.string(), recorded: z.boolean() }),
+  ),
 });
 
 export const storedProposalSchema = z.object({
@@ -243,6 +245,8 @@ export const storedProposalSchema = z.object({
       }),
     }),
   ),
+  // 記録を読み込んだ案にだけ付く。この案では Claude を呼んでいない
+  recording: z.object({ model: z.string(), recordedAt: z.string() }).optional(),
 });
 
 export const proposalResponseSchema = storedProposalSchema.extend({

@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "eval:extract": "tsx evals/extract.ts",
-    "eval:advise": "tsx evals/advise.ts"
+    "eval:advise": "tsx evals/advise.ts",
+    "record:proposal": "tsx evals/record-proposal.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",
