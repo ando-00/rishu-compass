@@ -20,6 +20,9 @@ export type BoundaryProfile = {
   loadByYear: [number, number];
 };
 
+// 要項に適用の入学年度が書かれていないので、ここで決める。適用内の学生の年度と合わせる。
+export const ADMISSION_YEARS = [2023, 2024, 2025, 2026];
+
 export type StudentConfig = {
   prefix: string;
   seed: number;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { RuleSet } from "../engine/rules";
 
 export const answersSchema = z.record(z.string(), z.string());
 
@@ -158,6 +159,39 @@ export const planCheckResponseSchema = z.object({
   plan: z.array(planEntrySchema).nullable(),
 });
 
+// 費用の上限として、要項の長さを制限する
+export const MAX_HANDBOOK_LENGTH = 40000;
+
+export const extractRequestSchema = z.object({
+  handbook: z.string().trim().min(1).max(MAX_HANDBOOK_LENGTH),
+});
+
+export const sourcesResponseSchema = z.object({
+  extractionEnabled: z.boolean(),
+  sources: z.array(z.object({ id: z.string(), name: z.string(), handbook: z.string() })),
+});
+
+export const proposalResponseSchema = z.object({
+  // 職員が確定するまでの案。形は engine が定める
+  rules: z.custom<RuleSet>((value) => typeof value === "object" && value !== null),
+  notes: z.array(z.object({ clause: z.string(), sourceQuote: z.string(), reason: z.string() })),
+  problems: z.array(z.string()),
+  // 検査に問題が残る案では人数を計算しない
+  impacts: z.array(impactSchema).nullable(),
+  attempts: z.array(
+    z.object({
+      problems: z.number(),
+      model: z.string(),
+      usage: z.object({
+        inputTokens: z.number(),
+        outputTokens: z.number(),
+        cacheReadTokens: z.number(),
+        cacheWriteTokens: z.number(),
+      }),
+    }),
+  ),
+});
+
 export type Answers = z.infer<typeof answersSchema>;
 export type PlanEntry = z.infer<typeof planEntrySchema>;
 export type JudgmentStatus = z.infer<typeof judgmentStatusSchema>;
@@ -168,3 +202,5 @@ export type DatasetsResponse = z.infer<typeof datasetsResponseSchema>;
 export type OverviewResponse = z.infer<typeof overviewResponseSchema>;
 export type StudentResponse = z.infer<typeof studentResponseSchema>;
 export type PlanCheckResponse = z.infer<typeof planCheckResponseSchema>;
+export type SourcesResponse = z.infer<typeof sourcesResponseSchema>;
+export type ProposalResponse = z.infer<typeof proposalResponseSchema>;

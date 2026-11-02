@@ -2,9 +2,12 @@ import { exampleCourses } from "../data/fictional/example/courses";
 import { exampleRules } from "../data/fictional/example/rules";
 import { exampleStudents } from "../data/fictional/example/students";
 import { kamomeCourses } from "../data/fictional/kamome/courses";
+import kamomeHandbook from "../data/fictional/kamome/handbook.md?raw";
 import { kamomeStudents } from "../data/fictional/kamome/students";
 import { sakuradaiCourses } from "../data/fictional/sakuradai/courses";
+import sakuradaiHandbook from "../data/fictional/sakuradai/handbook.md?raw";
 import { sakuradaiStudents } from "../data/fictional/sakuradai/students";
+import { ADMISSION_YEARS } from "../data/fictional/students";
 import { validateRuleSet, type Course, type RuleSet, type Student } from "../engine";
 
 export type Dataset = {
@@ -16,14 +19,39 @@ export type Dataset = {
   problems: string[];
 };
 
-const SOURCES: Record<string, { name: string; courses: Course[]; students: Student[] }> = {
+type Source = {
+  name: string;
+  admissionYears: number[];
+  handbook: string;
+  courses: Course[];
+  students: Student[];
+};
+
+const SOURCES: Record<string, Source> = {
   sakuradai: {
     name: "さくら台大学（架空）",
+    admissionYears: ADMISSION_YEARS,
+    handbook: sakuradaiHandbook,
     courses: sakuradaiCourses,
     students: sakuradaiStudents,
   },
-  kamome: { name: "かもめ大学（架空）", courses: kamomeCourses, students: kamomeStudents },
+  kamome: {
+    name: "かもめ大学（架空）",
+    admissionYears: ADMISSION_YEARS,
+    handbook: kamomeHandbook,
+    courses: kamomeCourses,
+    students: kamomeStudents,
+  },
 };
+
+export function findSource(id: string) {
+  const source = Object.hasOwn(SOURCES, id) ? SOURCES[id] : undefined;
+  return source ? { ...source, id } : undefined;
+}
+
+export function listSources() {
+  return Object.entries(SOURCES).map(([id, { name, handbook }]) => ({ id, name, handbook }));
+}
 
 // 人が決めた正解ルールは、ファイルを置くだけで読み込む。
 const goldModules = import.meta.glob<{ goldRules: RuleSet }>("../data/fictional/*/gold-rules.ts", {

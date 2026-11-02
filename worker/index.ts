@@ -13,16 +13,41 @@ import {
 } from "../engine";
 import {
   answersRequestSchema,
+  extractRequestSchema,
   planCheckRequestSchema,
   type Answers,
   type DatasetsResponse,
   type OverviewResponse,
   type PlanCheckResponse,
+  type ProposalResponse,
+  type SourcesResponse,
   type StudentResponse,
 } from "../shared/api";
-import { datasets, type Dataset } from "./datasets";
+import { datasets, findSource, listSources, type Dataset } from "./datasets";
+import { createClaudeModel } from "./rule-extraction/claude";
+import { extractRules, type ExtractionFailure } from "./rule-extraction/extract";
 
-const app = new Hono<{ Bindings: Env }>();
+// 型の定義は .dev.vars から生成されるので、これがない環境でも通るようここに書く。
+type ClaudeBindings = {
+  ANTHROPIC_API_KEY?: string;
+  ALLOW_CLAUDE?: string;
+};
+
+const app = new Hono<{ Bindings: Env & ClaudeBindings }>();
+
+// 公開 URL の利用の制限が決まるまで、明示して開けた環境でだけ Claude を呼ぶ。
+function claudeKey({ ALLOW_CLAUDE, ANTHROPIC_API_KEY }: ClaudeBindings) {
+  return ALLOW_CLAUDE === "true" && ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY : null;
+}
+
+const FAILURE_STATUS: Record<ExtractionFailure["kind"], 429 | 502 | 504> = {
+  rate_limited: 429,
+  timeout: 504,
+  api_error: 502,
+  refusal: 502,
+  truncated: 502,
+  invalid_format: 502,
+};
 
 async function parseBody<T extends z.ZodType>(c: Context, schema: T) {
   const result = schema.safeParse(await c.req.json().catch(() => undefined));
@@ -84,6 +109,39 @@ app.get("/api/datasets", (c) => {
     datasets: datasets.map(({ id, name, problems }) => ({ id, name, problems })),
   };
   return c.json(body);
+});
+
+app.get("/api/sources", (c) => {
+  const body: SourcesResponse = {
+    extractionEnabled: claudeKey(c.env ?? {}) !== null,
+    sources: listSources(),
+  };
+  return c.json(body);
+});
+
+app.post("/api/sources/:id/extract", async (c) => {
+  const apiKey = claudeKey(c.env ?? {});
+  if (!apiKey) return c.json({ error: "この環境では要項の変換を使えません" }, 403);
+  const source = findSource(c.req.param("id"));
+  if (!source) return c.json({ error: "データがありません" }, 404);
+  const body = await parseBody(c, extractRequestSchema);
+  if (!body) return c.json({ error: "要項の形式が正しくありません" }, 400);
+
+  const input = { ...source, handbook: body.handbook };
+  const result = await extractRules(createClaudeModel(apiKey), input);
+  if (!result.ok) {
+    return c.json({ error: result.failure.message }, FAILURE_STATUS[result.failure.kind]);
+  }
+
+  const { rules, notes, problems, attempts } = result;
+  const response: ProposalResponse = {
+    rules,
+    notes,
+    problems,
+    impacts: problems.length === 0 ? computeImpacts(rules, source.courses, source.students, {}) : null,
+    attempts,
+  };
+  return c.json(response);
 });
 
 app.post("/api/datasets/:id/overview", async (c) => {

@@ -54,7 +54,7 @@
 | A0-24 | S2 | 実際の API キーが `dist/rishu_compass/.dev.vars` にある。git の履歴と `dist/client` にはない | dist/ | 運用で対応 | `AGENTS.md` で `dist/` の共有と提出を禁じた。第3回で提出物を確認する |
 | A0-25 | S2 | ローカルのコミットを push しておらず、CI の最新の成功は 85d1dff のままだった | origin/main | 解決 | 2e7d6ad まで push し、CI の成功を確認した |
 | A0-26 | S3 | `migrations/` が空で、`AGENTS.md` の表になく、DB の設定もない | migrations/ | 対応しない | 回答者と日時を残す D1 の表を作るときに解消する |
-| A0-27 | S3 | `evals/` が空で、`tsconfig` と `vitest.config.ts` の対象に入っていない | evals/ | 対応しない | 評価のコードを置くときに設定を足す |
+| A0-27 | S3 | `evals/` が空で、`tsconfig` と `vitest.config.ts` の対象に入っていない | evals/ | 解決 | `tsconfig.evals.json` を足し、`vitest.config.ts` の対象に入れた |
 | A0-28 | S3 | `docs/PROGRESS.md` に土台の作成より後の作業が反映されていなかった | docs/PROGRESS.md | 解決 | |
 
 ### 人の判断
