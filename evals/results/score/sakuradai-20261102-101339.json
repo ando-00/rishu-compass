@@ -1,0 +1,23 @@
+{
+  "commit": "4ee8780",
+  "advice": {
+    "file": "sakuradai-20261102-101326.json",
+    "commit": "4ee8780",
+    "model": "claude-opus-5-5",
+    "option": "countable"
+  },
+  "checks": {
+    "attempted": 8,
+    "firstPassed": 8,
+    "finalPassed": 8
+  },
+  "rechecked": {
+    "plans": 8,
+    "passed": 8
+  },
+  "gold": "なし",
+  "credits": null,
+  "dangerous": [],
+  "overEscalated": null,
+  "adviceMissing": null
+}

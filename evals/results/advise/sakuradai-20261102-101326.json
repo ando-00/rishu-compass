@@ -1,0 +1,1955 @@
+{
+  "commit": "4ee8780",
+  "model": "claude-opus-5-5",
+  "option": "countable",
+  "results": [
+    {
+      "studentId": "E0001",
+      "type": "順調（4年次）",
+      "seconds": 9,
+      "cost": 0.0304,
+      "usage": {
+        "inputTokens": 3509,
+        "outputTokens": 747,
+        "cacheReadTokens": 7119,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":5,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "escalate_to_staff",
+          "input": {
+            "reason": "要件の判定では、今年度に履修中の科目をすべて修得すれば全区分が満たされる見込みで、5年次に履修する科目が残っていないため、履修案は不要と判断しました。今年度の修得状況の確認と、5年次在籍の必要性について職員の判断をお願いします。"
+          },
+          "output": "職員の確認に回しました。ここで終えてください。"
+        }
+      ],
+      "result": {
+        "status": "needs_staff",
+        "reason": "要件の判定では、今年度に履修中の科目をすべて修得すれば全区分が満たされる見込みで、5年次に履修する科目が残っていないため、履修案は不要と判断しました。今年度の修得状況の確認と、5年次在籍の必要性について職員の判断をお願いします。",
+        "iterations": 3
+      }
+    },
+    {
+      "studentId": "E0002",
+      "type": "順調（2年次）",
+      "seconds": 22,
+      "cost": 0.114,
+      "usage": {
+        "inputTokens": 17602,
+        "outputTokens": 2062,
+        "cacheReadTokens": 11865,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":3,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/必修",
+            "term": null
+          },
+          "output": "{\"total\":2,\"courses\":[{\"name\":\"計量経済学\",\"credits\":2,\"groups\":[\"専門教育/必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"火\",\"period\":3}],\"summary\":\"回帰分析で経済データを検証する方法を学ぶ\"},{\"name\":\"演習Ⅰ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":3}],\"summary\":\"少人数で専門の文献を読み研究の基礎を身につける\"}]}"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択",
+            "term": null
+          },
+          "output": "{\"total\":22,\"courses\":[{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":1}],\"summary\":\"戦後の日本経済の歩みと現状を学ぶ\"},{\"name\":\"財政学Ⅱ\",\"credits\":2,\"groups\":[\"専門教育/選択\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"d"
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": "演習"
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅰ",
+                "term": "通年"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "データ分析入門",
+                "term": "前期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              },
+              {
+                "course": "国際金融論",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅰ",
+                "term": "通年"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "データ分析入門",
+                "term": "前期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              },
+              {
+                "course": "国際金融論",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              }
+            ],
+            "draft": "3年次の履修登録に向けて、一緒に確認したいことがあり連絡しました。3年次から始まる演習Ⅰは、今年度履修している科目の単位を修得できるかどうかで履修できるかが決まるため、今期の授業はぜひ最後まで大切に取り組んでください。また、専門教育の必修と選択、自由の区分にはまだ不足があり、来年度は演習Ⅰや計量経済学などの必修科目を優先して組む案を用意しています。無理のない量になるよう考えていますが、あなたの希望も聞いたうえで調整したいと思います。履修登録の前に、一度窓口へ相談に来てください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅰ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "計量経済学",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済統計",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "企業金融論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "データ分析入門",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "政策分析",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "国際金融論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 18,
+        "planningYear": 3,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n3年次の履修登録に向けて、一緒に確認したいことがあり連絡しました。3年次から始まる演習Ⅰは、今年度履修している科目の単位を修得できるかどうかで履修できるかが決まるため、今期の授業はぜひ最後まで大切に取り組んでください。また、専門教育の必修と選択、自由の区分にはまだ不足があり、来年度は演習Ⅰや計量経済学などの必修科目を優先して組む案を用意しています。無理のない量になるよう考えていますが、あなたの希望も聞いたうえで調整したいと思います。履修登録の前に、一度窓口へ相談に来てください。",
+        "iterations": 5,
+        "corrections": []
+      }
+    },
+    {
+      "studentId": "E0003",
+      "type": "区分の偏り: 修得は足りるが選択必修が不足",
+      "seconds": 21,
+      "cost": 0.0856,
+      "usage": {
+        "inputTokens": 13294,
+        "outputTokens": 1478,
+        "cacheReadTokens": 14238,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":5,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択必修",
+            "term": null
+          },
+          "output": "{\"total\":3,\"courses\":[{\"name\":\"地域経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"火\",\"period\":1}],\"summary\":\"地域の産業と雇用の課題を考える\"},{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\""
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択",
+            "term": null
+          },
+          "output": "{\"total\":3,\"courses\":[{\"name\":\"地域経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"火\",\"period\":1}],\"summary\":\"地域の産業と雇用の課題を考える\"},{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\""
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "環境経済学",
+                "term": "前期"
+              },
+              {
+                "course": "日本経済論",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "環境経済学",
+                "term": "前期"
+              },
+              {
+                "course": "日本経済論",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、あなたの履修状況を一緒に確認したいと思い連絡しました。現在の記録では、専門教育の選択必修に不足があり、今年度中の卒業は難しい見込みとなっています。来年度は前期に「環境経済学」、後期に「日本経済論」を履修して不足を補い、1科目を落としても対応できる余裕を持たせる案を考えています。追試や成績の確認など、記録に反映されていない事情がないかもあわせて確かめたいです。お手数ですが、一度教務の窓口で面談の予約を取ってご相談ください。"
+          },
+          "output": "{\"accepted\":false,\"draftProblem\":\"「不足を補い、1科目」を外してください。単位数や成績の値は職員が画面で確認します。\"}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "\n\n環境経済学",
+                "term": "前期"
+              },
+              {
+                "course": "日本経済論",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、あなたの履修状況を一緒に確認したいと思い連絡しました。現在の記録では、専門教育の選択必修に不足があり、今年度中の卒業は難しい見込みとなっています。来年度は前期に「環境経済学」、後期に「日本経済論」を履修し、万一の場合にも対応できる余裕を持たせる案を考えています。追試や成績の確認など、記録に反映されていない事情がないかもあわせて確かめたいです。お手数ですが、一度教務の窓口で面談の予約を取ってご相談ください。"
+          },
+          "output": "{\"accepted\":false,\"draftProblem\":\"「卒業は難し」を外してください。卒業や進級の可否を断定せず、「一緒に確認したい」のように書いてください。\"}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "環境経済学",
+                "term": "前期"
+              },
+              {
+                "course": "日本経済論",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、あなたの履修状況を一緒に確認したいと思い連絡しました。現在の記録では専門教育の選択必修に不足があり、卒業に向けた見通しを一緒に確認したいと考えています。来年度は前期に「環境経済学」、後期に「日本経済論」を履修し、万一の場合にも対応できる余裕を持たせる案を考えています。追試や成績の確認など、記録に反映されていない事情がないかもあわせて確かめたいです。お手数ですが、一度教務の窓口で面談の予約を取ってご相談ください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "環境経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "日本経済論",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 4,
+        "planningYear": 5,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n来年度の履修登録に向けて、あなたの履修状況を一緒に確認したいと思い連絡しました。現在の記録では専門教育の選択必修に不足があり、卒業に向けた見通しを一緒に確認したいと考えています。来年度は前期に「環境経済学」、後期に「日本経済論」を履修し、万一の場合にも対応できる余裕を持たせる案を考えています。追試や成績の確認など、記録に反映されていない事情がないかもあわせて確かめたいです。お手数ですが、一度教務の窓口で面談の予約を取ってご相談ください。",
+        "iterations": 6,
+        "corrections": [
+          {
+            "stage": "draft",
+            "messages": [
+              "下書きに、書かない決まりの数値か、卒業や進級の断定が含まれていました。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentId": "E0004",
+      "type": "必修の落とし: 再履修が必要",
+      "seconds": 22,
+      "cost": 0.1272,
+      "usage": {
+        "inputTokens": 21512,
+        "outputTokens": 1917,
+        "cacheReadTokens": 14238,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":4,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/必修",
+            "term": null
+          },
+          "output": "{\"total\":2,\"courses\":[{\"name\":\"経済史\",\"credits\":2,\"groups\":[\"専門教育/必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"火\",\"period\":3}],\"summary\":\"近代以降の経済の発展を歴史的にたどる\"},{\"name\":\"演習Ⅱ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"木\",\"period\":3}],\"summary\":\"各自のテーマで研究を進め論文にまとめる\"}]}"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "自由",
+            "term": null
+          },
+          "output": "{\"total\":0,\"courses\":[]}"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": null,
+            "term": null
+          },
+          "output": "{\"total\":23,\"courses\":[{\"name\":\"法学入門\",\"credits\":2,\"groups\":[\"基礎教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"月\",\"period\":1}],\"summary\":\"法の考え方と身近な法律の基礎を学ぶ\"},{\"name\":\"哲学入門\",\"credits\":2,\"groups\":[\"基礎教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"火\",\"period\":1}],\"summary\":\"代表的な問いを通して考える方法を学ぶ\"},{\"name\":\"地球科学入門\",\"credits\":2,\"groups\":[\"基礎教育/選択\"],\"term\":\"後期\",\"intensive\":false,\"slots\":"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "経済史",
+                "term": "前期"
+              },
+              {
+                "course": "経営学入門",
+                "term": "前期"
+              },
+              {
+                "course": "組織論",
+                "term": "前期"
+              },
+              {
+                "course": "会計学入門",
+                "term": "後期"
+              },
+              {
+                "course": "簿記",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "経済史",
+                "term": "前期"
+              },
+              {
+                "course": "経営学入門",
+                "term": "前期"
+              },
+              {
+                "course": "組織論",
+                "term": "前期"
+              },
+              {
+                "course": "会計学入門",
+                "term": "後期"
+              },
+              {
+                "course": "簿記",
+                "term": "後期"
+              }
+            ],
+            "draft": "4年次の履修登録に向けて、一緒に確認しておきたいことがあります。現在の記録では、専門教育の必修科目（演習Ⅱ、経済史など）と自由科目の区分にまだ不足があり、総単位とは別に区分ごとの要件を満たす必要があります。必修科目を優先し、他学科の科目で自由科目を補う形の履修案を用意しました。1科目を落としても困らないよう、余裕を持った組み方を一緒に考えたいと思います。今年度の履修中の科目の結果も踏まえて確認したいので、登録の前に一度教務窓口へ相談に来てください。"
+          },
+          "output": "{\"accepted\":false,\"draftProblem\":\"「1科目」を外してください。単位数や成績の値は職員が画面で確認します。\"}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "\ffff6f14\ffff7fd2\ffff2161",
+                "term": "通年"
+              }
+            ],
+            "draft": "x"
+          },
+          "output": "{\"accepted\":false,\"status\":\"failed\",\"issues\":[{\"code\":\"UNKNOWN_COURSE\",\"course\":\"\\ffff6f14\\ffff7fd2\\ffff2161\",\"message\":\"\\ffff6f14\\ffff7fd2\\ffff2161 は科目データにありません。\",\"hint\":\"科目名を確認してください。\",\"clause\":\"科目データ\"}],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "経済史",
+                "term": "前期"
+              },
+              {
+                "course": "経営学入門",
+                "term": "前期"
+              },
+              {
+                "course": "組織論",
+                "term": "前期"
+              },
+              {
+                "course": "会計学入門",
+                "term": "後期"
+              },
+              {
+                "course": "簿記",
+                "term": "後期"
+              }
+            ],
+            "draft": "4年次の履修登録に向けて、一緒に確認しておきたいことがあります。現在の記録では、専門教育の必修科目（演習Ⅱ、経済史など）と自由科目の区分にまだ不足があり、総単位とは別に区分ごとの要件を満たす必要があります。必修科目を優先し、他学科の科目で自由科目を補う形の履修案を用意しました。もし単位を落とす科目があっても困らないよう、余裕を持った組み方を一緒に考えたいと思います。今年度に履修中の科目の結果も踏まえて確認したいので、登録の前に一度教務窓口へ相談に来てください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅱ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "経済史",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "経営学入門",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "組織論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "会計学入門",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "簿記",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 14,
+        "planningYear": 4,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n4年次の履修登録に向けて、一緒に確認しておきたいことがあります。現在の記録では、専門教育の必修科目（演習Ⅱ、経済史など）と自由科目の区分にまだ不足があり、総単位とは別に区分ごとの要件を満たす必要があります。必修科目を優先し、他学科の科目で自由科目を補う形の履修案を用意しました。もし単位を落とす科目があっても困らないよう、余裕を持った組み方を一緒に考えたいと思います。今年度に履修中の科目の結果も踏まえて確認したいので、登録の前に一度教務窓口へ相談に来てください。",
+        "iterations": 6,
+        "corrections": [
+          {
+            "stage": "draft",
+            "messages": [
+              "下書きに、書かない決まりの数値か、卒業や進級の断定が含まれていました。"
+            ]
+          },
+          {
+            "stage": "plan",
+            "messages": [
+              "科目データにない科目が入っていました。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentId": "E0005",
+      "type": "先修未修得: Ⅰを落としてⅡを履修できない",
+      "seconds": 27,
+      "cost": 0.1497,
+      "usage": {
+        "inputTokens": 25719,
+        "outputTokens": 2197,
+        "cacheReadTokens": 14238,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":3,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/必修",
+            "term": null
+          },
+          "output": "{\"total\":4,\"courses\":[{\"name\":\"ミクロ経済学Ⅰ\",\"credits\":2,\"groups\":[\"専門教育/必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"木\",\"period\":2}],\"summary\":\"消費者と企業の行動の基礎を学ぶ\"},{\"name\":\"ミクロ経済学Ⅱ\",\"credits\":2,\"groups\":[\"専門教育/必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"木\",\"period\":2}],\"summary\":\"市場の失敗とゲーム的状況の分析を学ぶ\"},{\"name\":\"計量経済学\",\"credits\":2,\"groups\":[\"専門教育/必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択",
+            "term": null
+          },
+          "output": "{\"total\":22,\"courses\":[{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":1}],\"summary\":\"戦後の日本経済の歩みと現状を学ぶ\"},{\"name\":\"財政学Ⅱ\",\"credits\":2,\"groups\":[\"専門教育/選択\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"d"
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": "演習"
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "ミクロ経済学Ⅰ",
+                "term": "前期"
+              },
+              {
+                "course": "ミクロ経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[\"ミクロ経済学Ⅱ は ミクロ経済学Ⅰ の修得を前提にしています。不合格の場合は組み直しが必要です。\"]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "ミクロ経済学Ⅰ",
+                "term": "前期"
+              },
+              {
+                "course": "ミクロ経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修科目にまだ修得していないものがあり、特にミクロ経済学Ⅰは演習Ⅰを履修する条件に関わるため、3年次の前期に優先して履修することをおすすめします。ミクロ経済学Ⅱはミクロ経済学Ⅰの修得が前提なので、前期の結果によっては計画を組み直す必要があります。今の履修の順番だと、演習Ⅱが卒業予定の時期に間に合わない可能性があるため、今後の計画を一緒に整理したいと考えています。追試や成績について気になることがあれば、それも含めて教務窓口で面談の時間をとりますので、お早めにご相談ください。"
+          },
+          "output": "{\"accepted\":false,\"draftProblem\":\"「卒業予定の時期に間に合」を外してください。卒業や進級の可否を断定せず、「一緒に確認したい」のように書いてください。\"}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "\ffミクロ経済学Ⅰ",
+                "term": "前期"
+              }
+            ],
+            "draft": "x"
+          },
+          "output": "{\"accepted\":false,\"status\":\"failed\",\"issues\":[{\"code\":\"UNKNOWN_COURSE\",\"course\":\"\\ffミクロ経済学Ⅰ\",\"message\":\"\\ffミクロ経済学Ⅰ は科目データにありません。\",\"hint\":\"科目名を確認してください。\",\"clause\":\"科目データ\"}],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "ミクロ経済学Ⅰ",
+                "term": "前期"
+              },
+              {
+                "course": "ミクロ経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修科目にまだ修得していないものがあり、特にミクロ経済学Ⅰは演習Ⅰを履修する条件に関わるため、3年次の前期に優先して履修することをおすすめします。ミクロ経済学Ⅱはミクロ経済学Ⅰの修得が前提なので、前期の結果によっては計画を組み直す必要があります。演習Ⅰ・演習Ⅱをどの順番でいつ履修できるかについても、今後の計画として一緒に確認したいと考えています。追試や成績について気になることがあれば、それも含めて教務窓口で面談の時間をとりますので、お早めにご相談ください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "ミクロ経済学Ⅰ",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "ミクロ経済学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "計量経済学",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済統計",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "企業金融論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "欧州経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "政策分析",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 18,
+        "planningYear": 3,
+        "warnings": [
+          "ミクロ経済学Ⅱ は ミクロ経済学Ⅰ の修得を前提にしています。不合格の場合は組み直しが必要です。"
+        ],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修科目にまだ修得していないものがあり、特にミクロ経済学Ⅰは演習Ⅰを履修する条件に関わるため、3年次の前期に優先して履修することをおすすめします。ミクロ経済学Ⅱはミクロ経済学Ⅰの修得が前提なので、前期の結果によっては計画を組み直す必要があります。演習Ⅰ・演習Ⅱをどの順番でいつ履修できるかについても、今後の計画として一緒に確認したいと考えています。追試や成績について気になることがあれば、それも含めて教務窓口で面談の時間をとりますので、お早めにご相談ください。",
+        "iterations": 6,
+        "corrections": [
+          {
+            "stage": "draft",
+            "messages": [
+              "下書きに、書かない決まりの数値か、卒業や進級の断定が含まれていました。"
+            ]
+          },
+          {
+            "stage": "plan",
+            "messages": [
+              "科目データにない科目が入っていました。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentId": "E0006",
+      "type": "上限に当たる: 緩和の条件を確認する",
+      "seconds": 30,
+      "cost": 0.1759,
+      "usage": {
+        "inputTokens": 26957,
+        "outputTokens": 3261,
+        "cacheReadTokens": 14238,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":4,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/必修",
+            "term": null
+          },
+          "output": "{\"total\":1,\"courses\":[{\"name\":\"演習Ⅱ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"木\",\"period\":3}],\"summary\":\"各自のテーマで研究を進め論文にまとめる\"}]}"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択",
+            "term": null
+          },
+          "output": "{\"total\":28,\"courses\":[{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":1}],\"summary\":\"戦後の日本経済の歩みと現状を学ぶ\"},{\"name\":\"財政学Ⅱ\",\"credits\":2,\"groups\":[\"専門教育/選択\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"d"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "自由",
+            "term": null
+          },
+          "output": "{\"total\":0,\"courses\":[]}"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "医療経済論",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "国際経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "交通経済論",
+                "term": "後期"
+              },
+              {
+                "course": "開発経済学",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "経済法",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "医療経済論",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "国際経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "交通経済論",
+                "term": "後期"
+              },
+              {
+                "course": "開発経済学",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "経済法",
+                "term": "後期"
+              }
+            ],
+            "draft": "4年次の履修登録に向けて、あなたの履修状況を一緒に確認したいことがありご連絡しました。専門教育の必修科目の演習Ⅱに加え、専門教育の選択科目と自由科目の区分に、まだ不足があります。来年度の時間割は、演習Ⅱを最優先にして組むことをお勧めします。卒業の見込みについては個別にお話ししたいことがあるので、履修登録の前に一度、教務窓口で職員との面談の時間を取ってください。追試や成績について気になることがあれば、その際にあわせてご相談ください。"
+          },
+          "output": "{\"accepted\":false,\"draftProblem\":\"「卒業の見込み」を外してください。卒業や進級の可否を断定せず、「一緒に確認したい」のように書いてください。\"}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "\"演習Ⅱ\"",
+                "term": "通年"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "医療経済論",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "国際経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "交通経済論",
+                "term": "後期"
+              },
+              {
+                "course": "開発経済学",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "経済法",
+                "term": "後期"
+              }
+            ],
+            "draft": "4年次の履修登録に向けて、あなたの履修状況を一緒に確認したいことがありご連絡しました。専門教育の必修科目の演習Ⅱに加え、専門教育の選択科目と自由科目の区分に、まだ不足があります。来年度の時間割は、演習Ⅱを最優先にして組むことをお勧めします。今後の履修の進め方を一緒に確認したいので、履修登録の前に一度、教務窓口で職員との面談の時間を取ってください。追試や成績について気になることがあれば、その際にあわせてご相談ください。"
+          },
+          "output": "{\"accepted\":false,\"status\":\"failed\",\"issues\":[{\"code\":\"UNKNOWN_COURSE\",\"course\":\"\\\"演習Ⅱ\\\"\",\"message\":\"\\\"演習Ⅱ\\\" は科目データにありません。\",\"hint\":\"科目名を確認してください。\",\"clause\":\"科目データ\"}],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "医療経済論",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "国際経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "交通経済論",
+                "term": "後期"
+              },
+              {
+                "course": "開発経済学",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "経済法",
+                "term": "後期"
+              }
+            ],
+            "draft": "4年次の履修登録に向けて、あなたの履修状況を一緒に確認したいことがありご連絡しました。専門教育の必修科目の演習Ⅱに加え、専門教育の選択科目と自由科目の区分に、まだ不足があります。来年度の時間割は、演習Ⅱを最優先にして組むことをお勧めします。今後の履修の進め方を一緒に確認したいので、履修登録の前に一度、教務窓口で職員との面談の時間を取ってください。追試や成績について気になることがあれば、その際にあわせてご相談ください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅱ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "経済統計",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "企業金融論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "医療経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "都市経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "行動経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "欧州経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "情報経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "国際経済学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "交通経済論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "開発経済学",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "ゲーム理論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済法",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 32,
+        "planningYear": 4,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n4年次の履修登録に向けて、あなたの履修状況を一緒に確認したいことがありご連絡しました。専門教育の必修科目の演習Ⅱに加え、専門教育の選択科目と自由科目の区分に、まだ不足があります。来年度の時間割は、演習Ⅱを最優先にして組むことをお勧めします。今後の履修の進め方を一緒に確認したいので、履修登録の前に一度、教務窓口で職員との面談の時間を取ってください。追試や成績について気になることがあれば、その際にあわせてご相談ください。",
+        "iterations": 6,
+        "corrections": [
+          {
+            "stage": "draft",
+            "messages": [
+              "下書きに、書かない決まりの数値か、卒業や進級の断定が含まれていました。"
+            ]
+          },
+          {
+            "stage": "plan",
+            "messages": [
+              "科目データにない科目が入っていました。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentId": "E0007",
+      "type": "進級ぎりぎり: 履修中をすべて修得すれば第6条の単位に届く",
+      "seconds": 23,
+      "cost": 0.1229,
+      "usage": {
+        "inputTokens": 18283,
+        "outputTokens": 2371,
+        "cacheReadTokens": 11865,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":3,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/必修",
+            "term": null
+          },
+          "output": "{\"total\":2,\"courses\":[{\"name\":\"計量経済学\",\"credits\":2,\"groups\":[\"専門教育/必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"火\",\"period\":3}],\"summary\":\"回帰分析で経済データを検証する方法を学ぶ\"},{\"name\":\"演習Ⅰ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":3}],\"summary\":\"少人数で専門の文献を読み研究の基礎を身につける\"}]}"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択",
+            "term": null
+          },
+          "output": "{\"total\":31,\"courses\":[{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":1}],\"summary\":\"戦後の日本経済の歩みと現状を学ぶ\"},{\"name\":\"財政学Ⅱ\",\"credits\":2,\"groups\":[\"専門教育/選択\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"d"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅰ",
+                "term": "通年"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済思想史",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅰ",
+                "term": "通年"
+              },
+              {
+                "course": "計量経済学",
+                "term": "後期"
+              },
+              {
+                "course": "経済思想史",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ],
+            "draft": "3年次の履修登録に向けて、履修の計画を一緒に確認させてください。演習Ⅰを履修するには、今年度履修中の科目をきちんと修得しておくことが大切です。来年度は演習Ⅰと計量経済学などの専門教育の必修科目を優先し、まだ不足している専門教育の選択科目も無理のない量で進める案を用意しています。自由科目の区分にも不足があるので、今後の計画をあわせて確認したいと考えています。都合のよいときに教務窓口へ相談に来てください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅰ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "計量経済学",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済思想史",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "行動経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "都市経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "情報経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "経済統計",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "ゲーム理論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "政策分析",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 24,
+        "planningYear": 3,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n3年次の履修登録に向けて、履修の計画を一緒に確認させてください。演習Ⅰを履修するには、今年度履修中の科目をきちんと修得しておくことが大切です。来年度は演習Ⅰと計量経済学などの専門教育の必修科目を優先し、まだ不足している専門教育の選択科目も無理のない量で進める案を用意しています。自由科目の区分にも不足があるので、今後の計画をあわせて確認したいと考えています。都合のよいときに教務窓口へ相談に来てください。",
+        "iterations": 5,
+        "corrections": []
+      }
+    },
+    {
+      "studentId": "E0008",
+      "type": "今年度の卒業が難しい: 残りの単位が上限を超える",
+      "seconds": 31,
+      "cost": 0.1274,
+      "usage": {
+        "inputTokens": 17668,
+        "outputTokens": 2718,
+        "cacheReadTokens": 11865,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":5,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\","
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": "演習",
+            "group": null,
+            "term": null
+          },
+          "output": "{\"total\":1,\"courses\":[{\"name\":\"演習Ⅱ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"木\",\"period\":3}],\"summary\":\"各自のテーマで研究を進め論文にまとめる\"}]}"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育/選択",
+            "term": null
+          },
+          "output": "{\"total\":26,\"courses\":[{\"name\":\"環境経済学\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"前期\",\"intensive\":false,\"slots\":[{\"day\":\"金\",\"period\":1}],\"summary\":\"環境問題を経済の視点で分析する\"},{\"name\":\"日本経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":1}],\"summary\":\"戦後の日本経済の歩みと現状を学ぶ\"},{\"name\":\"財政学Ⅱ\",\"credits\":2,\"groups\":[\"専門教育/選択\"],\"term\":\"後期\",\"intensive\":false,\"slots\":[{\"d"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "自由",
+            "term": null
+          },
+          "output": "{\"total\":0,\"courses\":[]}"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "データ分析入門",
+                "term": "前期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "国際経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅱ",
+                "term": "通年"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "欧州経済論",
+                "term": "前期"
+              },
+              {
+                "course": "経済統計",
+                "term": "前期"
+              },
+              {
+                "course": "企業金融論",
+                "term": "前期"
+              },
+              {
+                "course": "データ分析入門",
+                "term": "前期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "国際経済学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "政策分析",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修である演習Ⅱをはじめ、専門教育の選択科目や自由科目の区分に、まだ不足があります。演習Ⅱは履修の順番が決まっているため、卒業予定の時期にどう影響するかを窓口で詳しく確認させてください。今年度の科目で追試や成績についての確認が残っていないかも、あわせて教えてください。来年度の時間割の案を用意していますので、都合のよい日に教務窓口へ相談に来てください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅱ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "行動経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "情報経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "欧州経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "経済統計",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "企業金融論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "データ分析入門",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "国際経済学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "ゲーム理論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "政策分析",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 26,
+        "planningYear": 5,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修である演習Ⅱをはじめ、専門教育の選択科目や自由科目の区分に、まだ不足があります。演習Ⅱは履修の順番が決まっているため、卒業予定の時期にどう影響するかを窓口で詳しく確認させてください。今年度の科目で追試や成績についての確認が残っていないかも、あわせて教えてください。来年度の時間割の案を用意していますので、都合のよい日に教務窓口へ相談に来てください。",
+        "iterations": 5,
+        "corrections": []
+      }
+    },
+    {
+      "studentId": "E0009",
+      "type": "第6条の境界: 修得60単位、うち他学科12単位",
+      "seconds": 23,
+      "cost": 0.1166,
+      "usage": {
+        "inputTokens": 17553,
+        "outputTokens": 2200,
+        "cacheReadTokens": 11865,
+        "cacheWriteTokens": 0
+      },
+      "calls": [
+        {
+          "tool": "check_requirements",
+          "input": {},
+          "output": "{\"planningYear\":4,\"planningAssumption\":\"翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。\",\"lockedEnrollments\":[\"演習Ⅰ は履修条件を満たしていないので、修得した前提にしていません。\"],\"judgments\":[{\"name\":\"基礎教育 必修\",\"status\":\"satisfied\",\"required\":8,\"actual\":8,\"enrolled\":0,\"missingCourses\":[],\"reason\":\"必要な単位を満たしています。\",\"clause\":\"第2条\"},{\"name\":\"基礎教育 選択必修\",\"status\":\"satisfied\",\"required\":6,\"actual\":6,\"enrolled\":0,\"missingCo"
+        },
+        {
+          "tool": "lookup_advice_rules",
+          "input": {
+            "keyword": null
+          },
+          "output": "[{\"number\":1,\"topic\":\"再履修の必修\",\"rule\":\"不合格だった必修は、他の科目より先に時間割へ入れる。翌年に回すと卒業が遅れる場合は、その影響を伝える。\"},{\"number\":3,\"topic\":\"4年次の履修\",\"rule\":\"履修上限いっぱいに詰めない。1科目を落としても卒業できる余裕を残すよう勧める。\"},{\"number\":4,\"topic\":\"区分の偏り\",\"rule\":\"総単位が足りていても、区分に不足があれば卒業できないと明言する。\"},{\"number\":5,\"topic\":\"先修科目の不合格\",\"rule\":\"上位科目をいつ履修できるかを示し、翌年以降の計画を組み直す。\"},{\"number\":6,\"topic\":\"履修上限に当たる\",\"rule\":\"卒業と進級に直結する科目を優先する。緩和の条件に当たるかも確認する。\"},{\"number\":"
+        },
+        {
+          "tool": "search_courses",
+          "input": {
+            "keyword": null,
+            "group": "専門教育",
+            "term": null
+          },
+          "output": "{\"total\":35,\"courses\":[{\"name\":\"演習Ⅰ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"水\",\"period\":3}],\"summary\":\"少人数で専門の文献を読み研究の基礎を身につける\"},{\"name\":\"演習Ⅱ\",\"credits\":4,\"groups\":[\"専門教育/必修\"],\"term\":\"通年\",\"intensive\":false,\"slots\":[{\"day\":\"木\",\"period\":3}],\"summary\":\"各自のテーマで研究を進め論文にまとめる\"},{\"name\":\"地域経済論\",\"credits\":2,\"groups\":[\"専門教育/選択必修\"],\"term\":\"後期\",\"intensive\":false,\"slots"
+        },
+        {
+          "tool": "validate_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅰ",
+                "term": "通年"
+              },
+              {
+                "course": "環境経済学",
+                "term": "前期"
+              },
+              {
+                "course": "地域経済論",
+                "term": "後期"
+              },
+              {
+                "course": "経済思想史",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "経済数学",
+                "term": "後期"
+              }
+            ]
+          },
+          "output": "{\"status\":\"passed\",\"issues\":[],\"warnings\":[]}"
+        },
+        {
+          "tool": "submit_plan",
+          "input": {
+            "plan": [
+              {
+                "course": "演習Ⅰ",
+                "term": "通年"
+              },
+              {
+                "course": "環境経済学",
+                "term": "前期"
+              },
+              {
+                "course": "地域経済論",
+                "term": "後期"
+              },
+              {
+                "course": "経済思想史",
+                "term": "前期"
+              },
+              {
+                "course": "都市経済論",
+                "term": "前期"
+              },
+              {
+                "course": "行動経済学",
+                "term": "前期"
+              },
+              {
+                "course": "情報経済論",
+                "term": "前期"
+              },
+              {
+                "course": "財政学Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "金融論Ⅱ",
+                "term": "後期"
+              },
+              {
+                "course": "ゲーム理論",
+                "term": "後期"
+              },
+              {
+                "course": "経済数学",
+                "term": "後期"
+              }
+            ],
+            "draft": "来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修である演習Ⅰ・演習Ⅱの履修の順番や、専門科目のいくつかの区分にまだ不足があり、卒業予定の時期に影響するおそれがあります。来年度は演習Ⅰを最優先にした履修案を用意していますが、これはあくまで見込みに基づくもので、確定したものではありません。追試や成績について気になる点が残っていないかもあわせて確認させてください。都合のよい日に教務窓口へ相談に来てください。"
+          },
+          "output": "{\"accepted\":true}"
+        }
+      ],
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅰ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "環境経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "地域経済論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済思想史",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "都市経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "行動経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "情報経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "ゲーム理論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済数学",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 24,
+        "planningYear": 4,
+        "warnings": [
+          "演習Ⅰ は履修条件を満たしていないので、修得した前提にしていません。"
+        ],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。専門教育の必修である演習Ⅰ・演習Ⅱの履修の順番や、専門科目のいくつかの区分にまだ不足があり、卒業予定の時期に影響するおそれがあります。来年度は演習Ⅰを最優先にした履修案を用意していますが、これはあくまで見込みに基づくもので、確定したものではありません。追試や成績について気になる点が残っていないかもあわせて確認させてください。都合のよい日に教務窓口へ相談に来てください。",
+        "iterations": 5,
+        "corrections": []
+      }
+    },
+    {
+      "studentId": "E0010",
+      "type": "要項の外の事情: 留学",
+      "seconds": 0,
+      "cost": 0,
+      "usage": null,
+      "calls": [],
+      "result": {
+        "status": "needs_staff",
+        "reason": "留学に該当するため、職員が確認します。",
+        "iterations": 0
+      }
+    }
+  ],
+  "failures": []
+}
