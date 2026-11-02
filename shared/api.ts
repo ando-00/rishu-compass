@@ -43,6 +43,8 @@ export const judgmentStatusSchema = z.enum([
   "needs_staff",
 ]);
 
+const groundSchema = z.object({ ruleId: z.string(), clause: z.string(), sourceQuote: z.string() });
+
 export const judgmentSchema = z.object({
   ruleId: z.string(),
   kind: z.enum(["graduation", "category", "gate"]),
@@ -62,6 +64,7 @@ export const judgmentSchema = z.object({
   uncountedCourses: z.array(z.string()).optional(),
   atRisk: z.boolean().optional(),
   eligibleFromYear: z.number().optional(),
+  grounds: z.array(groundSchema).optional(),
 });
 
 export const impactSchema = z.object({
@@ -105,6 +108,7 @@ export const outreachSchema = z.object({
       sourceQuote: z.string(),
       status: judgmentStatusSchema,
       detail: z.string(),
+      grounds: z.array(groundSchema).optional(),
     }),
   ),
   // 声かけの対象にだけ下書きを作る

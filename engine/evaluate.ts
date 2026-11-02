@@ -17,7 +17,7 @@ import {
   type CourseIndex,
   type Student,
 } from "./model";
-import type { Category, Gate, LoadLimit, RuleSet } from "./rules";
+import type { Category, Gate, LoadLimit, Prerequisite, RuleSet } from "./rules";
 
 export type JudgmentStatus = "satisfied" | "expected" | "short" | "delay_risk" | "needs_staff";
 
@@ -41,7 +41,11 @@ export type Judgment = {
   uncountedCourses?: string[];
   atRisk?: boolean;
   eligibleFromYear?: number;
+  // 延期見込みの発端になった条文。卒業要件の条文とは別に示す
+  grounds?: Ground[];
 };
+
+export type Ground = { ruleId: string; clause: string; sourceQuote: string };
 
 export type StudentEvaluation = {
   studentId: string;
@@ -417,9 +421,40 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
         course.groups.some((group) => category.groups.includes(group)),
       ),
     );
-  const tooLate = required.map((course) => finishTerm(course.name, new Set()) > deadline);
+  const courses = [
+    ...new Set(
+      required.filter((course) => finishTerm(course.name, new Set()) > deadline).map(({ name }) => name),
+    ),
+  ];
   // 循環と未知の科目は計算できないので、延期見込みにせず職員確認に倒す。
-  return incalculable ? pessimistic : tooLate.includes(true);
+  return { tooLate: incalculable ? pessimistic : courses.length > 0, courses };
+}
+
+// 間に合わない科目と、その履修の順を決めている条文を返す。
+function explainDelay(context: EvaluationContext, deadline: number) {
+  const { rules, student } = context;
+  const { courses } = requiredCoursesTooLate(context, deadline, false);
+  const passed = passedCourses(student);
+  const grounds = new Map<string, Ground>();
+  const seen = new Set<string>();
+  const cite = ({ id, clause, sourceQuote }: Gate | Prerequisite) =>
+    grounds.set(id, { ruleId: id, clause, sourceQuote });
+
+  function follow(name: string) {
+    if (seen.has(name) || passed.has(name)) return;
+    seen.add(name);
+    for (const gate of rules.gates) {
+      const applies = gate.target.kind === "course" && gate.target.courses.includes(name);
+      if (applies && matchesCondition(gate.when, student)) cite(gate);
+    }
+    for (const rule of rules.prerequisites) {
+      if (rule.course !== name || !matchesCondition(rule.when, student)) continue;
+      cite(rule);
+      rule.conditions.flat().forEach(follow);
+    }
+  }
+  courses.forEach(follow);
+  return { courses, grounds: [...grounds.values()] };
 }
 
 function maxRemainingCredits(context: EvaluationContext, deadline: number, maxPerTerm: number, maxPerYear?: number) {
@@ -474,8 +509,8 @@ function judgeDelay(context: EvaluationContext, projected: CreditAllocation) {
   // 要確認のルールは中身そのものが未確定なので、読み方の両端を計算できない。
   if (delayInputs(context).some((rule) => rule.status === "needs_review")) return "unknown";
 
-  const lateIfOpen = requiredCoursesTooLate(context, deadline, false);
-  const lateIfClosed = requiredCoursesTooLate(context, deadline, true);
+  const lateIfOpen = requiredCoursesTooLate(context, deadline, false).tooLate;
+  const lateIfClosed = requiredCoursesTooLate(context, deadline, true).tooLate;
   if (lateIfOpen) return "delay";
   if (lateIfClosed) return "unknown";
 
@@ -545,8 +580,14 @@ function judgeGraduation(
 
   const delay = judgeDelay(context, projected);
   if (delay === "delay") {
-    const reason = "卒業予定までの履修機会では足りない見込みです。職員と確認してください。";
-    return { ...base, status: "delay_risk", reason, needsContact: true };
+    const deadline = termIndex(student.expectedGraduation!);
+    const { courses, grounds } = explainDelay(context, deadline);
+    const clauses = [...new Set(grounds.map(({ clause }) => clause))].join("、");
+    const reason =
+      courses.length > 0
+        ? `${courses.join("、")} が卒業予定に間に合わない見込みです。履修の順は${clauses}で決まります。職員と確認してください。`
+        : "卒業予定までの履修機会では足りない見込みです。職員と確認してください。";
+    return { ...base, status: "delay_risk", reason, grounds, needsContact: true };
   }
   if (delay === "unknown") {
     const inputIds = delayInputs(context).flatMap((rule) => pendingIds(rule, unresolved));

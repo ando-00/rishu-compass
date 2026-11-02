@@ -15,7 +15,9 @@ type CardProps = {
 };
 
 function Grounds({ reasons }: { reasons: Outreach["reasons"] }) {
-  const unique = [...new Map(reasons.map((reason) => [reason.sourceQuote, reason])).values()];
+  // 発端の条文を先に出し、卒業要件の条文をあとに出す。
+  const cited = [...reasons.flatMap(({ grounds }) => grounds ?? []), ...reasons];
+  const unique = [...new Map(cited.map((reason) => [reason.sourceQuote, reason])).values()];
   return (
     <>
       {unique.map(({ ruleId, clause, sourceQuote }) => (

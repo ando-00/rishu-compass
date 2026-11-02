@@ -1,4 +1,4 @@
-import type { Judgment, JudgmentStatus, StudentEvaluation } from "./evaluate";
+import type { Ground, Judgment, JudgmentStatus, StudentEvaluation } from "./evaluate";
 import type { Student } from "./model";
 
 export type OutreachReason = {
@@ -8,6 +8,7 @@ export type OutreachReason = {
   sourceQuote: string;
   status: JudgmentStatus;
   detail: string;
+  grounds?: Ground[];
 };
 
 export type OutreachEntry = {
@@ -19,8 +20,8 @@ export type OutreachEntry = {
 };
 
 function toReason(judgment: Judgment): OutreachReason {
-  const { ruleId, name, clause, sourceQuote, status, reason } = judgment;
-  return { ruleId, name, clause, sourceQuote, status, detail: reason };
+  const { ruleId, name, clause, sourceQuote, status, reason, grounds } = judgment;
+  return { ruleId, name, clause, sourceQuote, status, detail: reason, ...(grounds ? { grounds } : {}) };
 }
 
 // 数字が大きいほど危険。延期見込み、卒業の不足、履修条件の不足、見込みの危険の順に並べる。

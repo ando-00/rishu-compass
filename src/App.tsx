@@ -121,6 +121,8 @@ export function App() {
   }
 
   function changeDataset(id: string) {
+    // 同じ対象では取り直しが走らないので、読み込み済みの内容を消さない。
+    if (id === datasetId) return;
     setDatasetId(id);
     setRecords(null);
     setAnswerError(null);

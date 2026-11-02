@@ -165,5 +165,17 @@ async function run(id: string, apiKey: string) {
 const ids = process.argv.slice(2);
 if (ids.length === 0) throw new Error("対象を指定してください: sakuradai kamome");
 const apiKey = readApiKey();
+// 想定外の失敗も結果に残す。都合の良い回だけが残らないようにする。
+function recordCrash(id: string, cause: unknown) {
+  const dir = join(ROOT, "evals", "results", "extract");
+  mkdirSync(dir, { recursive: true });
+  const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+  const message = cause instanceof Error ? cause.name : "想定外の失敗";
+  const failure = { kind: "unexpected", message };
+  const record = { source: id, commit, requestedModel: MODEL_ID, outcome: "failed", failure, attempts: [] };
+  writeFileSync(join(dir, `${id}-${stamp()}.json`), `${JSON.stringify(record, null, 2)}\n`);
+  console.log(`${id}: 失敗 ${message}`);
+}
+
 // 評価は並列にせず直列で回す
-for (const id of ids) await run(id, apiKey);
+for (const id of ids) await run(id, apiKey).catch((cause: unknown) => recordCrash(id, cause));

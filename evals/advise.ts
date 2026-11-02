@@ -46,6 +46,8 @@ async function main() {
   const adviceRules = readFileSync(join(ROOT, "data/fictional/advice-rules.md"), "utf8");
   const loop = createAdvisorLoop(readApiKey());
   const results = [];
+  // 失敗の回も結果に残す。職員に回した学生とは数えないので別に持つ。
+  const failures: { studentId: string; message: string }[] = [];
 
   // 評価は並列にせず直列で回す（設計書 v4 第6節）
   for (const { type, student } of targets) {
@@ -64,13 +66,21 @@ async function main() {
       return run;
     };
     const startedAt = Date.now();
-    const result = await adviseStudent(measured, {
-      rules: goldRules,
-      courses: sakuradaiCourses,
-      student,
-      answers: { [QUESTION]: option },
-      adviceRules,
-    });
+    let result;
+    try {
+      result = await adviseStudent(measured, {
+        rules: goldRules,
+        courses: sakuradaiCourses,
+        student,
+        answers: { [QUESTION]: option },
+        adviceRules,
+      });
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "履修案を作れませんでした";
+      console.log(student.id, "失敗", message);
+      failures.push({ studentId: student.id, message });
+      continue;
+    }
     const seconds = Math.round((Date.now() - startedAt) / 1000);
     const cost = run ? costOf(run) : 0;
     console.log(student.id, result.status, `${result.iterations}周`, `${seconds}秒`, `$${cost}`);
@@ -81,7 +91,7 @@ async function main() {
   const dir = join(ROOT, "evals/results/advise");
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `sakuradai-${stamp}.json`);
-  writeFileSync(file, `${JSON.stringify({ commit, model: MODEL_ID, option, results }, null, 2)}\n`);
+  writeFileSync(file, `${JSON.stringify({ commit, model: MODEL_ID, option, results, failures }, null, 2)}\n`);
   console.log(file);
 }
 
