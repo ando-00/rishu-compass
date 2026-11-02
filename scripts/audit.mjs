@@ -25,10 +25,10 @@ const WIN = process.platform === "win32";
 
 // 表示だけに関わり、すり抜けてよいと記録した壊す箇所（docs/AUDIT_LOG.md の A0-21）
 const KNOWN_SURVIVORS = new Set([
-  "outreach: 並び順: 種類",
-  "outreach: 並び順: 年次",
-  "evaluate: 根拠への職員確認の追加",
-  "evaluate: 副専攻の既定値",
+  "outreach: 声かけを先に並べる",
+  "outreach: 高年次を先に並べる",
+  "outreach: 根拠に職員確認を含める",
+  "model: 副専攻の既定値",
 ]);
 
 /** @type {{ id: string, status: "PASS" | "FAIL" | "WARN" | "未検証" | "INFO", title: string, detail: string }[]} */

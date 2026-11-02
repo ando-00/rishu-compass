@@ -51,7 +51,7 @@ const M = [
   ["plan", ".filter((record) => !(current(record) && locked.includes(record.course)))", "", "案: 条件外の履修中を外す"],
   ["plan", "record.result === \"enrolled\" && record.studentYear === student.studentYear;\n  if (student.currentTerm", "record.result === \"enrolled\";\n  if (student.currentTerm", "案: 今年度の履修中だけを修得にする"],
   ["plan", "prepared.rules.gates.flatMap", "rules.gates.flatMap", "案: 回答を反映した履修条件で見る"],
-  ["plan", "if (judgeGate(gate, context).status === \"satisfied\") return [];", "if (judgeGate(gate, context).status !== \"short\") return [];", "案: 判定が確定しない履修中を修得にする"],
+  ["plan", "if (status === \"satisfied\") return [];\n    const { courses: targets }", "if (status !== \"short\") return [];\n    const { courses: targets }", "案: 判定が確定しない履修中を修得にする"],
   ["plan", "if (exclusionReason(prepared, student)) return [];\n  const context", "const context", "案: 適用外の学生を計算しない"],
   ["plan", "if (seen.has(course)) {", "if (false) {", "重複: 案の中"],
   ["plan", "if (inProgress) {", "if (false) {", "重複: 履修中"],
