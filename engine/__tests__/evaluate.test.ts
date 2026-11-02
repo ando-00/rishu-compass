@@ -105,6 +105,20 @@ describe("履修条件と進級条件の判定", () => {
     expect(judgment(student, "gate-promotion").status).toBe("satisfied");
   });
 
+  it("進級済みの学生の進級条件は、未回答の曖昧箇所があっても充足", () => {
+    const rules = structuredClone(exampleRules);
+    rules.gates.find((gate) => gate.id === "gate-promotion")!.ambiguityIds = [ID];
+    const student = makeStudent({ studentYear: 3, records: passed(BASIC, 2) });
+    expect(judgment(student, "gate-promotion", rules, {}).status).toBe("satisfied");
+  });
+
+  it("進級前の学生の進級条件は、未回答の曖昧箇所があれば職員確認", () => {
+    const rules = structuredClone(exampleRules);
+    rules.gates.find((gate) => gate.id === "gate-promotion")!.ambiguityIds = [ID];
+    const student = makeStudent({ studentYear: 1, records: passed(BASIC, 1) });
+    expect(judgment(student, "gate-promotion", rules, {}).status).toBe("needs_staff");
+  });
+
   it("判定時点で条件を満たせば充足", () => {
     const student = makeStudent({ studentYear: 3, records: passed(ready, 2) });
     expect(judgment(student, "gate-seminar").status).toBe("satisfied");
