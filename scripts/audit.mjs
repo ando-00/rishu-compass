@@ -76,8 +76,18 @@ function checkKeys() {
   expectEmpty("K3", "鍵: コミットメッセージ", messages.join("\n"));
   const dist = join(ROOT, "dist/client");
   if (existsSync(dist)) {
-    const r = run("grep", ["-rlE", `${KEY}|ANTHROPIC_API_KEY`, dist]);
-    expectEmpty("K4", "鍵: dist/client", r.stdout);
+    // Windows でも動くように、grep を使わず Node で読む
+    const pattern = new RegExp(`${KEY}|ANTHROPIC_API_KEY`);
+    const hits = [];
+    const walk = (dir) => {
+      for (const name of readdirSync(dir)) {
+        const path = join(dir, name);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (pattern.test(readFileSync(path, "latin1"))) hits.push(path.slice(ROOT.length + 1));
+      }
+    };
+    walk(dist);
+    expectEmpty("K4", "鍵: dist/client", hits.join("\n"));
   } else {
     record("K4", "未検証", "鍵: dist/client", "dist/client がない（build のあとに検査する）");
   }

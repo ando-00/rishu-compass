@@ -15,6 +15,8 @@
 | B3 | 同じく A1-26（どの区分にも入らない科目群、空白の照合）を再現テストで確かめる | B2 と同じ | 済（両方とも再現した。今の2校のデータでは影響0件） |
 | B4 | 監査の第1回の未検証「全テストの期待値の手計算」の残り。`engine/__tests__/spec.test.ts` の T06、T08〜T24、T26〜T36 の期待値を、テストのルールと学生から手で求め直す | 一致しないものを `docs/AUDIT_LOG.md` に記録する。期待値は変えない（どちらが正しいかは人が決める） | 済（一致29、不一致0、判断できない2。`docs/AUDIT_LOG.md` の N-1、N-2） |
 | B5 | `scripts/audit.mjs --full` の壊す検査で SKIP が出たら、`scripts/mutate.mjs` の一覧を今のコードに合わせる | SKIP が0件になる。すり抜けが増えたら、守ることと数値の境界に関わるものだけテストを足す | 発生したとき（2026-11-02 に1件直した） |
+| B6 | 手元の Windows でも動くよう、フックと監査から bash と grep への依存をなくす | SessionStart フックを Node にし、`scripts/audit.mjs` の dist/client の鍵の検査を Node で読む | 済（偽の鍵を置いて K4 が止めることを確かめた。手元の Windows では未検証） |
+| B7 | README の評価の表の数字を、`npm run eval:recheck` と `npm run eval:score` の出力と突き合わせる検査を `scripts/audit.mjs --full` に足す | 表の数字が出力にない、または違えば FAIL。数字を直すかは、出力を見て判断が要らない場合だけ直す | 未着手 |
 
 ## 人の判断（Claude は進めない）
 
