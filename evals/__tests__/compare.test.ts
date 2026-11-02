@@ -139,6 +139,20 @@ describe("compareRules", () => {
     expect(result.extra).toHaveLength(1);
   });
 
+  it("適用条件を職員が読める形で示す", () => {
+    const proposal = clone();
+    proposal.loadLimits[0]!.when = { major: "甲専攻", hasMinor: true, minStudentYear: 2, minPreviousGpa: 3 };
+    expect(compareRules(GOLD, proposal).extra).toEqual([
+      "履修上限: 上限（甲専攻、副専攻あり、2年次以上、前年度 GPA 3 以上）",
+    ]);
+  });
+
+  it("副専攻なしの条件を示す", () => {
+    const proposal = clone();
+    proposal.loadLimits[0]!.when = { hasMinor: false };
+    expect(compareRules(GOLD, proposal).extra).toEqual(["履修上限: 上限（副専攻なし）"]);
+  });
+
   it("曖昧箇所の差分が変える項目は、一致率に数えない", () => {
     const proposal = clone();
     proposal.gates[0]!.creditBasis = "countable";

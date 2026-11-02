@@ -27,8 +27,15 @@ type Spec<T> = {
 };
 
 function whenKey(when: StudentCondition | undefined) {
-  const entries = Object.entries(when ?? {}).sort(([a], [b]) => a.localeCompare(b));
-  return entries.length > 0 ? ` [${entries.map(([k, v]) => `${k}=${String(v)}`).join(", ")}]` : "";
+  if (!when) return "";
+  const { major, hasMinor, minStudentYear, minPreviousGpa } = when;
+  const parts = [
+    major,
+    hasMinor === undefined ? undefined : hasMinor ? "副専攻あり" : "副専攻なし",
+    minStudentYear === undefined ? undefined : `${minStudentYear}年次以上`,
+    minPreviousGpa === undefined ? undefined : `前年度 GPA ${minPreviousGpa} 以上`,
+  ].filter((part) => part !== undefined);
+  return parts.length > 0 ? `（${parts.join("、")}）` : "";
 }
 
 function sorted(values: string[]) {

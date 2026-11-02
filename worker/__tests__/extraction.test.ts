@@ -378,6 +378,22 @@ describe("checkProposal", () => {
     expect(problemsOf(output)).toEqual([]);
   });
 
+  it("科目群のない区分は落ちる", () => {
+    const output = changeRule("category-common", (rule) => ({
+      ...rule,
+      detail: JSON.stringify({
+        name: "共通",
+        groups: [],
+        minCredits: 6,
+        requireAll: false,
+        maxCredits: 6,
+        overflowTo: null,
+        subLimits: [],
+      }),
+    }));
+    expect(problemsOf(output)[0]).toContain("category-common");
+  });
+
   it("選択肢が1つの曖昧箇所は落ちる", () => {
     const ambiguity = OUTPUT.ambiguities[0]!;
     const output = {

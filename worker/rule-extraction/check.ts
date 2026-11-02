@@ -17,6 +17,13 @@ function majorProblems(rules: RuleSet, input: ExtractionInput) {
     .map(({ id, major }) => `${id}: 学生データにない専攻です: ${major}`);
 }
 
+// 科目群のない区分には何も算入されず、全員が不足になる。
+function categoryProblems(rules: RuleSet) {
+  return rules.categories
+    .filter(({ groups }) => groups.length === 0)
+    .map(({ id }) => `${id}: 区分に科目群がありません`);
+}
+
 function gateProblems(rules: RuleSet) {
   // creditBasis がないと engine は修得した全単位で数える。Claude の書き漏らしを確定として通さない。
   return rules.gates
@@ -75,6 +82,7 @@ export function checkProposal({
       ({ ruleId, sourceQuote }) => `${ruleId}: 根拠の文が要項にありません: ${sourceQuote}`,
     ),
     ...majorProblems(rules, input),
+    ...categoryProblems(rules),
     ...gateProblems(rules),
     ...reviewProblems(rules),
     ...ambiguityProblems(rules),
