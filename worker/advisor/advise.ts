@@ -1,4 +1,4 @@
-import { checkPlan, evaluateStudent, isDisplayablePlan, planningStudent } from "../../engine";
+import { checkPlan, evaluateStudent, isDisplayablePlan } from "../../engine";
 import type { AdviseResponse } from "../../shared/advise";
 import type { ModelUsage } from "../rule-extraction/model";
 import { ADVISOR_SYSTEM_PROMPT, advisorPrompt } from "./prompt";
@@ -28,8 +28,7 @@ export async function adviseStudent(loop: AdvisorLoop, input: AdvisorInput): Pro
   const { excludedReason } = evaluateStudent(rules, courses, student, answers);
   if (excludedReason) return { status: "needs_staff", reason: excludedReason, iterations: 0 };
 
-  const target = planningStudent(student);
-  const { tools, state } = createAdvisorTools(input);
+  const { tools, state, target, lockedNotes } = createAdvisorTools(input);
   const { iterations } = await loop({
     system: ADVISOR_SYSTEM_PROMPT,
     prompt: advisorPrompt(student.id, target.studentYear),
@@ -53,7 +52,7 @@ export async function adviseStudent(loop: AdvisorLoop, input: AdvisorInput): Pro
     plan: entries,
     totalCredits: entries.reduce((sum, entry) => sum + entry.credits, 0),
     planningYear: target.studentYear,
-    warnings: check.warnings,
+    warnings: [...lockedNotes, ...check.warnings],
     draft: `${DRAFT_LABEL}\n\n${draft}`,
     iterations,
   };

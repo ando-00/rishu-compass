@@ -12,6 +12,7 @@ import {
   passedCourses,
   type Answers,
   type Course,
+  type CourseRecord,
   type CourseSlot,
   type OfferedTerm,
   type Student,
@@ -62,21 +63,44 @@ export function isDisplayablePlan(check: PlanCheck) {
   return check.status === "passed";
 }
 
+// 今年度に履修中でも、履修条件を満たしていない科目を返す。回答した読み方で条件から外れることがある。
+export function lockedEnrollments(
+  rules: RuleSet,
+  courses: Course[],
+  student: Student,
+  answers: Answers,
+) {
+  const prepared = prepareRules(rules, courses, answers);
+  if (exclusionReason(prepared, student)) return [];
+  const context = createContext(prepared, student);
+  const enrolled = student.records
+    .filter((record) => record.result === "enrolled" && record.studentYear === student.studentYear)
+    .map((record) => record.course);
+
+  return prepared.rules.gates.flatMap((gate) => {
+    if (gate.target.kind !== "course" || !matchesCondition(gate.when, student)) return [];
+    if (judgeGate(gate, context).status === "satisfied") return [];
+    const { courses: targets } = gate.target;
+    return enrolled.filter((name) => targets.includes(name));
+  });
+}
+
 // 後期の学生の案は翌年度の登録になるので、今年度の履修中を修得した前提に置き換える。
 // 翌年度の前年度 GPA はまだないので持たせず、緩和の上限を使わない。
-export function planningStudent(student: Student): Student {
+// locked の科目は修得の前提にできず、案に入れ直す科目なので記録から外す。
+export function planningStudent(student: Student, locked: string[] = []): Student {
   if (student.currentTerm === "前期") return student;
   const { previousGpa: _unknown, ...rest } = student;
+  const current = (record: CourseRecord) =>
+    record.result === "enrolled" && record.studentYear === student.studentYear;
   return {
     ...rest,
     studentYear: student.studentYear + 1,
     currentTerm: "前期",
     yearsEnrolled: student.yearsEnrolled + 1,
-    records: student.records.map((record) =>
-      record.result === "enrolled" && record.studentYear === student.studentYear
-        ? { ...record, result: "passed" as const }
-        : record,
-    ),
+    records: student.records
+      .filter((record) => !(current(record) && locked.includes(record.course)))
+      .map((record) => (current(record) ? { ...record, result: "passed" as const } : record)),
   };
 }
 

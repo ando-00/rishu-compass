@@ -3,6 +3,7 @@ import {
   checkPlan,
   evaluateStudent,
   isDisplayablePlan,
+  lockedEnrollments,
   planningStudent,
   type Answers,
   type Course,
@@ -90,7 +91,11 @@ function findAdviceRules(adviceRules: string, keyword: string | null) {
 
 export function createAdvisorTools(input: AdvisorInput) {
   const { rules, courses, student, answers, adviceRules } = input;
-  const target = planningStudent(student);
+  const locked = lockedEnrollments(rules, courses, student, answers);
+  const target = planningStudent(student, locked);
+  const lockedNotes = locked.map(
+    (name) => `${name} は履修条件を満たしていないので、修得した前提にしていません。`,
+  );
   const state: AdvisorState = { submitted: null, escalated: null };
   const check = (plan: PlanEntry[]) => checkPlan(rules, courses, target, plan, answers);
 
@@ -114,6 +119,7 @@ export function createAdvisorTools(input: AdvisorInput) {
           target === student
             ? "同じ年度の登録の案です。"
             : "翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。",
+        lockedEnrollments: lockedNotes,
         judgments: evaluateStudent(rules, courses, student, answers).judgments.map(
           ({ name, status, required, actual, enrolled, missingCourses, reason, clause }) => ({
             name,
@@ -200,5 +206,5 @@ export function createAdvisorTools(input: AdvisorInput) {
     ),
   ];
 
-  return { tools, state };
+  return { tools, state, target, lockedNotes };
 }

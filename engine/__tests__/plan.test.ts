@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { exampleCourses } from "../../data/fictional/example/courses";
 import { exampleRules } from "../../data/fictional/example/rules";
 import type { Answers, Course, OfferedTerm, Student } from "../model";
-import { checkPlan, isDisplayablePlan, planningStudent, type PlanEntry } from "../plan";
+import {
+  checkPlan,
+  isDisplayablePlan,
+  lockedEnrollments,
+  planningStudent,
+  type PlanEntry,
+} from "../plan";
 import type { RuleSet } from "../rules";
 import { enrolled, failed, makeStudent, numberedNames, passed } from "./helpers";
 
@@ -412,6 +418,63 @@ describe("次の登録に向けた学生の置き換え", () => {
     const before = structuredClone(second);
     planningStudent(second);
     expect(second).toEqual(before);
+  });
+
+  it("履修条件を満たしていない履修中の科目は、修得の前提にせず記録から外す", () => {
+    const records = planningStudent(second, ["基礎C"]).records;
+    expect(records.map(({ course }) => course)).not.toContain("基礎C");
+  });
+});
+
+describe("履修条件を満たしていない履修中の科目", () => {
+  const seminarYear = (earned: string[]) =>
+    makeStudent({
+      studentYear: 3,
+      records: [...passed(earned, 2), ...enrolled(["ゼミ"], 3, "通年")],
+    });
+  // 2年次の終わりに30単位。うち他学部6単位は上限4単位なので、卒業に数えると28単位になる。
+  const boundary = seminarYear([...BASIC, ...numberedNames("他", 3), ...numberedNames("専門", 7)]);
+  const locked = (student: Student, answers: Answers) =>
+    lockedEnrollments(exampleRules, exampleCourses, student, answers);
+
+  it("回答で条件を満たす読み方なら外さない", () => {
+    expect(locked(boundary, { "ambiguity-seminar-credits": "include" })).toEqual([]);
+  });
+
+  it("回答で条件を満たさない読み方なら外す", () => {
+    expect(locked(boundary, { "ambiguity-seminar-credits": "exclude" })).toEqual(["ゼミ"]);
+  });
+
+  it("未回答なら修得の前提にしない", () => {
+    expect(locked(boundary, {})).toEqual(["ゼミ"]);
+  });
+
+  it("条件を満たしていない履修中の科目は、次の年度の先修に数えない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.prerequisites[0]!.course = "専門01";
+    rules.prerequisites[0]!.conditions = [["ゼミ"]];
+    const answers = { "ambiguity-seminar-credits": "exclude" };
+    const dropped = lockedEnrollments(rules, exampleCourses, boundary, answers);
+    const target = planningStudent(boundary, dropped);
+    const result = checkPlan(rules, exampleCourses, target, entries(["専門01"]), answers);
+    expect(codes(result)).toContain("PREREQUISITE_NOT_MET");
+  });
+
+  it("外した科目は次の年度の案に入れられる", () => {
+    const answers = { "ambiguity-seminar-credits": "exclude" };
+    const target = planningStudent(boundary, locked(boundary, answers));
+    const result = checkPlan(exampleRules, exampleCourses, target, entries(["ゼミ"], "通年"), answers);
+    expect(codes(result)).not.toContain("ALREADY_EARNED");
+  });
+
+  it("適用外の学生では計算しない", () => {
+    expect(locked({ ...boundary, specialStatuses: ["留学"] }, {})).toEqual([]);
+  });
+
+  it("学生に適用されない履修条件では外さない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.gates[0]!.when = { hasMinor: true };
+    expect(lockedEnrollments(rules, exampleCourses, boundary, {})).toEqual([]);
   });
 });
 

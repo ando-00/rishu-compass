@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sakuradaiCourses } from "../../data/fictional/sakuradai/courses";
+import { sakuradaiEvalStudents } from "../../data/fictional/sakuradai/eval-students";
 import { goldRules } from "../../data/fictional/sakuradai/gold-rules";
 import handbook from "../../data/fictional/sakuradai/handbook.md?raw";
 import { sakuradaiStudents } from "../../data/fictional/sakuradai/students";
@@ -7,6 +8,8 @@ import {
   checkPlan,
   collectQuotes,
   evaluateStudent,
+  lockedEnrollments,
+  planningStudent,
   validateRuleSet,
   verifyQuotes,
   type Answers,
@@ -98,6 +101,30 @@ describe("第6条の曖昧箇所", () => {
     const delayed = (optionId: string) =>
       inScope.filter((student) => statusOf(student, "graduation", optionId) === "delay_risk").length;
     expect(delayed("countable")).toBeGreaterThan(delayed("earned"));
+  });
+
+  describe("履修中の演習Ⅰを持つ第6条の境界の学生の翌年度の案", () => {
+    const { student } = sakuradaiEvalStudents.find(({ type }) => type.startsWith("第6条"))!;
+    const planFor = (optionId: string, course: string, term: "前期" | "通年" = "通年") => {
+      const answers = { [QUESTION]: optionId };
+      const locked = lockedEnrollments(goldRules, sakuradaiCourses, student, answers);
+      const target = planningStudent(student, locked);
+      return checkPlan(goldRules, sakuradaiCourses, target, [{ course, term }], answers);
+    };
+
+    it("全単位で読むと演習Ⅰを修得した前提で、演習Ⅱを履修できる", () => {
+      expect(planFor("earned", "演習Ⅱ").status).toBe("passed");
+    });
+
+    it("卒業に数える単位で読むと演習Ⅰが条件を満たさず、演習Ⅱを履修できない", () => {
+      const { status, issues } = planFor("countable", "演習Ⅱ");
+      expect(status).toBe("failed");
+      expect(issues.map((issue) => issue.code)).toContain("PREREQUISITE_NOT_MET");
+    });
+
+    it("卒業に数える単位で読むと、4年次に演習Ⅰを入れ直せる", () => {
+      expect(planFor("countable", "演習Ⅰ").status).toBe("passed");
+    });
   });
 
   it("回答すると全学生の判定に反映される", async () => {
