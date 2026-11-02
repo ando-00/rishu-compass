@@ -131,6 +131,22 @@ describe("先修条件", () => {
     expect(check(entries(["応用C", "入門A"]), novice).status).toBe("passed");
   });
 
+  it("かつの組は、すべての修得が必要", () => {
+    const rules = structuredClone(exampleRules);
+    rules.prerequisites[0]!.conditions = [["入門A", "入門B"]];
+    const student = { ...novice, records: passed(["入門A"]) };
+    expect(ruleIds(check(entries(["応用B"]), student, { rules }))).toContain("prereq-b");
+    const both = { ...novice, records: passed(["入門A", "入門B"]) };
+    expect(check(entries(["応用B"]), both, { rules }).status).toBe("passed");
+  });
+
+  it("「A または（B かつ C）」のうち、後の組だけを満たしても通す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.prerequisites[0]!.conditions = [["基礎C"], ["入門A", "入門B"]];
+    const student = { ...novice, records: passed(["入門A", "入門B"]) };
+    expect(check(entries(["応用B"]), student, { rules }).status).toBe("passed");
+  });
+
   it("どれか1つの修得で足りる条件を扱える", () => {
     const student = { ...novice, records: passed(["入門B"]) };
     expect(check(entries(["応用C"]), student).status).toBe("passed");
@@ -228,6 +244,14 @@ describe("科目数の上限と時間割", () => {
 
   it("同じ時限の科目は通さない", () => {
     expect(ruleIds(check(entries(["実習", "講読"])))).toContain("timetable");
+  });
+
+  it("集中講義は、履修案のどの位置にあっても時間割の重なりを判定しない", () => {
+    const courses = exampleCourses.map((course) =>
+      course.name === "集中" ? { ...course, slots: [{ day: "月", period: 1 }] } : course,
+    );
+    expect(ruleIds(check(entries(["集中", "実習"]), sophomore, { courses }))).not.toContain("timetable");
+    expect(ruleIds(check(entries(["実習", "集中"]), sophomore, { courses }))).not.toContain("timetable");
   });
 
   it("別の学期なら同じ時限でも通す", () => {

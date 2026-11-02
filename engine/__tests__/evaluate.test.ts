@@ -323,6 +323,42 @@ describe("延期見込み", () => {
   });
 });
 
+describe("延期見込みの学期の数え方", () => {
+  it("開講学期が残っていなければ、学期が残っていても延期見込み", () => {
+    const courses = exampleCourses.map((course) =>
+      course.name === "実習" ? { ...course, groups: ["基礎/必修"] } : course,
+    );
+    const student = makeStudent({
+      currentTerm: "前期",
+      expectedGraduation: { studentYear: 4, term: "後期" },
+      records: passed([...BASIC, ...numberedNames("専門", 20)]),
+    });
+    const result = evaluateStudent(exampleRules, courses, student, ANSWERED);
+    expect(result.judgments.find((j) => j.ruleId === "graduation")?.status).toBe("delay_risk");
+  });
+
+  it("先修科目と同じ学期に履修できない必修は、次の学期までかかる", () => {
+    const courses = exampleCourses.map((course) =>
+      course.name === "応用B" ? { ...course, groups: ["基礎/必修"] } : course,
+    );
+    const rules = structuredClone(exampleRules);
+    rules.categories[0]!.minCredits = 8;
+    const student = makeStudent({
+      currentTerm: "前期",
+      expectedGraduation: { studentYear: 4, term: "後期" },
+      records: passed([...BASIC.filter((name) => name !== "入門B"), ...numberedNames("専門", 20)]),
+    });
+    const graduationOf = (target: typeof rules) =>
+      evaluateStudent(target, courses, student, ANSWERED).judgments.find(
+        (j) => j.ruleId === "graduation",
+      );
+    expect(graduationOf(rules)?.status).toBe("delay_risk");
+    const sameTerm = structuredClone(rules);
+    sameTerm.prerequisites[0]!.allowSameTerm = true;
+    expect(graduationOf(sameTerm)?.status).toBe("short");
+  });
+});
+
 describe("ルールに問題があるとき", () => {
   it("学生に適用されない算入先があれば、その学生を職員確認にして処理を止めない", () => {
     const rules = structuredClone(exampleRules);

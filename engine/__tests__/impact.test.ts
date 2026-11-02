@@ -4,7 +4,7 @@ import { exampleRules } from "../../data/fictional/example/rules";
 import { computeImpact, computeImpacts } from "../impact";
 import { draftOutreachMessage, listOutreach } from "../outreach";
 import { exampleStudents } from "../../data/fictional/example/students";
-import { evaluateStudent } from "../evaluate";
+import { evaluateStudent, type Judgment, type JudgmentStatus } from "../evaluate";
 import type { Answers } from "../model";
 import { makeStudent, numberedNames, passed } from "./helpers";
 
@@ -85,6 +85,21 @@ describe("computeImpact", () => {
     const student = makeStudent({ studentYear: 2, records: passed(BASIC, 1) });
     const impact = computeImpact(rules, exampleCourses, [student], {}, ID);
     expect(impact.affectedStudentIds).toEqual([student.id]);
+  });
+
+  it("影響人数に入る学生は、職員確認の人数に重ねて数えない", () => {
+    const rules = structuredClone(exampleRules);
+    rules.graduation.ambiguityIds = ["ambiguity-other"];
+    rules.ambiguities.push({
+      id: "ambiguity-other",
+      clause: "第1条",
+      sourceQuote: "見本の第1条の本文",
+      question: "別の確認事項",
+      options: [{ id: "only", label: "保留", patches: null }],
+    });
+    const impact = computeImpact(rules, exampleCourses, [swing], {}, ID);
+    expect(impact.affectedStudentIds).toEqual(["S0001"]);
+    expect(impact.staffReviewStudentIds).toEqual([]);
   });
 
   it("存在しない曖昧箇所はエラーにする", () => {
@@ -170,6 +185,51 @@ describe("声かけ", () => {
     const list = [risky, swing, delayed];
     const order = listOutreach(evaluateAll(list), list).map((entry) => entry.studentId);
     expect(order).toEqual(["S0006", "S0001", "S0005"]);
+  });
+
+  it("年次より危険度を優先して並べる", () => {
+    const judgment = (status: JudgmentStatus, atRisk = false): Judgment => ({
+      ruleId: "rule",
+      kind: status === "delay_risk" ? "graduation" : "gate",
+      name: "判定",
+      clause: "第1条",
+      sourceQuote: "本文",
+      status,
+      reason: "理由",
+      ambiguityIds: [],
+      needsContact: true,
+      atRisk,
+    });
+    const evaluation = (studentId: string, status: JudgmentStatus, atRisk?: boolean) => ({
+      studentId,
+      excludedReason: null,
+      judgments: [judgment(status, atRisk)],
+    });
+    const people = [
+      makeStudent({ id: "A", studentYear: 4 }),
+      makeStudent({ id: "B", studentYear: 2 }),
+      makeStudent({ id: "C", studentYear: 3 }),
+    ];
+    const list = listOutreach(
+      [evaluation("A", "short", true), evaluation("B", "delay_risk"), evaluation("C", "short")],
+      people,
+    );
+    expect(list.map((entry) => entry.studentId)).toEqual(["B", "C", "A"]);
+  });
+
+  it("声かけ文の下書きに、職員確認の理由を入れない", () => {
+    const draft = draftOutreachMessage({
+      studentId: "S0001",
+      studentYear: 3,
+      kind: "contact",
+      severity: 2,
+      reasons: [
+        { ruleId: "a", name: "不足の判定", clause: "第1条", sourceQuote: "", status: "short", detail: "不足" },
+        { ruleId: "b", name: "内部の判定", clause: "第2条", sourceQuote: "", status: "needs_staff", detail: "確認" },
+      ],
+    });
+    expect(draft).toContain("不足の判定");
+    expect(draft).not.toContain("内部の判定");
   });
 
   it("声かけ文は下書きとして作り、根拠を含める", () => {
