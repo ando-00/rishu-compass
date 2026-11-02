@@ -15,7 +15,7 @@ function toParam({ text, cache }: ContentBlock) {
   };
 }
 
-function toModelError(cause: unknown) {
+export function toModelError(cause: unknown) {
   if (cause instanceof Anthropic.RateLimitError) {
     return new ModelError("rate_limited", "API の利用の上限に達しました。時間をおいてください。");
   }

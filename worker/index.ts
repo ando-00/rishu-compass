@@ -24,44 +24,17 @@ import {
   type StudentResponse,
 } from "../shared/api";
 import { answerRoutes } from "./answers";
-import { datasets, findSource, listSources, type Dataset } from "./datasets";
+import { advisorRoutes } from "./advisor/routes";
+import { claudeKey, FAILURE_STATUS, type ClaudeBindings } from "./claudeAccess";
+import { datasets, findSource, isValidAnswers, listSources, type Dataset } from "./datasets";
 import { createClaudeModel } from "./rule-extraction/claude";
 import { extractConsensus } from "./rule-extraction/consensus";
-import type { ExtractionFailure } from "./rule-extraction/extract";
-
-// 型の定義は .dev.vars から生成されるので、これがない環境でも通るようここに書く。
-type ClaudeBindings = {
-  ANTHROPIC_API_KEY?: string;
-  ALLOW_CLAUDE?: string;
-};
 
 const app = new Hono<{ Bindings: Env & ClaudeBindings }>();
-
-// 公開 URL の利用の制限が決まるまで、明示して開けた環境でだけ Claude を呼ぶ。
-function claudeKey({ ALLOW_CLAUDE, ANTHROPIC_API_KEY }: ClaudeBindings) {
-  return ALLOW_CLAUDE === "true" && ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY : null;
-}
-
-const FAILURE_STATUS: Record<ExtractionFailure["kind"], 429 | 502 | 504> = {
-  rate_limited: 429,
-  timeout: 504,
-  api_error: 502,
-  refusal: 502,
-  truncated: 502,
-  invalid_format: 502,
-};
 
 async function parseBody<T extends z.ZodType>(c: Context, schema: T) {
   const result = schema.safeParse(await c.req.json().catch(() => undefined));
   return result.success ? result.data : null;
-}
-
-function isValidAnswers(dataset: Dataset, answers: Answers) {
-  return Object.entries(answers).every(([ambiguityId, optionId]) =>
-    dataset.rules.ambiguities
-      .find((ambiguity) => ambiguity.id === ambiguityId)
-      ?.options.some((option) => option.id === optionId),
-  );
 }
 
 function findDataset(c: Context) {
@@ -219,5 +192,6 @@ app.post("/api/datasets/:id/plan-check", async (c) => {
 });
 
 app.route("/api/datasets", answerRoutes);
+app.route("/api/datasets", advisorRoutes);
 
 export default app;

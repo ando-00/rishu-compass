@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { exampleCourses } from "../../data/fictional/example/courses";
 import { exampleRules } from "../../data/fictional/example/rules";
 import type { Answers, Course, OfferedTerm, Student } from "../model";
-import { checkPlan, isDisplayablePlan, type PlanEntry } from "../plan";
+import { checkPlan, isDisplayablePlan, planningStudent, type PlanEntry } from "../plan";
 import type { RuleSet } from "../rules";
 import { enrolled, failed, makeStudent, numberedNames, passed } from "./helpers";
 
@@ -359,6 +359,59 @@ describe("履修条件", () => {
 
   it("未回答でも関係しない科目は確定の検査を返す", () => {
     expect(check(entries(["専門01"]), ready, { answers: {} }).status).toBe("passed");
+  });
+});
+
+describe("次の登録に向けた学生の置き換え", () => {
+  const second = makeStudent({
+    studentYear: 2,
+    currentTerm: "後期",
+    previousGpa: 3.8,
+    records: [
+      ...passed(["入門A"]),
+      ...failed(["入門B"]),
+      ...enrolled(["基礎C"], 2, "後期"),
+      ...enrolled(["基礎D"], 1, "後期"),
+    ],
+  });
+
+  it("前期の学生は同じ年度の登録なので変えない", () => {
+    const student = { ...second, currentTerm: "前期" as const };
+    expect(planningStudent(student)).toBe(student);
+  });
+
+  it("後期の学生は翌年度の前期に進める", () => {
+    expect(planningStudent(second)).toMatchObject({
+      studentYear: 3,
+      currentTerm: "前期",
+      yearsEnrolled: 3,
+    });
+  });
+
+  it("今年度の履修中は修得した前提にし、不合格はそのまま残す", () => {
+    const results = Object.fromEntries(
+      planningStudent(second).records.map((record) => [record.course, record.result]),
+    );
+    expect(results).toMatchObject({ 入門A: "passed", 入門B: "failed", 基礎C: "passed" });
+  });
+
+  it("前の年度の履修中の記録は修得にしない", () => {
+    const record = planningStudent(second).records.find(({ course }) => course === "基礎D");
+    expect(record?.result).toBe("enrolled");
+  });
+
+  it("翌年度の前年度 GPA は分からないので、緩和の上限を使わない", () => {
+    expect(planningStudent(second).previousGpa).toBeUndefined();
+    const relaxedOnly = structuredClone(exampleRules);
+    relaxedOnly.loadLimits = relaxedOnly.loadLimits.slice(1);
+    const result = check(entries(["専門01"]), planningStudent(second), { rules: relaxedOnly });
+    expect(codes(result)).toContain("PENDING_RULE");
+  });
+
+  it("元の学生を変えない", () => {
+    const before = structuredClone(second);
+    planningStudent(second);
+    expect(second).toEqual(before);
   });
 });
 

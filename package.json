@@ -14,7 +14,8 @@
     "build": "npm run types && tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "eval:extract": "tsx evals/extract.ts"
+    "eval:extract": "tsx evals/extract.ts",
+    "eval:advise": "tsx evals/advise.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

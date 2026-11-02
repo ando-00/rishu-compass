@@ -62,6 +62,24 @@ export function isDisplayablePlan(check: PlanCheck) {
   return check.status === "passed";
 }
 
+// 後期の学生の案は翌年度の登録になるので、今年度の履修中を修得した前提に置き換える。
+// 翌年度の前年度 GPA はまだないので持たせず、緩和の上限を使わない。
+export function planningStudent(student: Student): Student {
+  if (student.currentTerm === "前期") return student;
+  const { previousGpa: _unknown, ...rest } = student;
+  return {
+    ...rest,
+    studentYear: student.studentYear + 1,
+    currentTerm: "前期",
+    yearsEnrolled: student.yearsEnrolled + 1,
+    records: student.records.map((record) =>
+      record.result === "enrolled" && record.studentYear === student.studentYear
+        ? { ...record, result: "passed" as const }
+        : record,
+    ),
+  };
+}
+
 function overlaps(a: OfferedTerm, b: OfferedTerm) {
   return a === b || a === "通年" || b === "通年";
 }

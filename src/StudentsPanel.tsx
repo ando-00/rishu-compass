@@ -7,6 +7,7 @@ import type {
   PlanEntry,
   StudentResponse,
 } from "../shared/api";
+import { AdvisorPanel } from "./AdvisorPanel";
 import { checkPlan, fetchStudent } from "./api";
 import { JudgmentBadge, PlanBadge, StateBadge } from "./StatusBadge";
 
@@ -189,6 +190,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 ))}
               </tbody>
             </table>
+            <AdvisorPanel datasetId={datasetId} studentId={selectedId} answers={answers} />
             <PlanForm datasetId={datasetId} studentId={selectedId} answers={answers} />
           </>
         )}

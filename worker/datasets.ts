@@ -8,7 +8,7 @@ import { sakuradaiCourses } from "../data/fictional/sakuradai/courses";
 import sakuradaiHandbook from "../data/fictional/sakuradai/handbook.md?raw";
 import { sakuradaiStudents } from "../data/fictional/sakuradai/students";
 import { ADMISSION_YEARS } from "../data/fictional/students";
-import { validateRuleSet, type Course, type RuleSet, type Student } from "../engine";
+import { validateRuleSet, type Answers, type Course, type RuleSet, type Student } from "../engine";
 
 export type Dataset = {
   id: string;
@@ -75,3 +75,11 @@ export const datasets: Dataset[] = [
   ...goldDatasets(),
   createDataset("example", "見本（動作確認用）", exampleRules, exampleCourses, exampleStudents),
 ];
+
+export function isValidAnswers(dataset: Dataset, answers: Answers) {
+  return Object.entries(answers).every(([ambiguityId, optionId]) =>
+    dataset.rules.ambiguities
+      .find((ambiguity) => ambiguity.id === ambiguityId)
+      ?.options.some((option) => option.id === optionId),
+  );
+}

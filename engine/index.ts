@@ -15,7 +15,7 @@ export type {
 } from "./model";
 export { draftOutreachMessage, listOutreach } from "./outreach";
 export type { OutreachEntry, OutreachReason } from "./outreach";
-export { checkPlan, isDisplayablePlan } from "./plan";
+export { checkPlan, isDisplayablePlan, planningStudent } from "./plan";
 export type { PlanCheck, PlanEntry, PlanIssue, PlanIssueCode } from "./plan";
 export type { RuleSet } from "./rules";
 export { validateRuleSet } from "./validate";

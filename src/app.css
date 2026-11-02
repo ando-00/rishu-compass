@@ -429,3 +429,11 @@ button:disabled {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.draft {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  white-space: pre-wrap;
+}
