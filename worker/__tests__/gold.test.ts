@@ -4,11 +4,13 @@ import { goldRules } from "../../data/fictional/sakuradai/gold-rules";
 import handbook from "../../data/fictional/sakuradai/handbook.md?raw";
 import { sakuradaiStudents } from "../../data/fictional/sakuradai/students";
 import {
+  checkPlan,
   collectQuotes,
   evaluateStudent,
   validateRuleSet,
   verifyQuotes,
   type Answers,
+  type Student,
 } from "../../engine";
 import { datasetsResponseSchema, overviewResponseSchema } from "../../shared/api";
 import app from "../index";
@@ -42,6 +44,26 @@ describe("さくら台大学の正解ルール", () => {
         .reduce((sum, course) => sum + course.credits, 0);
       expect(credits).toBe(category.minCredits);
     }
+  });
+
+  it("1年次の必修を開講学期どおりに入れた履修案が検査を通る", () => {
+    const freshman: Student = {
+      id: "S-new",
+      admissionYear: 2026,
+      studentYear: 1,
+      currentTerm: "前期",
+      yearsEnrolled: 1,
+      specialStatuses: [],
+      records: [],
+    };
+    const plan = sakuradaiCourses
+      .filter((course) => course.assignedYear === 1 && course.groups.some((g) => g.endsWith("/必修")))
+      .map(({ name, offeredIn }) => ({ course: name, term: offeredIn! }));
+    expect(plan.length).toBeGreaterThan(0);
+    expect(checkPlan(goldRules, sakuradaiCourses, freshman, plan, {})).toMatchObject({
+      status: "passed",
+      issues: [],
+    });
   });
 
   it("画面の対象に入る", async () => {

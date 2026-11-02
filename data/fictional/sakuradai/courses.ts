@@ -1,7 +1,9 @@
 import type { Course } from "../../../engine/model";
+import { withCourseDetails } from "../courseDetails";
+import { sakuradaiSummaries } from "./summaries";
 
 // 履修要項の第6章の科目表から機械的に変換した。
-export const sakuradaiCourses: Course[] = [
+const handbookCourses: Course[] = [
   { name: "大学基礎論", credits: 2, assignedYear: 1, groups: ["基礎教育/必修"] },
   { name: "情報リテラシー", credits: 2, assignedYear: 1, groups: ["基礎教育/必修"] },
   { name: "英語Ⅰ", credits: 2, assignedYear: 1, groups: ["基礎教育/必修"] },
@@ -79,3 +81,11 @@ export const sakuradaiCourses: Course[] = [
   { name: "組織論", credits: 2, assignedYear: 2, groups: ["他学科"] },
   { name: "簿記", credits: 2, assignedYear: 2, groups: ["他学科"] },
 ];
+
+// 月〜金の1〜5限に置く。
+export const sakuradaiCourses = withCourseDetails(handbookCourses, {
+  days: ["月", "火", "水", "木", "金"],
+  periods: [2, 3, 1, 4, 5],
+  summaries: sakuradaiSummaries,
+  intensive: ["地域調査実習"],
+});

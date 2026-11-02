@@ -14,6 +14,7 @@ export type Course = {
   credits: number;
   assignedYear: number;
   groups: string[];
+  summary?: string;
   offeredIn?: OfferedTerm;
   intensive?: boolean;
   slots?: CourseSlot[];

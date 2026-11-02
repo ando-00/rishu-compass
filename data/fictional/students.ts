@@ -104,8 +104,9 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
   const records: CourseRecord[] = [];
   let earned = 0;
   let previousYearRate: number | undefined;
+  let boundaryOwed = 0;
 
-  const settle = (year: number, term: OfferedTerm) => {
+  const settle =(year: number, term: OfferedTerm) => {
     for (const record of records) {
       if (record.studentYear !== year || record.term !== term || record.result !== "passed") continue;
       if (!passed.has(record.course)) earned += creditsOf.get(record.course) ?? 0;
@@ -140,7 +141,7 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
         .sort((a, b) => a.rank - b.rank || a.tie - b.tie);
 
       const target = boundaryYear
-        ? boundary.loadByYear[year - 1]!
+        ? boundary.loadByYear[year - 1]! + boundaryOwed
         : Math.round(config.loadByYear[year - 1]! * profile.loadScale);
       let load = 0;
       const planned: { course: Course; term: OfferedTerm }[] = [];
@@ -149,6 +150,8 @@ function generateStudent(config: StudentConfig, index: number, random: () => num
         planned.push({ course, term: course.offeredIn === "通年" ? "通年" : term });
         load += course.offeredIn === "通年" ? course.credits / 2 : course.credits;
       }
+      // 開講の都合で足りなかった分を次の学期へ回し、2年次の終わりの単位を型のとおりに揃える。
+      if (boundaryYear) boundaryOwed = target - load;
 
       for (const { course, term: recordTerm } of planned) {
         taken.add(course.name);

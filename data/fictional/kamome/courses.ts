@@ -1,7 +1,9 @@
 import type { Course } from "../../../engine/model";
+import { withCourseDetails } from "../courseDetails";
+import { kamomeSummaries } from "./summaries";
 
 // 履修の手引きの第8節の科目表から機械的に変換した。配当年次の記載がないため 1 とした。
-export const kamomeCourses: Course[] = [
+const handbookCourses: Course[] = [
   { name: "人間科学入門", credits: 2, assignedYear: 1, groups: ["コア/必修"] },
   { name: "学びの技法", credits: 2, assignedYear: 1, groups: ["コア/必修"] },
   { name: "情報の基礎", credits: 2, assignedYear: 1, groups: ["コア/必修"] },
@@ -88,3 +90,18 @@ export const kamomeCourses: Course[] = [
   { name: "地域課題演習", credits: 2, assignedYear: 1, groups: ["社会学専攻/選択", "演習"] },
   { name: "統計分析演習", credits: 2, assignedYear: 1, groups: ["社会学専攻/選択", "演習"] },
 ];
+
+// 第7節のとおり月〜土の1〜6限に置き、クォーターの科目を混ぜる。
+export const kamomeCourses = withCourseDetails(handbookCourses, {
+  days: ["月", "火", "水", "木", "金", "土"],
+  periods: [2, 3, 4, 1, 5, 6],
+  summaries: kamomeSummaries,
+  yearLong: ["卒業研究"],
+  intensive: ["フィールドワーク演習"],
+  quarterPairs: [
+    ["法と社会", "経済のしくみ"],
+    ["自然の科学", "生命と環境"],
+    ["教育心理学", "産業心理学"],
+    ["都市社会学", "農村社会学"],
+  ],
+});

@@ -27,6 +27,70 @@ describe("科目データ", () => {
   });
 });
 
+describe.each([
+  ["さくら台", sakuradaiCourses, ["月", "火", "水", "木", "金"], 5],
+  ["かもめ", kamomeCourses, ["月", "火", "水", "木", "金", "土"], 6],
+] as const)("%sの開講学期と時間割", (_, courses, days, periods) => {
+  const required = courses.filter((c) => c.groups.some((group) => group.endsWith("/必修")));
+  const termsOf = (course: Course): (string | undefined)[] =>
+    course.offeredIn === "通年" ? ["前期", "後期"] : [course.offeredIn];
+
+  it("すべての科目に開講学期と概要があり、集中講義のほかは時限がある", () => {
+    for (const course of courses) {
+      expect(course.offeredIn).toBeDefined();
+      expect(course.summary).toMatch(/^.{5,30}$/);
+      expect(course.slots ?? []).toHaveLength(course.intensive ? 0 : 1);
+    }
+  });
+
+  it("時限が大学の時間割の範囲に収まる", () => {
+    for (const slot of courses.flatMap((course) => course.slots ?? [])) {
+      expect(days).toContain(slot.day);
+      expect(slot.period).toBeGreaterThanOrEqual(1);
+      expect(slot.period).toBeLessThanOrEqual(periods);
+    }
+  });
+
+  it("同じ配当年次の必修どうしは時限が重ならない", () => {
+    for (const course of required) {
+      for (const other of required) {
+        if (course === other || course.assignedYear !== other.assignedYear) continue;
+        if (!termsOf(course).some((term) => termsOf(other).includes(term))) continue;
+        const [a, b] = [course.slots?.[0], other.slots?.[0]];
+        expect(`${a?.day}${a?.period}`).not.toBe(`${b?.day}${b?.period}`);
+      }
+    }
+  });
+
+  it("「○○Ⅰ」は「○○Ⅱ」より前の学期にある", () => {
+    for (const second of courses.filter((course) => course.name.endsWith("Ⅱ"))) {
+      const first = courses.find((course) => course.name === `${second.name.slice(0, -1)}Ⅰ`);
+      if (first?.offeredIn === "通年") continue;
+      expect(first?.offeredIn).toBe("前期");
+      expect(second.offeredIn).toBe("後期");
+    }
+  });
+});
+
+describe("かもめのクォーターの科目", () => {
+  it("別のクォーターの科目を同じ時限に置く", () => {
+    const quarters = kamomeCourses.flatMap((course) =>
+      (course.slots ?? []).filter((slot) => slot.quarter).map((slot) => ({ course, slot })),
+    );
+    expect(quarters.length).toBeGreaterThan(0);
+    for (const { course, slot } of quarters.filter(({ slot }) => slot.quarter === 1)) {
+      const partner = quarters.find(
+        (other) =>
+          other.slot.quarter === 2 &&
+          other.slot.day === slot.day &&
+          other.slot.period === slot.period &&
+          other.course.offeredIn === course.offeredIn,
+      );
+      expect(partner).toBeDefined();
+    }
+  });
+});
+
 describe("第6条の読み方で判定が変わる型", () => {
   const credits = new Map(sakuradaiCourses.map((course) => [course.name, course]));
   const boundary = sakuradaiStudents.filter((student) => {
