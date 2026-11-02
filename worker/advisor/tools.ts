@@ -4,6 +4,8 @@ import {
   evaluateStudent,
   isDisplayablePlan,
   lockedEnrollments,
+  pendingPromotions,
+  unresolvedEnrollments,
   planningStudent,
   type Answers,
   type Course,
@@ -114,19 +116,23 @@ function findAdviceRules(adviceRules: string, keyword: string | null) {
 
 export function planningTarget({ rules, courses, student, answers }: PlanInput) {
   const locked = lockedEnrollments(rules, courses, student, answers);
+  const pendingCourses = unresolvedEnrollments(rules, courses, student, answers);
   return {
     target: planningStudent(student, locked),
-    lockedNotes: locked.map(
-      (name) => `${name} は履修条件を満たしていないので、修得した前提にしていません。`,
+    assumptions: { pendingCourses, promotions: pendingPromotions(rules, courses, student, answers) },
+    lockedNotes: locked.map((name) =>
+      pendingCourses.includes(name)
+        ? `${name} は履修条件が未確定なので、修得した前提にしていません。`
+        : `${name} は履修条件を満たしていないので、修得した前提にしていません。`,
     ),
   };
 }
 
 export function createAdvisorTools(input: AdvisorInput) {
   const { rules, courses, student, answers, adviceRules } = input;
-  const { target, lockedNotes } = planningTarget(input);
+  const { target, lockedNotes, assumptions } = planningTarget(input);
   const state: AdvisorState = { submitted: null, escalated: null, corrections: [] };
-  const check = (plan: PlanEntry[]) => checkPlan(rules, courses, target, plan, answers);
+  const check = (plan: PlanEntry[]) => checkPlan(rules, courses, target, plan, answers, assumptions);
 
   // 同じ違反を検査と提出で続けて返しても、直した回数は増えないので1回に数える。
   const noteCorrection = (correction: Correction) => {

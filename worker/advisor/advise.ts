@@ -37,8 +37,8 @@ export function reviewPlan(
   corrections: Correction[],
 ) {
   const { rules, courses, answers } = input;
-  const { target, lockedNotes } = planningTarget(input);
-  const check = checkPlan(rules, courses, target, plan, answers);
+  const { target, lockedNotes, assumptions } = planningTarget(input);
+  const check = checkPlan(rules, courses, target, plan, answers, assumptions);
   if (!isDisplayablePlan(check)) return null;
 
   const credits = new Map(courses.map((course) => [course.name, course.credits]));

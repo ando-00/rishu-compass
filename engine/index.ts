@@ -15,7 +15,14 @@ export type {
 } from "./model";
 export { draftOutreachMessage, listOutreach } from "./outreach";
 export type { OutreachEntry, OutreachReason } from "./outreach";
-export { checkPlan, isDisplayablePlan, lockedEnrollments, planningStudent } from "./plan";
+export {
+  checkPlan,
+  isDisplayablePlan,
+  lockedEnrollments,
+  pendingPromotions,
+  planningStudent,
+  unresolvedEnrollments,
+} from "./plan";
 export type { PlanCheck, PlanEntry, PlanIssue, PlanIssueCode } from "./plan";
 export type { RuleSet } from "./rules";
 export { diffStudentStates } from "./stateChanges";

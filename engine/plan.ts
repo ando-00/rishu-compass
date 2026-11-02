@@ -18,7 +18,7 @@ import {
   type OfferedTerm,
   type Student,
 } from "./model";
-import type { LoadLimit, RuleSet } from "./rules";
+import type { Gate, LoadLimit, RuleSet } from "./rules";
 
 export type PlanEntry = {
   course: string;
@@ -61,17 +61,19 @@ const DATA_RULE: Rule = { id: "course-data", clause: "科目データ", sourceQu
 const TIMETABLE_RULE: Rule = { id: "timetable", clause: "時間割", sourceQuote: "" };
 const UNRESOLVED_MESSAGE = "未回答の確認事項があるため、職員が確認します。";
 
+// 検査の前提のうち、学生の記録だけでは表せないもの。
+export type PlanAssumptions = {
+  // 履修中だが、履修条件が未回答で決まらない科目
+  pendingCourses?: string[];
+  // 翌年度の案が前提にするのに、決まっていない進級
+  promotions?: Gate[];
+};
+
 export function isDisplayablePlan(check: PlanCheck) {
   return check.status === "passed";
 }
 
-// 今年度に履修中でも、履修条件を満たしていない科目を返す。回答した読み方で条件から外れることがある。
-export function lockedEnrollments(
-  rules: RuleSet,
-  courses: Course[],
-  student: Student,
-  answers: Answers,
-) {
+function enrolledGates(rules: RuleSet, courses: Course[], student: Student, answers: Answers) {
   const prepared = prepareRules(rules, courses, answers);
   if (exclusionReason(prepared, student)) return [];
   const context = createContext(prepared, student);
@@ -81,9 +83,46 @@ export function lockedEnrollments(
 
   return prepared.rules.gates.flatMap((gate) => {
     if (gate.target.kind !== "course" || !matchesCondition(gate.when, student)) return [];
-    if (judgeGate(gate, context).status === "satisfied") return [];
+    const { status } = judgeGate(gate, context);
+    if (status === "satisfied") return [];
     const { courses: targets } = gate.target;
-    return enrolled.filter((name) => targets.includes(name));
+    return enrolled.filter((name) => targets.includes(name)).map((name) => ({ name, status }));
+  });
+}
+
+// 今年度に履修中でも、履修条件を満たしていない科目を返す。回答した読み方で条件から外れることがある。
+export function lockedEnrollments(
+  rules: RuleSet,
+  courses: Course[],
+  student: Student,
+  answers: Answers,
+) {
+  return enrolledGates(rules, courses, student, answers).map(({ name }) => name);
+}
+
+// そのうち、未回答で履修条件が決まらない科目を返す。修得の前提にはしないが、満たしていないとは言わない。
+export function unresolvedEnrollments(
+  rules: RuleSet,
+  courses: Course[],
+  student: Student,
+  answers: Answers,
+) {
+  return enrolledGates(rules, courses, student, answers)
+    .filter(({ status }) => status === "needs_staff")
+    .map(({ name }) => name);
+}
+
+// 翌年度の案が前提にする進級のうち、不足か未確定のものを返す。履修中の修得を見込むものは含めない。
+export function pendingPromotions(rules: RuleSet, courses: Course[], student: Student, answers: Answers) {
+  if (student.currentTerm === "前期") return [];
+  const prepared = prepareRules(rules, courses, answers);
+  if (exclusionReason(prepared, student)) return [];
+  const context = createContext(prepared, student);
+  return prepared.rules.gates.filter((gate) => {
+    if (gate.target.kind !== "promotion" || gate.target.toYear !== student.studentYear + 1) return false;
+    if (!matchesCondition(gate.when, student)) return false;
+    const { status } = judgeGate(gate, context);
+    return status === "needs_staff" || status === "short";
   });
 }
 
@@ -132,7 +171,11 @@ class PlanChecker {
   private readonly plan: PlanEntry[];
   private readonly scheduled: PlanEntry[];
 
-  constructor(context: EvaluationContext, plan: PlanEntry[]) {
+  constructor(
+    context: EvaluationContext,
+    plan: PlanEntry[],
+    private readonly assumptions: PlanAssumptions,
+  ) {
     this.context = context;
     this.plan = plan.filter((entry) => context.catalog.has(entry.course));
     const { student } = context;
@@ -181,6 +224,13 @@ class PlanChecker {
 
   private course(name: string) {
     return findCourse(this.context.catalog, name);
+  }
+
+  checkPromotions() {
+    for (const rule of this.assumptions.promotions ?? []) {
+      const message = `${rule.name} が決まっていないので、翌年次の案は職員が確認します。`;
+      this.add("PENDING_RULE", rule, message, "進級の条件を確かめてください。");
+    }
   }
 
   checkDuplicates() {
@@ -258,6 +308,15 @@ class PlanChecker {
         const available = (name: string) => passed.has(name) || earlier(name) || together(name);
 
         const met = rule.conditions.find((names) => names.every(available));
+        const pending = rule.conditions
+          .flat()
+          .find((name) => this.assumptions.pendingCourses?.includes(name));
+        if (!met && pending) {
+          // 前提の科目の履修条件が未回答で決まらないので、不合格と言い切らない。
+          const message = `${entry.course} の前提の ${pending} は、履修条件が未確定です。${UNRESOLVED_MESSAGE}`;
+          this.add("PENDING_RULE", rule, message, "曖昧箇所に回答すると検査できます。", entry.course);
+          continue;
+        }
         if (!met) {
           const need = rule.conditions.map((names) => names.join("と")).join("または");
           const message = `${entry.course} には ${need} の修得が必要です。`;
@@ -427,6 +486,7 @@ export function checkPlan(
   student: Student,
   plan: PlanEntry[],
   answers: Answers,
+  assumptions: PlanAssumptions = {},
 ): PlanCheck {
   const prepared = prepareRules(rules, courses, answers);
   const reason = exclusionReason(prepared, student);
@@ -434,7 +494,8 @@ export function checkPlan(
 
   // エラーは例外で止めず、職員確認にする。
   try {
-    const checker = new PlanChecker(createContext(prepared, student), plan);
+    const checker = new PlanChecker(createContext(prepared, student), plan, assumptions);
+    checker.checkPromotions();
     checker.checkDuplicates();
     checker.checkOffering();
     checker.checkEnrollment();

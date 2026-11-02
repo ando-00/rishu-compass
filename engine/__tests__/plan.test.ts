@@ -6,6 +6,7 @@ import {
   checkPlan,
   isDisplayablePlan,
   lockedEnrollments,
+  unresolvedEnrollments,
   planningStudent,
   type PlanEntry,
 } from "../plan";
@@ -447,6 +448,41 @@ describe("履修条件を満たしていない履修中の科目", () => {
 
   it("未回答なら修得の前提にしない", () => {
     expect(locked(boundary, {})).toEqual(["ゼミ"]);
+  });
+
+  it("未回答で止まっている科目だけを未確定として分ける（A2-1）", () => {
+    const unresolved = (answers: Answers) =>
+      unresolvedEnrollments(exampleRules, exampleCourses, boundary, answers);
+    expect(unresolved({})).toEqual(["ゼミ"]);
+    expect(unresolved({ "ambiguity-seminar-credits": "exclude" })).toEqual([]);
+    expect(unresolved({ "ambiguity-seminar-credits": "include" })).toEqual([]);
+  });
+
+  it("進級が決まっていない学生の翌年次の案は、検査を通さない（A2-10）", () => {
+    const rules = structuredClone(exampleRules);
+    const promotion = { ...rules.gates[0]!, id: "gate-promotion", name: "進級", target: { kind: "promotion", toYear: 3 } } as RuleSet["gates"][number];
+    const plan = [{ course: "専門10", term: "前期" as const }];
+    const target = planningStudent(boundary, []);
+    expect(checkPlan(rules, exampleCourses, target, plan, ANSWERED).status).toBe("passed");
+
+    const blocked = checkPlan(rules, exampleCourses, target, plan, ANSWERED, { promotions: [promotion] });
+    expect(blocked.status).toBe("needs_staff");
+    expect(blocked.issues[0]).toMatchObject({ code: "PENDING_RULE", ruleId: "gate-promotion" });
+  });
+
+  it("未確定の履修中の科目が前提の案は、不合格にせず職員確認にする（A2-1）", () => {
+    const rules = structuredClone(exampleRules);
+    rules.prerequisites[0]!.course = "専門10";
+    rules.prerequisites[0]!.conditions = [["ゼミ"]];
+    const target = planningStudent(boundary, locked(boundary, {}));
+    const plan = [{ course: "専門10", term: "前期" as const }];
+
+    const pending = checkPlan(rules, exampleCourses, target, plan, {}, { pendingCourses: ["ゼミ"] });
+    expect(pending.status).toBe("needs_staff");
+    expect(pending.issues.map(({ code }) => code)).not.toContain("PREREQUISITE_NOT_MET");
+
+    // 未確定と知らされなければ、これまでどおり不合格になる
+    expect(checkPlan(rules, exampleCourses, target, plan, {}).status).toBe("failed");
   });
 
   it("条件を満たしていない履修中の科目は、次の年度の先修に数えない", () => {

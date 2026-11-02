@@ -154,7 +154,7 @@
 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
-| A2-1 | S1 | 未回答の第6条を「履修条件を満たしていない」と言い切り、Claude にも同じ文を渡す。演習Ⅱの案が `needs_staff` でなく `failed` になる。S0007 で再現 | engine/plan.ts:82 worker/advisor/tools.ts:116 | 未解決 | |
+| A2-1 | S1 | 未回答の第6条を「履修条件を満たしていない」と言い切り、Claude にも同じ文を渡す。演習Ⅱの案が `needs_staff` でなく `failed` になる。S0007 で再現 | engine/plan.ts:82 worker/advisor/tools.ts:116 | 解決 | 未回答の科目を `unresolvedEnrollments` で分け、未確定と書く。前提の案は職員確認にする。`worker/__tests__/unresolved-plan.test.ts` |
 | A2-2 | S1 | 土台の案に結びつかない質問が未回答でも確定でき、確認事項から消える。関係する項目は印がないまま確定する | worker/rule-extraction/consensus.ts:82 worker/ruleSets.ts:212 | 解決 | 結びつかない質問が残る案は確定できない。画面にも理由を出す |
 | A2-3 | S2 | 1回だけが読み取ったルールは割れた項目に出ても確定を止めず、「要確認にしてあります」の表示が事実と違う | worker/rule-extraction/consensus.ts:86 src/ExtractionPanel.tsx:101 | 解決 | 確定を止めるとかもめ大学が確定できなくなるので、確定しても判定に入らない項目だと表示する |
 | A2-4 | S2 | 変換の打ち切り、拒否、形式の誤りが 500 になり、1回の失敗で3回分を失う。途中で別のモデルへ引き継いだ成功の応答も失敗になる。本文の断片がログに残る | worker/rule-extraction/claude.ts:42 worker/rule-extraction/consensus.ts:182 | 解決 | SDK に解析させず parseReply で種類どおりに返す。`worker/__tests__/extract-sdk.test.ts` が本物の SDK で確かめる。引き継ぎの応答の実際の形は未検証 |
@@ -163,7 +163,7 @@
 | A2-7 | S2 | 声かけの理由に発端の第6条が出ず、第1条だけが出る。S0095 は単位数と理由が合わないように見え、職員が説明できない | engine/outreach.ts | 未解決 | |
 | A2-8 | S2 | 声かけ文の検査をすり抜ける表現がある。「卒業出来ません」「留年です」「不足は十八です」など | worker/advisor/tools.ts:77 | 未解決 | |
 | A2-9 | S2 | 文章に長さの上限がなく、検査に落ちる案の文が下書きや理由に書ける。声かけ文は検査の対象外という設計なので、長さと表示で防ぐ | worker/advisor/tools.ts:224 | 未解決 | |
-| A2-10 | S2 | 進級が未確定でも翌年次の案が検査を通る。かもめ大学の1年次後期で再現 | engine/plan.ts:101 | 未解決 | |
+| A2-10 | S2 | 進級が未確定でも翌年次の案が検査を通る。かもめ大学の1年次後期で再現 | engine/plan.ts:101 | 解決 | `pendingPromotions` の進級を検査の前提に渡し、不足か未確定なら職員確認にする。同上 |
 | A2-11 | S2 | 科目名に入れた任意の文と、落とした下書きの数値が「コードの検査が返した内容」として表示される | worker/advisor/tools.ts:140 src/AdvisorPanel.tsx:20 | 未解決 | |
 | A2-12 | S2 | 評価の失敗の回が結果に残らず、途中の失敗で全員分が消える。都合の良い回だけを選んでいないことを示せない | evals/extract.ts:92 evals/advise.ts:84 | 未解決 | |
 | A2-13 | S2 | 「判定を見る」を確定済みの同じ対象で押すと、タブと本文が消える | src/App.tsx:123 | 未解決 | |

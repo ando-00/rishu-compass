@@ -198,8 +198,8 @@ app.post("/api/datasets/:id/plan-check", async (c) => {
   // 案の作成と同じ前提で検査する。
   const { rules, courses } = dataset;
   const input = { rules, courses, student, answers: body.answers };
-  const { target, lockedNotes } = planningTarget(input);
-  const check = checkPlan(rules, courses, target, body.plan, body.answers);
+  const { target, lockedNotes, assumptions } = planningTarget(input);
+  const check = checkPlan(rules, courses, target, body.plan, body.answers, assumptions);
   const response: PlanCheckResponse = {
     ...check,
     warnings: [...lockedNotes, ...check.warnings],
