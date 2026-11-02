@@ -25,6 +25,7 @@
 | `data/fictional/students.ts` | 学生データの生成器 | 固定のシードで同じ学生を再現する |
 | `data/fictional/sakuradai/students.ts` | さくら台大学の架空の学生 300 人 | 生成器で作る。氏名は持たず ID だけにする。第6条の読み方で判定が変わる型を一定数入れる |
 | `data/fictional/kamome/students.ts` | かもめ大学の架空の学生 200 人 | 生成器で作る。氏名は持たず ID だけにする |
+| `data/fictional/sakuradai/eval-students.ts` | 評価用の架空の学生 10 人 | 仕様メモの型ごとに Claude が履修記録を組んだ。正解は持たず、作り手が書く。ルール変換の修正に使わず、画面の対象にも入れない |
 | `data/fictional/example/` | 書式と動作確認のための見本 | どの要項の内容でもない値で手作りした |
 
 | `data/fictional/sakuradai/gold-rules.ts` | さくら台大学の正解ルール | 下の「正解ルールの作り方」のとおり |

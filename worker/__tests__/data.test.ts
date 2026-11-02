@@ -5,9 +5,10 @@ import { exampleStudents } from "../../data/fictional/example/students";
 import { kamomeCourses } from "../../data/fictional/kamome/courses";
 import { kamomeStudents } from "../../data/fictional/kamome/students";
 import { sakuradaiCourses } from "../../data/fictional/sakuradai/courses";
+import { sakuradaiEvalStudents } from "../../data/fictional/sakuradai/eval-students";
 import { sakuradaiStudents } from "../../data/fictional/sakuradai/students";
 import { generateStudents } from "../../data/fictional/students";
-import { validateRuleSet, type Course, type Student } from "../../engine";
+import { validateRuleSet, type Course, type CourseRecord, type Student } from "../../engine";
 
 const datasets: [string, Course[], Student[]][] = [
   ["見本", exampleCourses, exampleStudents],
@@ -88,6 +89,60 @@ describe("かもめのクォーターの科目", () => {
       );
       expect(partner).toBeDefined();
     }
+  });
+});
+
+describe("さくら台の評価用の学生", () => {
+  const courseOf = (name: string) => sakuradaiCourses.find((course) => course.name === name);
+  const creditsOf = (record: CourseRecord) => courseOf(record.course)?.credits ?? 0;
+
+  describe.each(sakuradaiEvalStudents)("$type", ({ student }) => {
+    it("履修記録が開講学期と配当年次に合う", () => {
+      for (const { course, term, studentYear } of student.records) {
+        expect(courseOf(course)?.offeredIn, course).toBe(term);
+        expect(courseOf(course)?.assignedYear, course).toBeLessThanOrEqual(studentYear);
+      }
+    });
+
+    it("同じ科目を二度修得せず、先修科目を前の学期までに修得している", () => {
+      const passed = student.records.filter((record) => record.result !== "failed");
+      expect(new Set(passed.map((record) => record.course)).size).toBe(passed.length);
+      for (const { course, studentYear } of passed) {
+        const first = course.endsWith("Ⅱ") ? `${course.slice(0, -1)}Ⅰ` : null;
+        if (!first) continue;
+        const done = student.records.find((r) => r.course === first && r.result === "passed");
+        expect(done, course).toBeDefined();
+        expect(done!.studentYear, course).toBeLessThanOrEqual(studentYear);
+      }
+    });
+
+    it("学期と年間の履修上限を超えていない", () => {
+      for (let year = 1; year <= student.studentYear; year += 1) {
+        const inYear = student.records.filter((record) => record.studentYear === year);
+        const load = (term: string) =>
+          inYear
+            .filter((record) => record.term === term)
+            .reduce((sum, record) => sum + creditsOf(record), 0);
+        const whole = load("通年") / 2;
+        expect(load("前期") + whole, `${year}年前期`).toBeLessThanOrEqual(24);
+        expect(load("後期") + whole, `${year}年後期`).toBeLessThanOrEqual(24);
+        expect(load("前期") + load("後期") + whole * 2, `${year}年`).toBeLessThanOrEqual(48);
+      }
+    });
+  });
+
+  it("id が重複せず、表示用の学生と重ならない", () => {
+    const ids = sakuradaiEvalStudents.map(({ student }) => student.id);
+    expect(new Set(ids).size).toBe(10);
+    expect(ids.filter((id) => sakuradaiStudents.some((student) => student.id === id))).toEqual([]);
+  });
+
+  it("第6条の境界の型は、2年次の終わりに修得60単位、うち他学科12単位", () => {
+    const { student } = sakuradaiEvalStudents.find(({ type }) => type.startsWith("第6条"))!;
+    const early = student.records.filter((r) => r.studentYear <= 2 && r.result === "passed");
+    expect(early.reduce((sum, record) => sum + creditsOf(record), 0)).toBe(60);
+    const outside = early.filter((r) => courseOf(r.course)?.groups.includes("他学科"));
+    expect(outside.reduce((sum, record) => sum + creditsOf(record), 0)).toBe(12);
   });
 });
 
