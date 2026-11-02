@@ -79,7 +79,7 @@ node scripts/audit.mjs --full   # 約30〜60分。上に加えて clean clone（
 | 回数 | 何度でも。夜間ループは毎周回す | 3回だけ |
 | 指摘の記録 | `FAIL` を直したら `docs/PROGRESS.md` に1行 | `docs/AUDIT_LOG.md` |
 
-夜間ループの手順は `.claude/skills/night-loop/SKILL.md`、拾う作業は `docs/BACKLOG.md` にある。
+夜間ループの手順は `.claude/skills/night-loop/SKILL.md`、拾う作業は `docs/BACKLOG.md` にある。夜間ループは claude.ai のスケジュールで毎晩起動する。Claude Code の Stop フックが、作業を終える前に速い検査を回し、FAIL があれば終了を止めて直させる。
 
 ### コマンドの一覧
 

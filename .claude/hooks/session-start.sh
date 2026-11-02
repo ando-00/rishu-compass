@@ -11,6 +11,11 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
+# クラウドの clone は浅い履歴なので、鍵と持ち込みデータの検査のために全履歴を取る
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  git fetch --quiet --unshallow origin || true
+fi
+
 # package.json と package-lock.json が前回の導入から変わったときだけ入れ直す
 hashes=node_modules/.session-start.sha256
 if ! sha256sum --check --status "$hashes" 2>/dev/null; then

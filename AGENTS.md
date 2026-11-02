@@ -65,5 +65,6 @@
 - 区切りのコミットのあと、`docs/AUDIT.md` の鍵の検査を通して `origin/main` へ push し、CI の結果を確認する。CI が落ちたら次の機能より先に直す
 - push が拒まれたら、`rebase` や `force push` をせず原因を確認する
 - 鍵は `.githooks/pre-commit` と `.githooks/pre-push` でも止める。clone したら `git config core.hooksPath .githooks` を実行する。Claude Code では `.claude/settings.json` の SessionStart フックがこれを行う
+- `.claude/hooks/stop-audit.mjs` が、Claude Code の作業を終える前に `node scripts/audit.mjs` を回し、FAIL があれば終了を止めて直させる。push のあとは `.claude/hooks/after-push.mjs` が CI の確認を促す
 - `.claude/hooks/guard-bash.mjs` が、`git add -A`、`rebase`、`force push`、`--amend`、`reset --hard`、ブランチの作成を止め、コードを含むコミットの前に `npm run build` と `npm test` を回す
 - ビルドで `.dev.vars` が `dist/` にコピーされる。`.dev.vars` がある環境の `dist/` を共有も提出もしない
