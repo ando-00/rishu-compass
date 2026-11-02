@@ -19,4 +19,11 @@ export const adviseResponseSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
+// recordedAt が null なら記録がない。advice があるときは、案を記録できなかったことを表す
+export const savedAdviceSchema = z.object({
+  advice: adviseResponseSchema.nullable(),
+  recordedAt: z.string().nullable(),
+});
+
 export type AdviseResponse = z.infer<typeof adviseResponseSchema>;
+export type SavedAdvice = z.infer<typeof savedAdviceSchema>;

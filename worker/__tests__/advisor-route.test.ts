@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { exampleStudents } from "../../data/fictional/example/students";
-import { adviseResponseSchema } from "../../shared/advise";
+import { savedAdviceSchema } from "../../shared/advise";
 import app from "../index";
+import { createTestDb } from "./testDb";
 
 const ANSWERS = { "ambiguity-seminar-credits": "include" };
 const excluded = exampleStudents.find((student) => student.specialStatuses.length > 0)!;
-const allowed = { ALLOW_CLAUDE: "true", ANTHROPIC_API_KEY: "test-key" };
+const allowed = { ALLOW_CLAUDE: "true", ANTHROPIC_API_KEY: "test-key", DB: createTestDb().db };
 
 function post(studentId: string, env: object, body: unknown = { answers: ANSWERS }) {
   return app.request(
@@ -27,7 +28,7 @@ describe("履修案の経路", () => {
   it("適用外の学生は Claude を呼ばず職員確認を返す", async () => {
     const res = await post(excluded.id, allowed);
     expect(res.status).toBe(200);
-    expect(adviseResponseSchema.parse(await res.json())).toMatchObject({
+    expect(savedAdviceSchema.parse(await res.json()).advice).toMatchObject({
       status: "needs_staff",
       iterations: 0,
     });

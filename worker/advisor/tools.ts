@@ -20,6 +20,8 @@ export type AdvisorInput = {
   adviceRules: string;
 };
 
+export type PlanInput = Omit<AdvisorInput, "adviceRules">;
+
 export type AdvisorState = {
   submitted: { plan: PlanEntry[]; draft: string } | null;
   escalated: string | null;
@@ -89,13 +91,19 @@ function findAdviceRules(adviceRules: string, keyword: string | null) {
   return shown.map(({ number, topic, rule }) => ({ number, topic, rule }));
 }
 
+export function planningTarget({ rules, courses, student, answers }: PlanInput) {
+  const locked = lockedEnrollments(rules, courses, student, answers);
+  return {
+    target: planningStudent(student, locked),
+    lockedNotes: locked.map(
+      (name) => `${name} は履修条件を満たしていないので、修得した前提にしていません。`,
+    ),
+  };
+}
+
 export function createAdvisorTools(input: AdvisorInput) {
   const { rules, courses, student, answers, adviceRules } = input;
-  const locked = lockedEnrollments(rules, courses, student, answers);
-  const target = planningStudent(student, locked);
-  const lockedNotes = locked.map(
-    (name) => `${name} は履修条件を満たしていないので、修得した前提にしていません。`,
-  );
+  const { target, lockedNotes } = planningTarget(input);
   const state: AdvisorState = { submitted: null, escalated: null };
   const check = (plan: PlanEntry[]) => checkPlan(rules, courses, target, plan, answers);
 

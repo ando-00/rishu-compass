@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { adviseResponseSchema } from "../shared/advise";
+import { savedAdviceSchema } from "../shared/advise";
 import {
   answerRecordsResponseSchema,
   confirmResponseSchema,
@@ -87,7 +87,12 @@ export async function fetchStudent(datasetId: string, studentId: string, answers
 
 export async function adviseStudent(datasetId: string, studentId: string, answers: Answers) {
   const res = await post(`/api/datasets/${datasetId}/students/${studentId}/advise`, { answers });
-  return readJson(res, adviseResponseSchema);
+  return readJson(res, savedAdviceSchema);
+}
+
+export async function fetchLatestAdvice(datasetId: string, studentId: string, answers: Answers) {
+  const res = await post(`/api/datasets/${datasetId}/students/${studentId}/advice/latest`, { answers });
+  return readJson(res, savedAdviceSchema);
 }
 
 export async function checkPlan(

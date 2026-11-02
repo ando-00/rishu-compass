@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import type { AdviseResponse } from "../shared/advise";
+import { useEffect, useRef, useState } from "react";
+import type { AdviseResponse, SavedAdvice } from "../shared/advise";
 import type { Answers } from "../shared/api";
-import { adviseStudent } from "./api";
+import { adviseStudent, fetchLatestAdvice } from "./api";
 import { PlanBadge } from "./StatusBadge";
 
 type Props = {
@@ -50,26 +50,52 @@ function PlanResult({ result }: { result: Extract<AdviseResponse, { status: "pas
   );
 }
 
+function RecordNote({ saved }: { saved: SavedAdvice }) {
+  return (
+    <p className="muted">
+      {saved.recordedAt
+        ? `${new Date(saved.recordedAt).toLocaleString("ja-JP")}に作成した記録です。`
+        : "この結果は記録できませんでした。"}
+    </p>
+  );
+}
+
 export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
-  const [result, setResult] = useState<AdviseResponse | null>(null);
+  const [saved, setSaved] = useState<SavedAdvice | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 学生や回答が変わったあとに届いた結果を、別の学生の案として見せない。
+  const latestRequest = useRef(0);
+  const result = saved?.advice ?? null;
 
   useEffect(() => {
-    setResult(null);
+    const request = ++latestRequest.current;
+    setSaved(null);
+    setRunning(false);
     setError(null);
-  }, [studentId]);
+    fetchLatestAdvice(datasetId, studentId, answers)
+      .then((found) => {
+        if (request === latestRequest.current) setSaved(found);
+      })
+      .catch((cause: unknown) => {
+        if (request !== latestRequest.current) return;
+        setError(cause instanceof Error ? cause.message : "以前の履修案を読み込めませんでした。");
+      });
+  }, [datasetId, studentId, answers]);
 
   async function run() {
+    const request = ++latestRequest.current;
     setRunning(true);
-    setResult(null);
+    setSaved(null);
     setError(null);
     try {
-      setResult(await adviseStudent(datasetId, studentId, answers));
+      const created = await adviseStudent(datasetId, studentId, answers);
+      if (request === latestRequest.current) setSaved(created);
     } catch (cause) {
+      if (request !== latestRequest.current) return;
       setError(cause instanceof Error ? cause.message : "履修案を作れませんでした。");
     } finally {
-      setRunning(false);
+      if (request === latestRequest.current) setRunning(false);
     }
   }
 
@@ -81,13 +107,14 @@ export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
       </p>
       <div className="actions">
         <button type="button" disabled={running} onClick={() => void run()}>
-          {running ? "作成中です" : "履修案を作る"}
+          {running ? "作成中です" : result ? "履修案を作り直す" : "履修案を作る"}
         </button>
       </div>
       {error && <p role="alert" className="error">{error}</p>}
-      {result && (
+      {saved && result && (
         <div className="plan-result" aria-live="polite">
           <PlanBadge status={result.status} />
+          <RecordNote saved={saved} />
           {result.status === "passed" ? <PlanResult result={result} /> : <p>{result.reason}</p>}
         </div>
       )}
