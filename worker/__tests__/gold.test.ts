@@ -139,8 +139,8 @@ describe("第6条の曖昧箇所", () => {
     };
     const before = await overview({});
     const after = await overview({ [QUESTION]: "countable" });
-    expect(before.unanswered).toHaveLength(1);
-    expect(after.unanswered).toHaveLength(0);
+    expect(before.unanswered).toHaveLength(goldRules.ambiguities.length);
+    expect(after.unanswered).toHaveLength(goldRules.ambiguities.length - 1);
     expect(after.summary.contact).toBeGreaterThan(before.summary.contact);
     expect(after.summary.staffReview).toBeLessThan(before.summary.staffReview);
   });

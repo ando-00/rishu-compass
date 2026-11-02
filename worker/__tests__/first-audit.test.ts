@@ -31,6 +31,8 @@ async function overview(answers: Record<string, string>) {
 
 describe("さくら台の全学生の集計（A1-1、A1-3）", () => {
   const ambiguity = goldRules.ambiguities[0]!;
+  const impactOf = (result: Awaited<ReturnType<typeof overview>>) =>
+    result.unanswered.find(({ ambiguityId }) => ambiguityId === ambiguity.id);
 
   it("2年次の後期に演習Ⅰの条件を満たせない6人は、どの読み方でも延期見込みになる", () => {
     for (const id of SIX) {
@@ -49,7 +51,7 @@ describe("さくら台の全学生の集計（A1-1、A1-3）", () => {
       const after = await overview({ [ambiguity.id]: option.id });
       const contact = after.outreach.filter((entry) => entry.kind === "contact");
       const dropped = contact.filter(({ studentId }) => {
-        const always = before.unanswered[0]?.affectedStudentIds.includes(studentId);
+        const always = impactOf(before)?.affectedStudentIds.includes(studentId);
         return !always && !listed.has(studentId);
       });
       expect(dropped).toEqual([]);
@@ -63,7 +65,7 @@ describe("さくら台の全学生の集計（A1-1、A1-3）", () => {
       const after = await overview({ [ambiguity.id]: option.id });
       const moved = after.students.filter(({ id, state }) => states.get(id) !== state).map(({ id }) => id);
       expect(moved.length).toBeGreaterThan(0);
-      expect(before.unanswered[0]?.affectedStudentIds).toEqual(expect.arrayContaining(moved));
+      expect(impactOf(before)?.affectedStudentIds).toEqual(expect.arrayContaining(moved));
     }
   });
 

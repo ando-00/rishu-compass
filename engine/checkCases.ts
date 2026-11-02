@@ -34,6 +34,7 @@ const ISSUE_LABELS: Record<PlanIssueCode, string> = {
   NOT_OFFERED: "開講なし",
   WRONG_YEAR: "配当年次より前の履修",
   ALREADY_EARNED: "修得済みの再履修",
+  DISQUALIFIED_RETAKE: "失格の再履修",
   SEMINAR_LOCKED: "履修条件の未達",
   CATEGORY_LIMIT: "科目数の超過",
   PENDING_RULE: "未確定のルール",

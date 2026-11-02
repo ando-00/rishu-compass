@@ -173,6 +173,7 @@ export const planCheckResponseSchema = z.object({
         "NOT_OFFERED",
         "WRONG_YEAR",
         "ALREADY_EARNED",
+        "DISQUALIFIED_RETAKE",
         "SEMINAR_LOCKED",
         "CATEGORY_LIMIT",
         "PENDING_RULE",

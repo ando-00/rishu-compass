@@ -76,6 +76,10 @@ export type EnrollmentRule = RuleBase & {
   forbidRetakeOfPassed: boolean;
 };
 
+export type RetakeRule = RuleBase & {
+  forbidDisqualified: boolean;
+};
+
 export type RulePatch = {
   ruleId: string;
   field: string;
@@ -108,5 +112,6 @@ export type RuleSet = {
   courseCountLimits: CourseCountLimit[];
   prerequisites: Prerequisite[];
   enrollment?: EnrollmentRule;
+  retake?: RetakeRule;
   ambiguities: Ambiguity[];
 };

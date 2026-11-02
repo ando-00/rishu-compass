@@ -8,6 +8,7 @@ import {
 } from "./credits";
 import {
   indexCourses,
+  disqualifiedCourses,
   matchesCondition,
   passedCourses,
   termIndex,
@@ -350,6 +351,9 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
   const { enrollment } = rules;
   const forbidEarly =
     enrollment && (isOpen(enrollment) ? pessimistic : enrollment.forbidBeforeAssignedYear);
+  const disqualified = disqualifiedCourses(student);
+  const retakeBarred =
+    rules.retake && (isOpen(rules.retake) ? pessimistic : rules.retake.forbidDisqualified);
   let incalculable = false;
 
   function earliestStart(name: string) {
@@ -364,6 +368,7 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
 
   function finishTerm(name: string, visiting: Set<string>): number {
     if (passed.has(name)) return -1;
+    if (retakeBarred && disqualified.has(name)) return Number.POSITIVE_INFINITY;
     const known = finished.get(name);
     if (known !== undefined) return known;
     const course = catalog.get(name);
@@ -452,10 +457,12 @@ function shortfallCredits(rules: RuleSet, student: Student, projected: CreditAll
 // 延期見込みの計算に使う、学生に適用されるルール。
 function delayInputs({ rules, student }: EvaluationContext) {
   const applies = ({ when }: { when?: Gate["when"] }) => matchesCondition(when, student);
+  const retake = rules.retake && disqualifiedCourses(student).size > 0 ? [rules.retake] : [];
   return [
     ...rules.prerequisites.filter(applies),
     ...(rules.enrollment ? [rules.enrollment] : []),
     ...rules.loadLimits.filter(applies),
+    ...retake,
   ];
 }
 

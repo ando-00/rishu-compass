@@ -9,6 +9,7 @@ import {
 import {
   findCourse,
   matchesCondition,
+  disqualifiedCourses,
   passedCourses,
   type Answers,
   type Course,
@@ -31,6 +32,7 @@ export type PlanIssueCode =
   | "NOT_OFFERED"
   | "WRONG_YEAR"
   | "ALREADY_EARNED"
+  | "DISQUALIFIED_RETAKE"
   | "SEMINAR_LOCKED"
   | "CATEGORY_LIMIT"
   | "PENDING_RULE"
@@ -221,6 +223,22 @@ class PlanChecker {
       }
       if (rule.forbidRetakeOfPassed && passed.has(course)) {
         this.add("ALREADY_EARNED", rule, `${course} は修得済みです。`, "案から外してください。", course);
+      }
+    }
+  }
+
+  checkRetake() {
+    const { rules, student } = this.context;
+    const rule = rules.retake;
+    if (!rule) return;
+    const passed = passedCourses(student);
+    const disqualified = disqualifiedCourses(student);
+    for (const { course } of this.plan) {
+      if (!disqualified.has(course) || passed.has(course)) continue;
+      if (this.deferIfUnresolved(rule, course)) continue;
+      if (rule.forbidDisqualified) {
+        const message = `${course} は失格のため再び履修できません。`;
+        this.add("DISQUALIFIED_RETAKE", rule, message, "案から外してください。", course);
       }
     }
   }
@@ -420,6 +438,7 @@ export function checkPlan(
     checker.checkDuplicates();
     checker.checkOffering();
     checker.checkEnrollment();
+    checker.checkRetake();
     checker.checkPrerequisites();
     checker.checkGates();
     checker.checkLoad();

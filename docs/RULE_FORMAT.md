@@ -27,6 +27,7 @@
 | `courseCountLimits` | 科目数の上限（なければ `[]`） |
 | `prerequisites` | 先修条件 |
 | `enrollment` | 履修の基本ルール（なければ項目ごと消す） |
+| `retake` | 失格の再履修（なければ項目ごと消す） |
 | `ambiguities` | 曖昧な箇所 |
 
 ## すべてのルールに共通
@@ -112,6 +113,14 @@
 |---|---|
 | `forbidBeforeAssignedYear` | 配当年次より前の履修を禁じるなら `true` |
 | `forbidRetakeOfPassed` | 修得済みの科目の再履修を禁じるなら `true` |
+
+## retake（失格の再履修）
+
+要項に定めがなければ項目ごと消す。曖昧箇所として扱うと、未回答の間は失格の記録がある学生の該当の科目だけが職員確認になる。
+
+| 項目 | 書くこと |
+|---|---|
+| `forbidDisqualified` | 失格の科目の再履修を禁じるなら `true` |
 
 ## ambiguities（曖昧な箇所）
 

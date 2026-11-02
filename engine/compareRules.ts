@@ -112,6 +112,11 @@ const SPECS = {
       forbidRetakeOfPassed,
     }),
   } satisfies Spec<NonNullable<RuleSet["enrollment"]>>,
+  retake: {
+    label: "失格の再履修",
+    key: () => "",
+    fields: ({ forbidDisqualified }) => ({ forbidDisqualified }),
+  } satisfies Spec<NonNullable<RuleSet["retake"]>>,
 };
 
 function itemName<T>(spec: Spec<T>, rule: T) {
@@ -145,6 +150,7 @@ export function ruleNames(rules: RuleSet) {
   add(SPECS.courseCountLimits, rules.courseCountLimits);
   add(SPECS.prerequisites, rules.prerequisites);
   add(SPECS.enrollment, rules.enrollment ? [rules.enrollment] : []);
+  add(SPECS.retake, rules.retake ? [rules.retake] : []);
   return names;
 }
 
@@ -221,6 +227,7 @@ export function compareRules(base: RuleSet, other: RuleSet): Comparison {
     base.enrollment ? [base.enrollment] : [],
     other.enrollment ? [other.enrollment] : [],
   );
+  compare(SPECS.retake, base.retake ? [base.retake] : [], other.retake ? [other.retake] : []);
 
   return {
     rate: total === 0 ? 0 : matched / total,

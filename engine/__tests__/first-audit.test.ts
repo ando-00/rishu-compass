@@ -527,6 +527,55 @@ describe("計算できない候補の人数（A1-28）", () => {
   });
 });
 
+describe("失格の再履修（第13条）", () => {
+  const rules = miniRules({
+    retake: { id: "retake", clause: "第13条", sourceQuote: "本文", forbidDisqualified: false },
+    ambiguities: [
+      ambiguity("scope", [
+        { id: "include", label: "含む", patches: [{ ruleId: "retake", field: "forbidDisqualified", value: false }] },
+        { id: "exclude", label: "含まない", patches: [{ ruleId: "retake", field: "forbidDisqualified", value: true }] },
+      ]),
+    ],
+  });
+  const disqualified = { course: "Y", studentYear: 2, term: "前期" as const, result: "disqualified" as const };
+  const student = { ...third, records: [...passed(["X"]), disqualified] };
+  const plan = [{ course: "Y", term: "前期" as const }];
+  const codes = (target: Student, answers: Answers) =>
+    checkPlan(rules, miniCourses, planningStudent(target), plan, answers).issues.map(({ code }) => code);
+
+  it("未回答なら、失格の必修が残る学生の卒業は職員確認にする", () => {
+    expect(judge(rules, miniCourses, student, {})).toMatchObject({
+      status: "needs_staff",
+      ambiguityIds: ["scope"],
+    });
+  });
+
+  it("再び履修できないなら延期見込み、履修できるなら不足にする", () => {
+    expect(judge(rules, miniCourses, student, { scope: "exclude" }).status).toBe("delay_risk");
+    expect(judge(rules, miniCourses, student, { scope: "include" }).status).toBe("short");
+  });
+
+  it("失格の記録がない学生の判定は止めない", () => {
+    expect(judge(rules, miniCourses, third, {}).status).toBe("short");
+    expect(judge(rules, miniCourses, third, {}).ambiguityIds).toEqual([]);
+    const review = { ...rules, retake: { ...rules.retake!, status: "needs_review" as const } };
+    expect(judge(review, miniCourses, third, {}).status).toBe("short");
+  });
+
+  it("案の検査は失格の科目だけを止める", () => {
+    expect(codes(student, {})).toEqual(["PENDING_RULE"]);
+    expect(codes(student, { scope: "exclude" })).toEqual(["DISQUALIFIED_RETAKE"]);
+    expect(codes(student, { scope: "include" })).toEqual([]);
+    expect(codes(third, {})).not.toContain("PENDING_RULE");
+  });
+
+  it("失格のあとに修得した科目には関係しない", () => {
+    const again = { ...student, records: [...student.records, ...passed(["Y"], 3)] };
+    expect(judge(rules, miniCourses, again, { scope: "exclude" }).status).not.toBe("delay_risk");
+    expect(codes(again, {})).toEqual([]);
+  });
+});
+
 describe("検査の例外（A1-14）", () => {
   it("学生に適用されない算入先があっても、例外で止めず職員確認を返す", () => {
     const rules = structuredClone(exampleRules);

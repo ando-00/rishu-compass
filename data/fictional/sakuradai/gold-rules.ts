@@ -166,6 +166,12 @@ export const goldRules: RuleSet = {
     forbidBeforeAssignedYear: true,
     forbidRetakeOfPassed: true,
   },
+  retake: {
+    id: "retake-disqualified",
+    clause: "第13条",
+    sourceQuote: "不合格となった科目は、再び履修できる",
+    forbidDisqualified: false,
+  },
   ambiguities: [
     {
       id: "seminar-credit-basis",
@@ -182,6 +188,24 @@ export const goldRules: RuleSet = {
           id: "countable",
           label: "卒業に数える単位だけを数える",
           patches: [{ ruleId: "gate-seminar", field: "creditBasis", value: "countable" }],
+        },
+      ],
+    },
+    {
+      id: "retake-disqualified-scope",
+      clause: "第13条",
+      sourceQuote: "不合格となった科目は、再び履修できる",
+      question: "第13条の「不合格となった科目」に、失格の科目は含まれますか。",
+      options: [
+        {
+          id: "include",
+          label: "含む（失格の科目も再び履修できる）",
+          patches: [{ ruleId: "retake-disqualified", field: "forbidDisqualified", value: false }],
+        },
+        {
+          id: "exclude",
+          label: "含まない（失格の科目は再び履修できない）",
+          patches: [{ ruleId: "retake-disqualified", field: "forbidDisqualified", value: true }],
         },
       ],
     },

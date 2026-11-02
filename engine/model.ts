@@ -80,6 +80,11 @@ export function matchesCondition(condition: StudentCondition | undefined, studen
   return true;
 }
 
+export function disqualifiedCourses(student: Student) {
+  const records = student.records.filter((record) => record.result === "disqualified");
+  return new Set(records.map((record) => record.course));
+}
+
 export function passedCourses(
   student: Student,
   options: { includeEnrolled?: boolean; throughYear?: number } = {},

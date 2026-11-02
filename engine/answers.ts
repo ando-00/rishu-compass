@@ -27,6 +27,7 @@ const PATCHABLE_FIELDS = {
   courseCount: { maxPerTerm: "number" },
   prerequisite: { allowSameTerm: "boolean" },
   enrollment: { forbidBeforeAssignedYear: "boolean", forbidRetakeOfPassed: "boolean" },
+  retake: { forbidDisqualified: "boolean" },
 } as const satisfies Record<string, Record<string, FieldType>>;
 
 type RuleKind = keyof typeof PATCHABLE_FIELDS;
@@ -41,6 +42,7 @@ export function listRules(rules: RuleSet) {
     ...tagged("courseCount", rules.courseCountLimits),
     ...tagged("prerequisite", rules.prerequisites),
     ...tagged("enrollment", rules.enrollment ? [rules.enrollment] : []),
+    ...tagged("retake", rules.retake ? [rules.retake] : []),
   ];
 }
 
