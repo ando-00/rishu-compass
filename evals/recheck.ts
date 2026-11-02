@@ -59,7 +59,9 @@ for (const { id, gold, courses, students } of SOURCES) {
   const { comparison, detected } = compareWithGold(gold, rules);
 
   console.log(`最新: ${name}（${saved.commit.slice(0, 7)}、${saved.requestedModel}）`);
+  // 曖昧箇所が変える値は項目の数に入れず、見逃しは検出と案にない項目で見る
   console.log(`  項目の一致: ${comparison.matched}/${comparison.total}`);
+  console.log(`  案にない項目: ${comparison.missing.length}件 ${comparison.missing.join("、")}`);
   console.log(`  曖昧箇所の検出: ${detected.length}/${gold.ambiguities.length} ${detected.map(({ id: ambiguity }) => ambiguity).join("、")}`);
   console.log(`  根拠の文の実在: ${quotes.length - verifyQuotes(quotes, handbook).length}/${quotes.length}`);
   console.log(`  ルールの検査の問題: ${validateRuleSet(rules, courses).length}件`);

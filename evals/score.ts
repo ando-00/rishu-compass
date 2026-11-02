@@ -11,6 +11,7 @@ import { sakuradaiEvalStudents } from "../data/fictional/sakuradai/eval-students
 import { goldRules } from "../data/fictional/sakuradai/gold-rules";
 import { evaluateStudent } from "../engine";
 import { adviseResponseSchema, type AdviseResponse } from "../shared/advise";
+import { reviewPlan } from "../worker/advisor/advise";
 import { evalGoldSchema, scoreStudent, summarizeChecks, unresolvedShown, type Danger } from "./scoring";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -65,6 +66,22 @@ function score(record: AdviseRecord) {
   };
 }
 
+// 記録のあとでルールや検査が変わっても案が有効かを、今のコードで検査し直す。
+function recheckPlans(record: AdviseRecord) {
+  const answers = { "seminar-credit-basis": record.option };
+  const plans = sakuradaiEvalStudents.flatMap(({ student }) => {
+    const found = record.results.find(({ studentId }) => studentId === student.id);
+    const advice = found && adviseResponseSchema.parse(found.result);
+    return advice?.status === "passed" ? [{ student, advice }] : [];
+  });
+  const passed = plans.filter(({ student, advice }) => {
+    const plan = advice.plan.map(({ course, term }) => ({ course, term }));
+    const input = { rules: goldRules, courses: sakuradaiCourses, student, answers };
+    return reviewPlan(input, plan, advice.draft, advice.iterations, advice.corrections) !== null;
+  });
+  return { plans: plans.length, passed: passed.length };
+}
+
 function stamp() {
   return new Date().toISOString().replace(/[-:]/g, "").slice(0, 15).replace("T", "-");
 }
@@ -72,6 +89,7 @@ function stamp() {
 function main() {
   const { name, record } = latestFullRecord();
   const checks = summarizeChecks(record.results.map(({ calls, result }) => ({ calls: calls ?? [], result })));
+  const rechecked = recheckPlans(record);
   const unresolved: Danger[] = sakuradaiEvalStudents.flatMap(({ student }) =>
     unresolvedShown(goldRules, sakuradaiCourses, student).map((rule) => ({
       studentId: student.id,
@@ -87,6 +105,7 @@ function main() {
     commit,
     advice: { file: name, commit: record.commit, model: record.model, option: record.option },
     checks,
+    rechecked,
     gold: scored ? "あり" : "なし",
     credits: scored?.credits ?? null,
     dangerous,
@@ -101,6 +120,7 @@ function main() {
 
   console.log(`履修案の記録: ${name}（${record.commit}、${record.model}、読み方 ${record.option}）`);
   console.log(`検査の通過: 検査まで進んだ ${checks.attempted}名のうち、最初の検査で ${checks.firstPassed}名、最後に ${checks.finalPassed}名`);
+  console.log(`今のコードで検査し直して通る案: ${rechecked.passed}/${rechecked.plans}`);
   console.log(`未確定を確定として示した判定: ${unresolved.length}件`);
   if (scored) {
     console.log(`区分別の不足単位の一致: ${scored.credits.matched}/${scored.credits.total}`);
