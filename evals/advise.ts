@@ -50,8 +50,17 @@ async function main() {
   // 評価は並列にせず直列で回す（設計書 v4 第6節）
   for (const { type, student } of targets) {
     let run: LoopResult | null = null;
+    const calls: { tool: string; input: unknown; output: string }[] = [];
     const measured: AdvisorLoop = async (request) => {
-      run = await loop(request);
+      const tools = request.tools.map((tool) => ({
+        ...tool,
+        run: (input: unknown) => {
+          const output = tool.run(input);
+          calls.push({ tool: tool.name, input, output: output.slice(0, 400) });
+          return output;
+        },
+      }));
+      run = await loop({ ...request, tools });
       return run;
     };
     const startedAt = Date.now();
@@ -65,7 +74,7 @@ async function main() {
     const seconds = Math.round((Date.now() - startedAt) / 1000);
     const cost = run ? costOf(run) : 0;
     console.log(student.id, result.status, `${result.iterations}周`, `${seconds}秒`, `$${cost}`);
-    results.push({ studentId: student.id, type, seconds, cost, usage: (run as LoopResult | null)?.usage ?? null, result });
+    results.push({ studentId: student.id, type, seconds, cost, usage: (run as LoopResult | null)?.usage ?? null, calls, result });
   }
 
   const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15).replace("T", "-");

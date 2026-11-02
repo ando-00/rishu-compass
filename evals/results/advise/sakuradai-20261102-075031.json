@@ -1,0 +1,309 @@
+{
+  "commit": "ff0ba1a",
+  "model": "claude-opus-5-5",
+  "option": "countable",
+  "results": [
+    {
+      "studentId": "E0001",
+      "type": "順調（4年次）",
+      "seconds": 14,
+      "cost": 0.0622,
+      "usage": {
+        "inputTokens": 6916,
+        "outputTokens": 1114,
+        "cacheReadTokens": 6558,
+        "cacheWriteTokens": 2186
+      },
+      "result": {
+        "status": "needs_staff",
+        "reason": "今年度の履修中の科目（演習Ⅱを含む）をすべて修得すれば全区分と卒業要件を満たす見込みで、5年次に履修すべき科目がなく、どの科目を落とす前提で案を組むか判断できません。今年度の成績確定後に、5年次在籍の要否と再履修科目を職員が確認してください。",
+        "iterations": 4
+      }
+    },
+    {
+      "studentId": "E0002",
+      "type": "順調（2年次）",
+      "seconds": 19,
+      "cost": 0.1165,
+      "usage": {
+        "inputTokens": 19562,
+        "outputTokens": 1781,
+        "cacheReadTokens": 13116,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "needs_staff",
+        "reason": "周回の上限までに検査を通る案を作れなかったので、職員の確認に回します。",
+        "iterations": 6
+      }
+    },
+    {
+      "studentId": "E0003",
+      "type": "区分の偏り: 修得は足りるが選択必修が不足",
+      "seconds": 23,
+      "cost": 0.0796,
+      "usage": {
+        "inputTokens": 10555,
+        "outputTokens": 1759,
+        "cacheReadTokens": 10930,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "環境経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "地域経済論",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 4,
+        "planningYear": 5,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n来年度の履修登録に向けて、一緒に確認したいことがあり連絡しました。現在の修得状況では、専門教育の選択必修科目にまだ不足があり、ほかの区分の単位が足りていても、この不足が残ると卒業要件を満たせません。卒業予定の時期については現時点では見込みの段階ですが、予定どおりの卒業は難しい可能性があるため、早めにご相談いただきたいと考えています。来年度は前期・後期それぞれに選択必修科目を入れる案を用意しており、追試や成績の確認などで残っている手続きがないかもあわせて確かめたいと思います。お手数ですが、近いうちに教務窓口へ面談のご相談にお越しください。",
+        "iterations": 5
+      }
+    },
+    {
+      "studentId": "E0004",
+      "type": "必修の落とし: 再履修が必要",
+      "seconds": 20,
+      "cost": 0.1012,
+      "usage": {
+        "inputTokens": 16960,
+        "outputTokens": 1538,
+        "cacheReadTokens": 13116,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "needs_staff",
+        "reason": "周回の上限までに検査を通る案を作れなかったので、職員の確認に回します。",
+        "iterations": 6
+      }
+    },
+    {
+      "studentId": "E0005",
+      "type": "先修未修得: Ⅰを落としてⅡを履修できない",
+      "seconds": 29,
+      "cost": 0.1293,
+      "usage": {
+        "inputTokens": 18787,
+        "outputTokens": 2597,
+        "cacheReadTokens": 10930,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "ミクロ経済学Ⅰ",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "ミクロ経済学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "計量経済学",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済統計",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "企業金融論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "欧州経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "データ分析入門",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "国際経済学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "政策分析",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 20,
+        "planningYear": 3,
+        "warnings": [
+          "ミクロ経済学Ⅱ は ミクロ経済学Ⅰ の修得を前提にしています。不合格の場合は組み直しが必要です。"
+        ],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n来年度の履修登録に向けて、一緒に確認したいことがあるのでご連絡しました。現在の状況では、3年次から演習Ⅰを履修するための条件が満たせない見込みで、ミクロ経済学Ⅰを修得することが大切になっています。来年度はミクロ経済学Ⅰを前期に優先して入れ、続けて後期のミクロ経済学Ⅱにつなげる案を考えています。演習の履修時期は、その後の卒業までの計画にも関わるため、早めに見通しを立てておきたいと思います。追試や成績確認の手続きが残っていないかも含めて、一度教務窓口へ相談に来てください。",
+        "iterations": 5
+      }
+    },
+    {
+      "studentId": "E0006",
+      "type": "上限に当たる: 緩和の条件を確認する",
+      "seconds": 30,
+      "cost": 0.128,
+      "usage": {
+        "inputTokens": 19354,
+        "outputTokens": 2419,
+        "cacheReadTokens": 10930,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "needs_staff",
+        "reason": "不足している専門教育選択と自由の単位、演習Ⅱを全部合わせると、4年次の年間履修上限を超えるため、今年度中の卒業は難しい見込みです（前年度GPAが未確定のため緩和上限は使えません）。判断ルール10に沿って職員面談が必要なので、追試や成績異議の有無、緩和の可能性を確認したうえで案を組み直してください。",
+        "iterations": 5
+      }
+    },
+    {
+      "studentId": "E0007",
+      "type": "進級ぎりぎり: 履修中をすべて修得すれば第6条の単位に届く",
+      "seconds": 26,
+      "cost": 0.1296,
+      "usage": {
+        "inputTokens": 19135,
+        "outputTokens": 2542,
+        "cacheReadTokens": 10930,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "passed",
+        "plan": [
+          {
+            "course": "演習Ⅰ",
+            "term": "通年",
+            "credits": 4
+          },
+          {
+            "course": "計量経済学",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "経済思想史",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "行動経済学",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "情報経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "都市経済論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "企業金融論",
+            "term": "前期",
+            "credits": 2
+          },
+          {
+            "course": "財政学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "金融論Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "国際経済学Ⅱ",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "ゲーム理論",
+            "term": "後期",
+            "credits": 2
+          },
+          {
+            "course": "政策分析",
+            "term": "後期",
+            "credits": 2
+          }
+        ],
+        "totalCredits": 26,
+        "planningYear": 3,
+        "warnings": [],
+        "draft": "【下書き】職員が内容を確認してから使ってください。\n\n3年次の履修登録に向けて、一緒に確認しておきたいことがあります。演習Ⅰを履修するには、今年度履修中の科目をきちんと修得しておくことが前提になりますので、まずは今期の授業を大切にしてください。来年度は演習Ⅰと計量経済学という必修科目を中心に、専門教育の選択科目も計画的に履修していくことをおすすめします。専門教育の選択科目や自由科目の区分にも不足がありますので、総単位だけでなく区分ごとの状況も一緒に見ておきましょう。時間割の組み方や科目の選び方について、一度教務の窓口に相談に来てください。",
+        "iterations": 5
+      }
+    },
+    {
+      "studentId": "E0008",
+      "type": "今年度の卒業が難しい: 残りの単位が上限を超える",
+      "seconds": 30,
+      "cost": 0.13,
+      "usage": {
+        "inputTokens": 18161,
+        "outputTokens": 2760,
+        "cacheReadTokens": 10930,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "needs_staff",
+        "reason": "卒業要件の判定が「delay_risk」（卒業予定までの履修機会では足りない見込み）で、判断ルール10により職員面談が必須のため、卒業時期を職員が確認するまで案の量と配分を決められません。演習Ⅱと専門教育選択科目を入れた試案は検査を通りましたが、自由区分の不足を含め、5年次での卒業を目指すか延長を前提にするかの判断と、追試・成績異議が残っていないかの確認をお願いします。",
+        "iterations": 5
+      }
+    },
+    {
+      "studentId": "E0009",
+      "type": "第6条の境界: 修得60単位、うち他学科12単位",
+      "seconds": 15,
+      "cost": 0.0377,
+      "usage": {
+        "inputTokens": 3690,
+        "outputTokens": 1083,
+        "cacheReadTokens": 6558,
+        "cacheWriteTokens": 0
+      },
+      "result": {
+        "status": "needs_staff",
+        "reason": "卒業要件が「卒業予定までの履修機会では足りない見込み」と判定されていて、専門教育の必修（演習Ⅰ・演習Ⅱ・計量経済学）と複数の区分が不足しているため、判断ルール10に沿って職員面談が必要です。追試や成績異議が残っていないかの確認も含めて、職員の判断のうえで4年次の履修計画を決めてください。",
+        "iterations": 3
+      }
+    },
+    {
+      "studentId": "E0010",
+      "type": "要項の外の事情: 留学",
+      "seconds": 0,
+      "cost": 0,
+      "usage": null,
+      "result": {
+        "status": "needs_staff",
+        "reason": "留学に該当するため、職員が確認します。",
+        "iterations": 0
+      }
+    }
+  ]
+}
