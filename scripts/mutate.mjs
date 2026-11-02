@@ -145,6 +145,8 @@ const M = [
   ["evaluate", 'const missed = outcome.atRisk === true && student.currentTerm === "後期";', "const missed = outcome.atRisk === true;", "延期: 判定年次の前期はまだ落ちない"],
   ["evaluate", "return yearStart(student.studentYear + (missed ? 2 : 1));", "return yearStart(student.studentYear + 1);", "延期: 落ちたら翌々年次"],
   ["evaluate", "tooLate: incalculable ? pessimistic : courses.length > 0,", "tooLate: courses.length > 0,", "延期: 計算できない科目"],
+  ["evaluate", "if (stray.length > 0) {", "if (false) {", "卒業: 区分に入らない科目を職員確認に（A1-26）"],
+  ["evaluate", "gate.enrolledThroughCheckOnly && throughYear !== undefined", "false", "条件: 履修中を判定の時点までに限る（A1-16）"],
   ["evaluate", "if (byMajor.length > 0 && !byMajor.some(({ when }) => matchesCondition(when, student))) {", "if (false) {", "対象外の専攻"],
   ["evaluate", "const required = gate.requiredMayBeEnrolled ? projected : passed;", "const required = passed;", "条件: 履修中でもよい必要科目"],
   ["evaluate", 'if (delay === "unknown") {', "if (false) {", "卒業: 判定できないときの職員確認"],

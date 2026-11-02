@@ -207,7 +207,10 @@ function gateOutcome(gate: Gate, context: EvaluationContext): GateOutcome {
       gate,
       context,
       passedCourses(student, throughYear === undefined ? {} : { throughYear }),
-      projectedNames,
+      // 「履修中でもよい」を判定の時点までに限るときは、その年次までの履修中だけを数える（A1-16）
+      gate.enrolledThroughCheckOnly && throughYear !== undefined
+        ? passedCourses(student, { includeEnrolled: true, throughYear })
+        : projectedNames,
     );
   const present = at();
   const projected = gateProgress(gate, context, projectedNames, projectedNames);

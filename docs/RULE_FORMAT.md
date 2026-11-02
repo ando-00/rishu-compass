@@ -74,6 +74,7 @@
 | `creditBasis` | 修得した全単位で数えるなら `"earned"`、卒業に算入される単位だけなら `"countable"` |
 | `requiredCourses` | 修得が必要な科目。なければ `[]` |
 | `requiredMayBeEnrolled` | 必要な科目は履修中でもよいなら `true`。修得が必要なら書かない |
+| `enrolledThroughCheckOnly` | `requiredMayBeEnrolled` のとき、判定の時点までに修得または履修中だった科目だけを数えるなら `true`。判定の時点より後に履修した科目も数えるなら書かない |
 | `retryAfterMet` | 判定の時点で満たせなくても、後から満たせば認めるなら `true` |
 
 ## loadLimits（履修上限）

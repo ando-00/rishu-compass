@@ -17,6 +17,7 @@ const PATCHABLE_FIELDS = {
     minCredits: "number",
     creditBasis: ["earned", "countable"],
     requiredMayBeEnrolled: "boolean",
+    enrolledThroughCheckOnly: "boolean",
     retryAfterMet: "boolean",
   },
   load: {

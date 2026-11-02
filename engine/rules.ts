@@ -48,6 +48,8 @@ export type Gate = RuleBase & {
   creditBasis?: "earned" | "countable";
   requiredCourses: string[];
   requiredMayBeEnrolled?: boolean;
+  // requiredMayBeEnrolled のとき、判定の時点までに修得または履修中だった科目だけを数えるなら true
+  enrolledThroughCheckOnly?: boolean;
   retryAfterMet: boolean;
 };
 

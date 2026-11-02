@@ -150,7 +150,7 @@ const thesisGates: Gate[] = MAJORS.map(({ key, major }) => ({
   clause: CHAPTER_4,
   sourceQuote: THESIS_QUOTE,
   when: { major },
-  ambiguityIds: [...CREDIT_GATE_AMBIGUITIES, "thesis-enrolled"],
+  ambiguityIds: [...CREDIT_GATE_AMBIGUITIES, "thesis-enrolled", "thesis-enrolled-timing"],
   name: `卒業研究の着手（${major}）`,
   target: { kind: "course", courses: ["卒業研究"] },
   checkAtEndOfYear: 3,
@@ -274,6 +274,26 @@ const ambiguities: Ambiguity[] = [
         id: "may-be-enrolled",
         label: "履修中でもよい",
         patches: patchAll(thesisGates.map(({ id }) => id), "requiredMayBeEnrolled", true),
+      },
+    ],
+  },
+  {
+    // 監査の第1回の A1-16 で、作り手が曖昧箇所にすると決めた（2026-11-02）
+    id: "thesis-enrolled-timing",
+    clause: CHAPTER_4,
+    sourceQuote: THESIS_QUOTE,
+    question:
+      "専攻必修科目を「履修中でもよい」と読む場合、判定の時点（3年次の終わり）より後に履修した科目も、条件を満たすものとして認めますか。",
+    options: [
+      {
+        id: "allow-later",
+        label: "認める",
+        patches: patchAll(thesisGates.map(({ id }) => id), "enrolledThroughCheckOnly", false),
+      },
+      {
+        id: "through-check",
+        label: "認めない（判定の時点までに修得または履修中だった科目だけ）",
+        patches: patchAll(thesisGates.map(({ id }) => id), "enrolledThroughCheckOnly", true),
       },
     ],
   },
