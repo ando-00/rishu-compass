@@ -154,6 +154,12 @@ function checkHistory() {
   const ancestor = git(["merge-base", "--is-ancestor", "origin/main", "HEAD"]);
   if (ancestor.status === 0) record("H2", "PASS", "履歴: origin/main が HEAD の祖先");
   else record("H2", "FAIL", "履歴: origin/main が HEAD の祖先でない", "push の前に原因を確かめる。rebase と force push はしない");
+  // 最初のコミットがイベントの開始（docs/DATA.md）より後。浅い clone では最初のコミットが読めないので未検証
+  const START = Date.parse("2026-11-02T12:30:00+09:00");
+  const first = lines(git(["log", "--reverse", "--format=%aI"]).stdout)[0];
+  if (git(["rev-parse", "--is-shallow-repository"]).stdout.trim() === "true") record("H5", "未検証", "最初のコミットが開始時刻より後", "浅い clone");
+  else if (first && Date.parse(first) > START) record("H5", "PASS", `最初のコミット ${first} は開始時刻より後`);
+  else record("H5", "FAIL", "最初のコミットが開始時刻より前か、読めない", first ?? "");
   const ahead = lines(git(["rev-list", "origin/main..HEAD"]).stdout).length;
   record("H3", ahead === 0 ? "PASS" : "WARN", `push していないコミット ${ahead} 件`);
   if (CI) return;

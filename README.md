@@ -8,14 +8,17 @@
 
 ## 動かし方
 
-公開 URL はありません。手元で動かしてください。Node.js 24 以上が必要です。**API キーがなくても、下の手順はすべて試せます。**
+公開 URL はありません。手元で動かしてください。Node.js 24 以上を想定しています（22 でも動きますが、`npm ci` と `npm test` に警告が出ます）。**API キーがなくても、下の手順はすべて試せます。**
 
 ```sh
 git clone https://github.com/ando-00/rishu-compass.git
 cd rishu-compass
+git config core.hooksPath .githooks
 npm ci
 npm run dev
 ```
+
+`git config core.hooksPath .githooks` は、コミットと push の前に API キーの混入を止める検査を有効にします。試すだけなら省けます。
 
 表示された URL（通常は http://localhost:5173 ）を開きます。
 
@@ -86,6 +89,8 @@ npm test
 npm run eval:recheck
 npm run eval:score
 ```
+
+`eval:score` は `evals/results/score/` に結果ファイルを1つ書きます。上の表のうち「仕込んだ曖昧さの検出」の行だけは、仕込みの一覧がリポジトリの外にあるので、コマンドでは出ません。
 
 全ての回の結果と結果ファイルの対応は [docs/EVALUATION.md](docs/EVALUATION.md) にあります。
 

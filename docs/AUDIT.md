@@ -102,7 +102,7 @@ grep -rnE "from \"([^.]|\.\./\.\./)" engine --include=*.ts --exclude-dir=__tests
 grep -rnE "from \"(\.\./)+worker" src shared                            # 空
 
 # 作らないもの
-git grep -n "@anthropic-ai/sdk" -- ':!package.json' ':!package-lock.json'  # worker/ の中だけ
+git grep -n "@anthropic-ai/sdk" -- ':!package.json' ':!package-lock.json' ':!docs' ':!scripts/audit.mjs'  # worker/ の中だけ
 git grep -nEi "mailto:|send_email|nodemailer|resend|sendgrid" -- src worker shared engine wrangler.jsonc  # 空
 git grep -nE "app\.(get|post|put|delete|patch|all)\(|\.route\(" -- worker ':!worker/__tests__'  # 全経路を読み、学生向けと送信がない
 
@@ -114,9 +114,9 @@ git grep -n "gold" -- src                                               # 空。
 git grep -ln "gold" -- worker ':!*.test.ts'                             # worker/datasets.ts だけ
 git log --format='%h %an | %(trailers:key=Co-Authored-By,valueonly)' -- 'data/fictional/*/gold*'  # 共著の表示がある。docs/DATA.md の経緯と合う
 git log --format=%h -- data/fictional/sakuradai/handbook.md data/fictional/kamome/handbook.md data/fictional/advice-rules.md  # 46e408f だけ
-git reflog | grep -E 'rebase|reset|amend'                               # 空
+git reflog | grep -E 'rebase|reset|amend' | grep -v 'reset: moving to HEAD$'  # 空（stash が残す記録は除く）
 git merge-base --is-ancestor origin/main HEAD                           # 終了コード 0
-git log --reverse --format=%aI | head -1                                # 開始時刻より後
+git log --reverse --format=%aI | head -1                                # 開始時刻（2026-11-02T12:30+09:00）より後
 
 # CI
 gh run list --limit 1                                                   # 最新の push が success
