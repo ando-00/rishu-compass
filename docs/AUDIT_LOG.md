@@ -222,7 +222,7 @@
 | A25-3 | S2 | 「別途、職員確認の学生」が、その曖昧箇所と関係のない職員確認も数える。さくら台の第13条で 293人と出るが、一覧の職員確認は29人 | engine/impact.ts:134 | 未解決 | |
 | A25-4 | S2 | 判定に反映できない回答（`patches: null`）に答えたあとも、理由が「未回答の確認事項があるため」のまま。かもめ大学で11件すべてに答えると、183人がこの理由で止まり、職員は次の操作が分からない | engine/evaluate.ts | 解決 | 止めている曖昧箇所がすべて「答えたが反映できない」ものなら、理由を「判定に反映できない回答があるため」にする。判定は変えない。`worker/__tests__/second-half-audit.test.ts` |
 | A25-5 | S2 | 第6条の単位数の時点が読み方で違う。S0007 は「修得した全単位」で 60/60（判定の時点の値）、「算入される単位だけ」で 76/60 見込み（今の値。判定の時点では満たさず、あとから満たした）。狭い読み方のほうが大きい数を示し、職員が理由を説明できない | engine/evaluate.ts:251 | 解決 | 判定の時点で満たさずあとから満たした学生の理由に、判定の時点の単位数（S0007 は58単位）を示す。判定と示す値は変えない。同上 |
-| A25-6 | S2 | 曖昧箇所ごとの「未回答なら職員確認」のテストが、retake-disqualified-scope、thesis-enrolled-timing、retry-after-met、same-term、retake-passed の5件にない。動作は総当たりで正しいことを確かめた | engine/__tests__/ worker/__tests__/ | 未解決 | |
+| A25-6 | S2 | 曖昧箇所ごとの「未回答なら職員確認」のテストが、retake-disqualified-scope、thesis-enrolled-timing、retry-after-met、same-term、retake-passed の5件にない。動作は総当たりで正しいことを確かめた | engine/__tests__/ worker/__tests__/ | 解決 | `engine/__tests__/each-ambiguity.test.ts` が、2校の全ての曖昧箇所（2件と11件）について1件ずつ、未回答なら関係する判定が職員確認になること、判定を持たないルールは履修案の検査が PENDING_RULE にすること、答えればその曖昧箇所で止まらなくなることを確かめる |
 | A25-14 | S3 | 算入先の区分が学生に適用されないルールで、`lockedEnrollments` が try の外で例外を投げる。判定は職員確認に倒れるが、plan-check と advise の経路は 500 になる見込み（経路はコードを読んだだけ） | engine/plan.ts:76 | 対応しない | |
 | A25-15 | S3 | 新しい項目 `enrolledThroughCheckOnly` が、変換のスキーマとプロンプト、`compareRules`、確認画面の要約にない。Claude の変換はこの読み方を表せない | worker/rule-extraction/schema.ts:80 engine/compareRules.ts:164 src/ruleSummary.ts:95 | 対応しない | |
 | A25-16 | S3 | 確認画面の要約が、曖昧箇所の候補で変わる値を「確認中」にせず仮の値で出す。行には「曖昧箇所あり」の印が付く | src/ruleSummary.ts:95 | 対応しない | |
@@ -239,7 +239,7 @@
 | A25-7 | S2 | guard-bash が、`git add … && git commit`、`git commit -a`、`git commit -- <path>` のとき build と test を回さない。判定に使う索引が実行の前のもの | .claude/hooks/guard-bash.mjs:55 | 解決 | コミットの前に、索引に加えて未ステージの変更と、同じコマンドで足す新しいファイルを見る。`scripts/__tests__/hooks.test.mjs` |
 | A25-8 | S2 | guard-bash が止めるべき操作を17件通す: `git -C`、`git -c core.hooksPath=…`、`pull --rebase`、`branch <名前>`、`switch --create`、短いオプションのまとめ（`-uf`、`-vA`、`-nm`）、長いオプションの省略（`--amen` など）、`bash -c "…"`、引用符の対応ずれ。逆に `<<"EOF"` のヒアドキュメントの中の文で止める。after-push も `git -C … push` を見ない | .claude/hooks/guard-bash.mjs:19 .claude/hooks/after-push.mjs:8 | 解決 | 正規表現をやめ、引用符とヒアドキュメントを解いて語に分ける `.claude/hooks/git-command.mjs` にした。監査役の17件と通すべき事例を `scripts/__tests__/hooks.test.mjs` に入れ、`npm test` で回す |
 | A25-9 | S2 | `git stash` が reflog に `reset: moving to HEAD` を残し、機械検査 H1 が reflog の期限まで FAIL し続ける。Stop フックが毎回止める | scripts/audit.mjs:149 | 解決 | reflog の `reset: moving to HEAD`（git stash が残すもの）だけを除く。他の reset は今までどおり FAIL |
-| A25-10 | S2 | 壊す検査（一覧にない30か所）で2か所がすり抜けた: 一覧の `dataset.problems` による 422、確定のときの「判定に結びつけられない質問」の検査。後者は未回答のまま残る質問を持つ案の確定を止める守りの線 | worker/index.ts:140 worker/ruleSets.ts:342 | 未解決 | |
+| A25-10 | S2 | 壊す検査（一覧にない30か所）で2か所がすり抜けた: 一覧の `dataset.problems` による 422、確定のときの「判定に結びつけられない質問」の検査。後者は未回答のまま残る質問を持つ案の確定を止める守りの線 | worker/index.ts:140 worker/ruleSets.ts:342 | 解決 | `worker/__tests__/confirm-guards.test.ts`。結びつけられない質問が残る案の確定の 422 と、問題が残る対象の一覧の 422。どちらも該当の行を消すと落ちることを確かめた |
 | A25-11 | S3 | stop-audit が、追跡外のファイルの中身の変更と、`tsconfig*.json`、`README.md`、`AGENTS.md`、`docs/` の変更で検査を回し直さない | .claude/hooks/stop-audit.mjs | 対応しない | |
 | A25-12 | S3 | 機械検査 D1 が、engine から `../shared` や `../worker` を読んでも見逃す | scripts/audit.mjs:114 | 対応しない | |
 | A25-13 | S3 | 機械検査が、git の失敗や空の名前の一覧で PASS と表示する（N1、N2 は「未検証」になるべき） | scripts/audit.mjs | 対応しない | |
