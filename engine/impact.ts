@@ -16,6 +16,8 @@ export type ImpactOption = {
   label: string;
   // 差分で表せない候補は null。人数を推測しない。
   counts: Partial<Record<JudgmentStatus, number>> | null;
+  // false の候補は、回答しても判定に反映できない。
+  reflected: boolean;
 };
 
 export type AmbiguityImpact = {
@@ -24,6 +26,8 @@ export type AmbiguityImpact = {
   sourceQuote: string;
   question: string;
   computable: boolean;
+  // false は履修上限のように判定を持たないルールだけに関わり、影響は履修案の検査に出る。
+  judged: boolean;
   options: ImpactOption[];
   affectedStudentIds: string[];
   staffReviewStudentIds: string[];
@@ -60,12 +64,16 @@ export function computeImpact(
 
   const computable = ambiguity.options.every((option) => option.patches !== null);
   const linked = linkedRuleIds(rules, ambiguityId);
+  const judged = listRules(rules).some(
+    ({ kind, rule }) => linked.has(rule.id) && ["graduation", "category", "gate"].includes(kind),
+  );
   const common = {
     ambiguityId,
     clause: ambiguity.clause,
     sourceQuote: ambiguity.sourceQuote,
     question: ambiguity.question,
     computable,
+    judged,
   };
 
   if (!computable) {
@@ -81,7 +89,12 @@ export function computeImpact(
       .map((student) => student.id);
     return {
       ...common,
-      options: ambiguity.options.map(({ id, label }) => ({ id, label, counts: null })),
+      options: ambiguity.options.map(({ id, label, patches }) => ({
+        id,
+        label,
+        counts: null,
+        reflected: patches !== null,
+      })),
       affectedStudentIds: [],
       staffReviewStudentIds: needsStaff,
       changes: [],
@@ -101,7 +114,9 @@ export function computeImpact(
     const shown = new Map<string, Set<string>>();
     for (const { option, rules: resolved, counts } of prepared) {
       const { judgments } = evaluatePrepared(resolved, student);
-      const worst = worstStatus(judgments.filter((judgment) => linked.has(judgment.ruleId)));
+      // 履修上限のように判定を持たないルールは、学生の全判定の中で数える。
+      const related = judgments.filter((judgment) => linked.has(judgment.ruleId));
+      const worst = worstStatus(related.length > 0 ? related : judgments);
       if (worst) counts[worst] = (counts[worst] ?? 0) + 1;
 
       for (const { ruleId, name, clause, status, needsContact } of judgments) {
@@ -127,11 +142,41 @@ export function computeImpact(
   const affected = new Set(changes.map((change) => change.studentId));
   return {
     ...common,
-    options: prepared.map(({ option, counts }) => ({ id: option.id, label: option.label, counts })),
+    options: prepared.map(({ option, counts }) => ({
+      id: option.id,
+      label: option.label,
+      counts,
+      reflected: true,
+    })),
     affectedStudentIds: [...affected],
     staffReviewStudentIds: [...needsStaff].filter((id) => !affected.has(id)),
     changes,
   };
+}
+
+// 未回答の1件をどの読み方にしても職員確認と声かけが残らない学生だけを、対応が要らないと確かめたものとして返す。
+// 確かめられない学生は職員確認に残す。曖昧箇所が2件関わる学生、反映できない回答、要確認のルールがここに当たる。
+export function settledStudentIds(
+  rules: RuleSet,
+  courses: Course[],
+  students: Student[],
+  answers: Answers,
+) {
+  const readings = rules.ambiguities
+    .filter((ambiguity) => !(ambiguity.id in answers) && ambiguity.options.length > 0)
+    .map((ambiguity) =>
+      ambiguity.options.map((option) =>
+        prepareRules(rules, courses, { ...answers, [ambiguity.id]: option.id }),
+      ),
+    );
+  const needsNothing = (resolved: ReturnType<typeof prepareRules>, student: Student) =>
+    evaluatePrepared(resolved, student).judgments.every(
+      (judgment) => judgment.status !== "needs_staff" && !judgment.needsContact,
+    );
+  const settled = students.filter((student) =>
+    readings.some((options) => options.every((resolved) => needsNothing(resolved, student))),
+  );
+  return new Set(settled.map((student) => student.id));
 }
 
 export function computeImpacts(

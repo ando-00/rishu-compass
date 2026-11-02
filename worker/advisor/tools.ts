@@ -60,14 +60,21 @@ function defineTool<T extends z.ZodType>(
   };
 }
 
-// 下書きの単位数は Claude の計算になるので書かせない。判定の数値は画面の engine の結果を見せる。
+const NUMBER = "[0-9０-９〇一二三四五六七八九十百]+";
+const COUNTS = new RegExp(
+  `${NUMBER}\\s*単位|単位(数)?(は|が)\\s*${NUMBER}|(あと|残り)\\s*${NUMBER}\\s*科目|GPA\\s*(は|が)?\\s*[0-9０-９]`,
+  "i",
+);
+const VERDICTS =
+  /卒業(は|が)?(できます|できません|できない|できる見込み|可能|不可|無理|難しい|確定|が確定)|進級(は|が)?(できません|できない|不可|無理|難しい)|留年(します|が確定|確定|の見込み|見込み)/;
+
+// 単位数と判定の値は Claude の計算になるので書かせない。判定の数値は画面の engine の結果を見せる。
 export function draftProblem(draft: string) {
-  const credits = /[0-9０-９]+\s*単位/.exec(draft);
-  if (credits) return `「${credits[0]}」を外してください。単位数は職員が画面で確認します。`;
-  const verdict =
-    /卒業(できます|できません|できない|できる見込み|可能|不可|確定|が確定)|留年(します|が確定|確定)/.exec(draft);
+  const counts = COUNTS.exec(draft);
+  if (counts) return `「${counts[0]}」を外してください。単位数や成績の値は職員が画面で確認します。`;
+  const verdict = VERDICTS.exec(draft);
   if (verdict) {
-    return `「${verdict[0]}」を外してください。卒業の可否を断定せず、「一緒に確認したい」のように書いてください。`;
+    return `「${verdict[0]}」を外してください。卒業や進級の可否を断定せず、「一緒に確認したい」のように書いてください。`;
   }
   return null;
 }
@@ -124,7 +131,7 @@ export function createAdvisorTools(input: AdvisorInput) {
       () => ({
         planningYear: target.studentYear,
         planningAssumption:
-          target === student
+          student.currentTerm === "前期"
             ? "同じ年度の登録の案です。"
             : "翌年度の案です。今年度の履修中はすべて修得した前提で検査します。前年度 GPA は未確定なので、緩和の上限は使えません。",
         lockedEnrollments: lockedNotes,
@@ -190,8 +197,12 @@ export function createAdvisorTools(input: AdvisorInput) {
     defineTool(
       "escalate_to_staff",
       "案を出さず、職員の確認に回す。検査に通る案を組めないときと、要項の外の事情があるときだけ使う。",
-      z.object({ reason: filled.describe("職員に伝える理由。2文までにする。単位数は書かない") }),
+      z.object({
+        reason: filled.describe("職員に伝える理由。2文までにする。単位数と卒業の可否は書かない"),
+      }),
       ({ reason }) => {
+        const problem = draftProblem(reason);
+        if (problem) return { accepted: false, reasonProblem: problem };
         state.escalated = reason;
         return "職員の確認に回しました。ここで終えてください。";
       },

@@ -31,19 +31,18 @@ function severityOf(contact: Judgment[]) {
   return contact.length > 0 ? 1 : 0;
 }
 
-// answerSensitive を渡すと、回答で結果が変わる学生だけを未回答による職員確認に入れる。
+// settled には、どの読み方でも対応が要らないと確かめた学生を渡す。それ以外の職員確認は一覧に残す。
 export function listOutreach(
   evaluations: StudentEvaluation[],
   students: Student[],
-  answerSensitive?: Set<string>,
+  settled: Set<string> = new Set(),
 ) {
   const years = new Map(students.map((student) => [student.id, student.studentYear]));
   const entries: OutreachEntry[] = [];
 
   for (const { studentId, excludedReason, judgments } of evaluations) {
     const contact = judgments.filter((judgment) => judgment.needsContact);
-    const inReview =
-      excludedReason !== null || answerSensitive === undefined || answerSensitive.has(studentId);
+    const inReview = excludedReason !== null || !settled.has(studentId);
     const review = inReview ? judgments.filter((j) => j.status === "needs_staff") : [];
     if (contact.length === 0 && review.length === 0) continue;
     entries.push({

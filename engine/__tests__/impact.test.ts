@@ -164,12 +164,12 @@ describe("声かけ", () => {
     expect(list[0]?.kind).toBe("staff_review");
   });
 
-  it("回答で結果が変わらない学生は、未回答でも職員確認に入れない", () => {
-    expect(listOutreach(evaluateAll([steady], {}), [steady], new Set())).toEqual([]);
+  it("どの読み方でも対応が要らないと確かめた学生は、未回答でも職員確認に入れない", () => {
+    expect(listOutreach(evaluateAll([steady], {}), [steady], new Set([steady.id]))).toEqual([]);
   });
 
-  it("全判定が職員確認の学生は、回答に関係なく職員確認に入れる", () => {
-    const list = listOutreach(evaluateAll([excluded]), [excluded], new Set());
+  it("全判定が職員確認の学生は、確かめたものとして渡されても職員確認に入れる", () => {
+    const list = listOutreach(evaluateAll([excluded]), [excluded], new Set([excluded.id]));
     expect(list[0]?.kind).toBe("staff_review");
   });
 

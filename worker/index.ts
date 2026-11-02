@@ -10,6 +10,7 @@ import {
   isDisplayablePlan,
   listOutreach,
   prepareRules,
+  settledStudentIds,
 } from "../engine";
 import {
   answersRequestSchema,
@@ -25,6 +26,7 @@ import {
 } from "../shared/api";
 import { answerRoutes } from "./answers";
 import { advisorRoutes } from "./advisor/routes";
+import { planningTarget } from "./advisor/tools";
 import { claudeKey, FAILURE_STATUS, type ClaudeBindings } from "./claudeAccess";
 import { findSource, isValidAnswers, listSources, type Dataset } from "./datasets";
 import { createClaudeModel } from "./rule-extraction/claude";
@@ -53,13 +55,17 @@ function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
   const prepared = prepareRules(rules, courses, answers);
   const evaluations = students.map((student) => evaluatePrepared(prepared, student));
   const unanswered = computeImpacts(rules, courses, students, answers);
-  // 未回答でも結果が変わらない学生は、職員確認の一覧に入れない。
-  const answerSensitive = new Set(
-    unanswered.flatMap((impact) =>
-      impact.computable ? impact.affectedStudentIds : impact.staffReviewStudentIds,
-    ),
+  const pending = new Set(
+    evaluations
+      .filter(({ judgments }) => judgments.some(({ status }) => status === "needs_staff"))
+      .map(({ studentId }) => studentId),
   );
-  const outreach = listOutreach(evaluations, students, answerSensitive);
+  const candidates = students.filter(({ id }) => pending.has(id));
+  const outreach = listOutreach(
+    evaluations,
+    students,
+    settledStudentIds(rules, courses, candidates, answers),
+  );
   const states = new Map(outreach.map((entry) => [entry.studentId, entry.kind]));
   const contact = outreach.filter((entry) => entry.kind === "contact").length;
   const staffReview = outreach.length - contact;
@@ -188,9 +194,14 @@ app.post("/api/datasets/:id/plan-check", async (c) => {
   const student = dataset.students.find(({ id }) => id === body.studentId);
   if (!student) return c.json({ error: "学生がいません" }, 404);
 
-  const check = checkPlan(dataset.rules, dataset.courses, student, body.plan, body.answers);
+  // 案の作成と同じ前提で検査する。
+  const { rules, courses } = dataset;
+  const input = { rules, courses, student, answers: body.answers };
+  const { target, lockedNotes } = planningTarget(input);
+  const check = checkPlan(rules, courses, target, body.plan, body.answers);
   const response: PlanCheckResponse = {
     ...check,
+    warnings: [...lockedNotes, ...check.warnings],
     plan: isDisplayablePlan(check) ? body.plan : null,
   };
   return c.json(response);

@@ -70,11 +70,13 @@ export const impactSchema = z.object({
   sourceQuote: z.string(),
   question: z.string(),
   computable: z.boolean(),
+  judged: z.boolean(),
   options: z.array(
     z.object({
       id: z.string(),
       label: z.string(),
       counts: z.partialRecord(judgmentStatusSchema, z.number()).nullable(),
+      reflected: z.boolean(),
     }),
   ),
   affectedStudentIds: z.array(z.string()),

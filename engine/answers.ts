@@ -87,14 +87,16 @@ export function resolveRules(base: RuleSet, answers: Answers) {
   }
 
   // 未解決の曖昧箇所が書き換えるルールは、ambiguityIds になくても未確定として扱う。
+  // 超過分の算入先を書き換えるときは、回答で単位を受け取る区分も未確定になる。
   for (const ambiguity of rules.ambiguities) {
     if (!unresolved.has(ambiguity.id)) continue;
     for (const option of ambiguity.options) {
       for (const patch of option.patches ?? []) {
-        const target = entries.find(({ rule }) => rule.id === patch.ruleId);
-        if (!target) continue;
-        const ids = (target.rule.ambiguityIds ??= []);
-        if (!ids.includes(ambiguity.id)) ids.push(ambiguity.id);
+        const touched = patch.field === "overflowTo" ? [patch.ruleId, patch.value] : [patch.ruleId];
+        for (const { rule } of entries.filter(({ rule }) => touched.includes(rule.id))) {
+          const ids = (rule.ambiguityIds ??= []);
+          if (!ids.includes(ambiguity.id)) ids.push(ambiguity.id);
+        }
       }
     }
   }

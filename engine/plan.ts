@@ -89,10 +89,16 @@ export function lockedEnrollments(
 // 翌年度の前年度 GPA はまだないので持たせず、緩和の上限を使わない。
 // locked の科目は修得の前提にできず、案に入れ直す科目なので記録から外す。
 export function planningStudent(student: Student, locked: string[] = []): Student {
-  if (student.currentTerm === "前期") return student;
-  const { previousGpa: _unknown, ...rest } = student;
   const current = (record: CourseRecord) =>
     record.result === "enrolled" && record.studentYear === student.studentYear;
+  if (student.currentTerm === "前期") {
+    if (locked.length === 0) return student;
+    const records = student.records.filter(
+      (record) => !(current(record) && locked.includes(record.course)),
+    );
+    return { ...student, records };
+  }
+  const { previousGpa: _unknown, ...rest } = student;
   return {
     ...rest,
     studentYear: student.studentYear + 1,
@@ -254,7 +260,14 @@ class PlanChecker {
       const { courses } = gate.target;
       for (const { course } of this.plan.filter((entry) => courses.includes(entry.course))) {
         const judgment = judgeGate(gate, this.context);
-        if (judgment.status === "satisfied") continue;
+        // 判定年次のうちは、条件を満たしていても判定の翌年次まで履修できない。
+        const firstYear = gate.checkAtEndOfYear + 1;
+        if (judgment.status === "satisfied") {
+          if (student.studentYear >= firstYear) continue;
+          const message = `${gate.name}は${firstYear}年次から履修できます。`;
+          this.add("SEMINAR_LOCKED", gate, message, message, course);
+          continue;
+        }
         if (judgment.status === "needs_staff") {
           this.issues.push({
             code: "PENDING_RULE",
@@ -377,6 +390,19 @@ class PlanChecker {
   }
 }
 
+function needsStaffCheck(message: string): PlanCheck {
+  const issue: PlanIssue = {
+    code: "PENDING_RULE",
+    ruleId: "excluded",
+    clause: "作業ルール",
+    sourceQuote: "",
+    message,
+    hint: "職員が確認してください。",
+    ambiguityIds: [],
+  };
+  return { status: "needs_staff", issues: [issue], warnings: [] };
+}
+
 export function checkPlan(
   rules: RuleSet,
   courses: Course[],
@@ -386,33 +412,28 @@ export function checkPlan(
 ): PlanCheck {
   const prepared = prepareRules(rules, courses, answers);
   const reason = exclusionReason(prepared, student);
-  if (reason) {
-    const issue: PlanIssue = {
-      code: "PENDING_RULE",
-      ruleId: "excluded",
-      clause: "作業ルール",
-      sourceQuote: "",
-      message: reason,
-      hint: "職員が確認してください。",
-      ambiguityIds: [],
-    };
-    return { status: "needs_staff", issues: [issue], warnings: [] };
-  }
+  if (reason) return needsStaffCheck(reason);
 
-  const checker = new PlanChecker(createContext(prepared, student), plan);
-  checker.checkDuplicates();
-  checker.checkOffering();
-  checker.checkEnrollment();
-  checker.checkPrerequisites();
-  checker.checkGates();
-  checker.checkLoad();
-  checker.checkCourseCounts();
-  checker.checkTimetable();
+  // エラーは例外で止めず、職員確認にする。
+  try {
+    const checker = new PlanChecker(createContext(prepared, student), plan);
+    checker.checkDuplicates();
+    checker.checkOffering();
+    checker.checkEnrollment();
+    checker.checkPrerequisites();
+    checker.checkGates();
+    checker.checkLoad();
+    checker.checkCourseCounts();
+    checker.checkTimetable();
 
-  const { issues, warnings } = checker;
-  if (issues.some((issue) => issue.code !== "PENDING_RULE")) {
-    return { status: "failed", issues, warnings };
+    const { issues, warnings } = checker;
+    if (issues.some((issue) => issue.code !== "PENDING_RULE")) {
+      return { status: "failed", issues, warnings };
+    }
+    if (issues.length > 0) return { status: "needs_staff", issues, warnings };
+    return { status: "passed", issues, warnings };
+  } catch (cause) {
+    const detail = cause instanceof Error ? cause.message : "検査できません";
+    return needsStaffCheck(`案を検査できないため、職員が確認します（${detail}）。`);
   }
-  if (issues.length > 0) return { status: "needs_staff", issues, warnings };
-  return { status: "passed", issues, warnings };
 }

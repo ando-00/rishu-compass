@@ -12,6 +12,20 @@ function overflowProblem(categories: Category[]) {
   }
 }
 
+// 先修のつながりをたどり、自分へ戻る科目を返す。
+function prerequisiteCycle(rules: RuleSet) {
+  const next = (name: string) =>
+    rules.prerequisites.filter((rule) => rule.course === name).flatMap((rule) => rule.conditions.flat());
+  const reaches = (from: string, target: string, seen: Set<string>): boolean =>
+    next(from).some((name) => {
+      if (name === target) return true;
+      if (seen.has(name)) return false;
+      seen.add(name);
+      return reaches(name, target, seen);
+    });
+  return rules.prerequisites.find(({ course }) => reaches(course, course, new Set()))?.course ?? null;
+}
+
 // 型では防げない参照切れを探す。問題の一覧を返し、空なら問題なし。
 export function validateRuleSet(rules: RuleSet, courses: Course[]) {
   const problems: string[] = [];
@@ -66,6 +80,9 @@ export function validateRuleSet(rules: RuleSet, courses: Course[]) {
       problems.push(`${prerequisite.id}: 先修の条件が空です`);
     }
   }
+
+  const cycle = prerequisiteCycle(rules);
+  if (cycle) problems.push(`先修の条件が循環しています: ${cycle}`);
 
   for (const limit of rules.courseCountLimits) checkGroup(limit.id, limit.group);
 

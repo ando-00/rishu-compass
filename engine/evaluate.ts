@@ -16,7 +16,7 @@ import {
   type CourseIndex,
   type Student,
 } from "./model";
-import type { Category, Gate, RuleSet } from "./rules";
+import type { Category, Gate, LoadLimit, RuleSet } from "./rules";
 
 export type JudgmentStatus = "satisfied" | "expected" | "short" | "delay_risk" | "needs_staff";
 
@@ -84,8 +84,9 @@ export function exclusionReason(prepared: PreparedRules, student: Student) {
   if (!rules.admissionYears.includes(student.admissionYear)) {
     return `入学年度 ${student.admissionYear} はこの要項の適用外のため、職員が確認します。`;
   }
-  const majors = new Set(rules.categories.flatMap(({ when }) => (when?.major ? [when.major] : [])));
-  if (majors.size > 0 && !(student.major && majors.has(student.major))) {
+  // 専攻で分かれるルールなら、学生の専攻と副専攻の組み合わせに合う区分がなければ対象外にする。
+  const byMajor = rules.categories.filter(({ when }) => when?.major);
+  if (byMajor.length > 0 && !byMajor.some(({ when }) => matchesCondition(when, student))) {
     return "所属の専攻がこの要項の対象外のため、職員が確認します。";
   }
   const unknown = [...new Set(student.records.map((record) => record.course))].filter(
@@ -323,11 +324,14 @@ function gateStartTerm(gate: Gate, context: EvaluationContext, pessimistic: bool
   const starts = variants.map((variant) => {
     const outcome = gateOutcome(variant, context);
     if (outcome.eligibleFromYear !== undefined) return yearStart(outcome.eligibleFromYear);
-    if (outcome.status === "satisfied") return 0;
-    if (student.studentYear <= variant.checkAtEndOfYear) {
+    // 判定年次の後期に満たせないなら判定で落ちる。やり直せる条件は、翌年次に満たしてその次から履修できる。
+    const missed = outcome.atRisk === true && student.currentTerm === "後期";
+    if (student.studentYear <= variant.checkAtEndOfYear && !missed) {
       return yearStart(variant.checkAtEndOfYear + 1);
     }
-    return variant.retryAfterMet ? yearStart(student.studentYear + 1) : Number.POSITIVE_INFINITY;
+    if (outcome.status === "satisfied") return 0;
+    if (!variant.retryAfterMet) return Number.POSITIVE_INFINITY;
+    return yearStart(student.studentYear + (missed ? 2 : 1));
   });
   if (!pessimistic) return Math.min(...starts);
   return complete ? Math.max(...starts) : Number.POSITIVE_INFINITY;
@@ -335,12 +339,18 @@ function gateStartTerm(gate: Gate, context: EvaluationContext, pessimistic: bool
 
 // 不足の必修が、先修と開講学期のつながりを含めて卒業予定に間に合うかを見る。
 function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pessimistic: boolean) {
-  const { rules, catalog, student } = context;
+  const { rules, catalog, student, unresolved } = context;
   const now = termIndex({ studentYear: student.studentYear, term: student.currentTerm });
   const passed = passedCourses(student);
   const gates = rules.gates.filter((gate) => matchesCondition(gate.when, student));
   const prerequisites = rules.prerequisites.filter((rule) => matchesCondition(rule.when, student));
   const finished = new Map<string, number>();
+  // 未回答の項目は今の値を使わず、読み方の両端で計算する。
+  const isOpen = (rule: Pending) => pendingIds(rule, unresolved).length > 0;
+  const { enrollment } = rules;
+  const forbidEarly =
+    enrollment && (isOpen(enrollment) ? pessimistic : enrollment.forbidBeforeAssignedYear);
+  let incalculable = false;
 
   function earliestStart(name: string) {
     let start = 0;
@@ -356,9 +366,11 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
     if (passed.has(name)) return -1;
     const known = finished.get(name);
     if (known !== undefined) return known;
-    if (visiting.has(name)) return Number.POSITIVE_INFINITY;
     const course = catalog.get(name);
-    if (!course) return Number.POSITIVE_INFINITY;
+    if (visiting.has(name) || !course) {
+      incalculable = true;
+      return Number.POSITIVE_INFINITY;
+    }
 
     const gateStart = earliestStart(name);
     const record = student.records.find(
@@ -375,11 +387,10 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
 
     const nested = new Set(visiting).add(name);
     let start = Math.max(now + 1, gateStart);
-    if (rules.enrollment?.forbidBeforeAssignedYear) {
-      start = Math.max(start, yearStart(course.assignedYear));
-    }
+    if (forbidEarly) start = Math.max(start, yearStart(course.assignedYear));
     for (const rule of prerequisites.filter((p) => p.course === name)) {
-      const gap = rule.allowSameTerm ? 0 : 1;
+      const sameTerm = isOpen(rule) ? !pessimistic : rule.allowSameTerm;
+      const gap = sameTerm ? 0 : 1;
       const options = rule.conditions.map((names) =>
         Math.max(...names.map((prerequisite) => finishTerm(prerequisite, nested) + gap)),
       );
@@ -401,18 +412,26 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
         course.groups.some((group) => category.groups.includes(group)),
       ),
     );
-  return required.some((course) => finishTerm(course.name, new Set()) > deadline);
+  const tooLate = required.map((course) => finishTerm(course.name, new Set()) > deadline);
+  // 循環と未知の科目は計算できないので、延期見込みにせず職員確認に倒す。
+  return incalculable ? pessimistic : tooLate.includes(true);
 }
 
 function maxRemainingCredits(context: EvaluationContext, deadline: number, maxPerTerm: number, maxPerYear?: number) {
   const { student } = context;
   const now = termIndex({ studentYear: student.studentYear, term: student.currentTerm });
   const registered = student.records.filter((r) => r.studentYear === student.studentYear);
-  const used = registered.reduce((sum, r) => sum + (context.catalog.get(r.course)?.credits ?? 0), 0);
+  const creditsOf = (name: string) => context.catalog.get(name)?.credits ?? 0;
+  const used = registered.reduce((sum, r) => sum + creditsOf(r.course), 0);
+  // 履修案の検査と同じく、履修中の通年は残りの学期にも半分を数える。
+  const yearLongHalf = registered
+    .filter((r) => r.term === "通年" && r.result === "enrolled")
+    .reduce((sum, r) => sum + creditsOf(r.course) / 2, 0);
   const perYear = new Map<number, number>();
   for (let term = now + 1; term <= deadline; term += 1) {
     const year = Math.floor(term / 2) + 1;
-    perYear.set(year, (perYear.get(year) ?? 0) + maxPerTerm);
+    const room = maxPerTerm - (year === student.studentYear ? yearLongHalf : 0);
+    perYear.set(year, (perYear.get(year) ?? 0) + Math.max(0, room));
   }
   let total = 0;
   for (const [year, credits] of perYear) {
@@ -430,11 +449,23 @@ function shortfallCredits(rules: RuleSet, student: Student, projected: CreditAll
   return Math.max(rules.graduation.totalCredits - projected.counted, categoryShort);
 }
 
+// 延期見込みの計算に使う、学生に適用されるルール。
+function delayInputs({ rules, student }: EvaluationContext) {
+  const applies = ({ when }: { when?: Gate["when"] }) => matchesCondition(when, student);
+  return [
+    ...rules.prerequisites.filter(applies),
+    ...(rules.enrollment ? [rules.enrollment] : []),
+    ...rules.loadLimits.filter(applies),
+  ];
+}
+
 // 判定に使えない情報があるときは、延期見込みにせず unknown を返す。
 function judgeDelay(context: EvaluationContext, projected: CreditAllocation) {
   const { rules, student, unresolved } = context;
   if (!student.expectedGraduation) return "none";
   const deadline = termIndex(student.expectedGraduation);
+  // 要確認のルールは中身そのものが未確定なので、読み方の両端を計算できない。
+  if (delayInputs(context).some((rule) => rule.status === "needs_review")) return "unknown";
 
   const lateIfOpen = requiredCoursesTooLate(context, deadline, false);
   const lateIfClosed = requiredCoursesTooLate(context, deadline, true);
@@ -443,13 +474,21 @@ function judgeDelay(context: EvaluationContext, projected: CreditAllocation) {
 
   const shortfall = shortfallCredits(rules, student, projected);
   if (shortfall === 0) return "none";
-  const applicable = rules.loadLimits.filter((limit) => matchesCondition(limit.when, student));
-  const limit = applicable.at(-1);
-  if (!limit) return "unknown";
-  const capacity = maxRemainingCredits(context, deadline, limit.maxPerTerm, limit.maxPerYear);
-  if (shortfall <= capacity) return "none";
-  const usable = applicable.every((l) => pendingIds(l, unresolved).length === 0);
-  return usable && limit.retakeExclusion === "none" ? "delay" : "unknown";
+  // 翌年度の前年度 GPA はまだないので、緩和なしで足りるなら none、緩和しても足りないなら delay にする。
+  const limitsFor = (candidate: Student) =>
+    rules.loadLimits.filter((limit) => matchesCondition(limit.when, candidate));
+  const nextYears = Math.floor(deadline / 2) + 1 > student.studentYear;
+  const { previousGpa: _unknown, ...withoutGpa } = student;
+  const reachable = limitsFor(nextYears ? { ...student, previousGpa: Number.MAX_VALUE } : student);
+  const highest = reachable.at(-1);
+  const lowest = nextYears ? limitsFor(withoutGpa).at(-1) : highest;
+  if (!highest || !lowest) return "unknown";
+  if (reachable.some((limit) => pendingIds(limit, unresolved).length > 0)) return "unknown";
+  const capacity = ({ maxPerTerm, maxPerYear }: LoadLimit) =>
+    maxRemainingCredits(context, deadline, maxPerTerm, maxPerYear);
+  if (shortfall <= capacity(lowest)) return "none";
+  if (shortfall <= capacity(highest)) return "unknown";
+  return highest.retakeExclusion === "none" ? "delay" : "unknown";
 }
 
 function judgeGraduation(
@@ -503,7 +542,13 @@ function judgeGraduation(
     return { ...base, status: "delay_risk", reason, needsContact: true };
   }
   if (delay === "unknown") {
-    return { ...base, status: "needs_staff", reason: "卒業の見込みを判定できないため、職員が確認します。" };
+    const inputIds = delayInputs(context).flatMap((rule) => pendingIds(rule, unresolved));
+    return {
+      ...base,
+      ambiguityIds: [...new Set([...base.ambiguityIds, ...inputIds])],
+      status: "needs_staff",
+      reason: "卒業の見込みを判定できないため、職員が確認します。",
+    };
   }
 
   if (shortCategories.length > 0) {

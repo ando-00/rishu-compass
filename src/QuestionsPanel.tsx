@@ -16,6 +16,9 @@ export function ImpactCounts({ impact }: { impact: Impact }) {
   }
   return (
     <>
+      {!impact.judged && (
+        <p className="notice">履修上限などに関わる確認事項です。人数のほか、履修案の検査の結果も変わります。</p>
+      )}
       <p className="counts">
         回答で判定が変わる学生 <strong>{impact.affectedStudentIds.length}人</strong>
         <span className="muted counts-note">
