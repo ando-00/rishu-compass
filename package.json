@@ -16,6 +16,8 @@
     "test:watch": "vitest",
     "eval:extract": "tsx evals/extract.ts",
     "eval:advise": "tsx evals/advise.ts",
+    "eval:score": "tsx evals/score.ts",
+    "eval:recheck": "tsx evals/recheck.ts",
     "record:proposal": "tsx evals/record-proposal.ts"
   },
   "dependencies": {
