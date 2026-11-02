@@ -1,0 +1,662 @@
+{
+  "source": "kamome",
+  "commit": "ac7ad639564f3a18635ac099ecec22a4d3d7d55c",
+  "requestedModel": "claude-opus-5-5",
+  "seconds": 91,
+  "costUsd": 0.2728,
+  "attempts": [
+    {
+      "problems": 0,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "inputTokens": 17,
+        "outputTokens": 11873,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 7049
+      }
+    }
+  ],
+  "comparison": {
+    "first": null,
+    "final": null
+  },
+  "judgments": null,
+  "outcome": "ok",
+  "problems": [],
+  "notes": [
+    {
+      "clause": "1 卒業に必要な単位",
+      "sourceQuote": "学生は、心理学専攻または社会学専攻のどちらかに所属します。",
+      "reason": "専攻の所属は各ルールの when（major）で表しており、独立したルールにはしていません。"
+    },
+    {
+      "clause": "2 超過した単位の扱い",
+      "sourceQuote": "他学部の科目は、自由科目に上限なく算入できます。専攻科目には算入できません。",
+      "reason": "他学部の科目は科目一覧に科目群として存在しないため、自由科目の groups に書けません。自由科目に上限（maxCredits）を設けないことで上限なしを表しています。"
+    },
+    {
+      "clause": "2 超過した単位の扱い",
+      "sourceQuote": "副専攻を登録していない学生が、もう一方の専攻の科目を修得した場合は、自由科目に算入します。",
+      "reason": "副専攻なしの学生の自由科目の groups に、もう一方の専攻の科目群を入れて表しています。"
+    },
+    {
+      "clause": "3 副専攻",
+      "sourceQuote": "副専攻の登録は、2年次の終わりまでに行います。登録した副専攻は、所定の手続きによって取りやめることができます。",
+      "reason": "登録の期限と取りやめの手続きは事務手続きであり、形式で表せません。判定では hasMinor の値で区分を切り替えます。"
+    },
+    {
+      "clause": "5 履修上限",
+      "sourceQuote": "成績による緩和はありません。",
+      "reason": "GPAによる緩和の上限がないことを示す文で、通常の上限（load-term）だけを書きました。"
+    },
+    {
+      "clause": "7 時間割",
+      "sourceQuote": "クォーター科目は、第1クォーターと第2クォーターで別の科目を同じ時限に置くことがあります。",
+      "reason": "時間割・クォーター科目の配置に関する説明で、履修上限や科目数の判定を定めるものではないため、ルールにしていません。集中講義や通年科目の数え方についての定めはありません。"
+    },
+    {
+      "clause": "8 科目表",
+      "sourceQuote": "単位の記載がない科目は、各2単位です。",
+      "reason": "科目ごとの単位数は科目データの情報であり、ルールの形式で表す項目がありません。"
+    },
+    {
+      "clause": "8 科目表 コア科目",
+      "sourceQuote": "選択（24単位以上）: 哲学の問い",
+      "reason": "コア選択24単位以上は、コア科目40単位からコア必修16単位を除いた残りと一致し、cat-core と cat-core-required で満たされるため、別の区分にはしていません。"
+    },
+    {
+      "clause": "8 科目表 心理学専攻 科目",
+      "sourceQuote": "選択: 臨床心理学",
+      "reason": "専攻選択科目に独自の最低単位の定めはなく、専攻科目の区分の groups に含めて表しています。"
+    }
+  ],
+  "impacts": [
+    {
+      "ambiguityId": "amb-credit-basis",
+      "question": "進級および卒業研究着手の単位数（30単位・100単位）は、修得したすべての単位で数えますか、それとも卒業に必要な単位に算入される単位（例：40単位を超えたコア科目の単位を除く）だけで数えますか。",
+      "computable": true,
+      "options": [
+        {
+          "optionId": "earned",
+          "label": "修得したすべての単位で数える",
+          "counts": {
+            "short": 111,
+            "satisfied": 67,
+            "needs_staff": 11,
+            "expected": 11
+          }
+        },
+        {
+          "optionId": "countable",
+          "label": "卒業に必要な単位に算入される単位だけで数える",
+          "counts": {
+            "needs_staff": 200
+          }
+        }
+      ],
+      "affected": 189
+    },
+    {
+      "ambiguityId": "amb-retake",
+      "question": "上限に含めない「再履修科目」には、不合格となった科目のほかに、失格（出席不足等）となった科目の再履修も含まれますか。",
+      "computable": true,
+      "options": [
+        {
+          "optionId": "failed",
+          "label": "不合格となった科目の再履修だけを上限から除く",
+          "counts": {}
+        },
+        {
+          "optionId": "failed_or_disqualified",
+          "label": "不合格・失格となった科目の再履修を上限から除く",
+          "counts": {}
+        }
+      ],
+      "affected": 0
+    },
+    {
+      "ambiguityId": "amb-shared-courses",
+      "question": "専攻演習Ⅰ・専攻演習Ⅱ・卒業研究は両専攻の必修科目に含まれています。これらの科目は、自分の専攻の専攻科目としてだけ数えますか、それとも「もう一方の専攻の科目」として副専攻科目または自由科目にも数えられますか。",
+      "computable": false,
+      "options": [
+        {
+          "optionId": "own-major-only",
+          "label": "自分の専攻の専攻科目としてだけ数え、副専攻科目・自由科目（もう一方の専攻の科目として）には数えない",
+          "counts": null
+        },
+        {
+          "optionId": "either",
+          "label": "もう一方の専攻の科目として副専攻科目・自由科目にも数えられる",
+          "counts": null
+        }
+      ],
+      "affected": 0
+    }
+  ],
+  "rules": {
+    "id": "kamome",
+    "name": "かもめ大学（架空）",
+    "admissionYears": [
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "graduation": {
+      "id": "graduation",
+      "clause": "1 卒業に必要な単位",
+      "sourceQuote": "卒業には、4年以上の在学と、合計128単位以上の修得が必要です。",
+      "minYears": 4,
+      "totalCredits": 128
+    },
+    "categories": [
+      {
+        "id": "cat-core",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| コア科目 | 40 | 40 |",
+        "name": "コア科目",
+        "groups": [
+          "コア/必修",
+          "コア/選択"
+        ],
+        "minCredits": 40,
+        "requireAll": false,
+        "overflowTo": null,
+        "maxCredits": 40
+      },
+      {
+        "id": "cat-core-required",
+        "clause": "8 科目表 コア科目",
+        "sourceQuote": "必修（16単位）: 人間科学入門、学びの技法、情報の基礎、データの読み方、英語コミュニケーションⅠ、英語コミュニケーションⅡ、キャリア形成、地域と暮らし",
+        "name": "コア必修",
+        "groups": [
+          "コア/必修"
+        ],
+        "minCredits": 16,
+        "requireAll": true,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-psy-required",
+        "clause": "8 科目表 心理学専攻 科目",
+        "sourceQuote": "必修（24単位）: 心理学概論、心理統計Ⅰ、心理統計Ⅱ、心理学実験、認知心理学、社会心理学、発達心理学、専攻演習Ⅰ、専攻演習Ⅱ、卒業研究（6単位）",
+        "when": {
+          "major": "心理学専攻"
+        },
+        "name": "心理学専攻必修",
+        "groups": [
+          "心理学専攻/必修"
+        ],
+        "minCredits": 24,
+        "requireAll": true,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-psy-major-nominor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 専攻科目 | 64 | 52 |",
+        "when": {
+          "major": "心理学専攻",
+          "hasMinor": false
+        },
+        "name": "専攻科目",
+        "groups": [
+          "心理学専攻/必修",
+          "心理学専攻/選択"
+        ],
+        "minCredits": 64,
+        "requireAll": false,
+        "overflowTo": "cat-psy-free-nominor"
+      },
+      {
+        "id": "cat-psy-free-nominor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 自由科目 | 24 | 20 |",
+        "when": {
+          "major": "心理学専攻",
+          "hasMinor": false
+        },
+        "ambiguityIds": [
+          "amb-shared-courses"
+        ],
+        "name": "自由科目",
+        "groups": [
+          "社会学専攻/必修",
+          "社会学専攻/選択"
+        ],
+        "minCredits": 24,
+        "requireAll": false,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-psy-major-minor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 専攻科目 | 64 | 52 |",
+        "when": {
+          "major": "心理学専攻",
+          "hasMinor": true
+        },
+        "name": "専攻科目",
+        "groups": [
+          "心理学専攻/必修",
+          "心理学専攻/選択"
+        ],
+        "minCredits": 52,
+        "requireAll": false,
+        "overflowTo": "cat-psy-free-minor"
+      },
+      {
+        "id": "cat-psy-minor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 副専攻科目 | なし | 16 |",
+        "when": {
+          "major": "心理学専攻",
+          "hasMinor": true
+        },
+        "ambiguityIds": [
+          "amb-shared-courses"
+        ],
+        "name": "副専攻科目",
+        "groups": [
+          "社会学専攻/必修",
+          "社会学専攻/選択"
+        ],
+        "minCredits": 16,
+        "requireAll": false,
+        "overflowTo": "cat-psy-free-minor"
+      },
+      {
+        "id": "cat-psy-free-minor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 自由科目 | 24 | 20 |",
+        "when": {
+          "major": "心理学専攻",
+          "hasMinor": true
+        },
+        "name": "自由科目",
+        "groups": [],
+        "minCredits": 20,
+        "requireAll": false,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-soc-required",
+        "clause": "8 科目表 社会学専攻 科目",
+        "sourceQuote": "必修（24単位）: 社会学概論、社会統計Ⅰ、社会統計Ⅱ、社会調査法、社会調査実習、家族社会学、地域社会学、専攻演習Ⅰ、専攻演習Ⅱ、卒業研究（6単位）",
+        "when": {
+          "major": "社会学専攻"
+        },
+        "name": "社会学専攻必修",
+        "groups": [
+          "社会学専攻/必修"
+        ],
+        "minCredits": 24,
+        "requireAll": true,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-soc-major-nominor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 専攻科目 | 64 | 52 |",
+        "when": {
+          "major": "社会学専攻",
+          "hasMinor": false
+        },
+        "name": "専攻科目",
+        "groups": [
+          "社会学専攻/必修",
+          "社会学専攻/選択"
+        ],
+        "minCredits": 64,
+        "requireAll": false,
+        "overflowTo": "cat-soc-free-nominor"
+      },
+      {
+        "id": "cat-soc-free-nominor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 自由科目 | 24 | 20 |",
+        "when": {
+          "major": "社会学専攻",
+          "hasMinor": false
+        },
+        "ambiguityIds": [
+          "amb-shared-courses"
+        ],
+        "name": "自由科目",
+        "groups": [
+          "心理学専攻/必修",
+          "心理学専攻/選択"
+        ],
+        "minCredits": 24,
+        "requireAll": false,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-soc-major-minor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 専攻科目 | 64 | 52 |",
+        "when": {
+          "major": "社会学専攻",
+          "hasMinor": true
+        },
+        "name": "専攻科目",
+        "groups": [
+          "社会学専攻/必修",
+          "社会学専攻/選択"
+        ],
+        "minCredits": 52,
+        "requireAll": false,
+        "overflowTo": "cat-soc-free-minor"
+      },
+      {
+        "id": "cat-soc-minor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 副専攻科目 | なし | 16 |",
+        "when": {
+          "major": "社会学専攻",
+          "hasMinor": true
+        },
+        "ambiguityIds": [
+          "amb-shared-courses"
+        ],
+        "name": "副専攻科目",
+        "groups": [
+          "心理学専攻/必修",
+          "心理学専攻/選択"
+        ],
+        "minCredits": 16,
+        "requireAll": false,
+        "overflowTo": "cat-soc-free-minor"
+      },
+      {
+        "id": "cat-soc-free-minor",
+        "clause": "1 卒業に必要な単位 表、2 超過した単位の扱い",
+        "sourceQuote": "| 自由科目 | 24 | 20 |",
+        "when": {
+          "major": "社会学専攻",
+          "hasMinor": true
+        },
+        "name": "自由科目",
+        "groups": [],
+        "minCredits": 20,
+        "requireAll": false,
+        "overflowTo": null
+      }
+    ],
+    "gates": [
+      {
+        "id": "gate-promote-2",
+        "clause": "4 進級と卒業研究",
+        "sourceQuote": "2年次へ進級するには、1年次の終わりまでに30単位以上を修得している必要があります。",
+        "ambiguityIds": [
+          "amb-credit-basis"
+        ],
+        "name": "2年次進級",
+        "checkAtEndOfYear": 1,
+        "requiredCourses": [],
+        "retryAfterMet": false,
+        "target": {
+          "kind": "promotion",
+          "toYear": 2
+        },
+        "minCredits": 30,
+        "creditBasis": "earned"
+      },
+      {
+        "id": "gate-thesis-psy",
+        "clause": "4 進級と卒業研究",
+        "sourceQuote": "4年次の卒業研究に着手するには、3年次の終わりまでに100単位以上を修得し、専攻必修科目（卒業研究を除く）の修得を要します。",
+        "when": {
+          "major": "心理学専攻"
+        },
+        "ambiguityIds": [
+          "amb-credit-basis"
+        ],
+        "name": "卒業研究着手条件",
+        "checkAtEndOfYear": 3,
+        "requiredCourses": [
+          "心理学概論",
+          "心理統計Ⅰ",
+          "心理統計Ⅱ",
+          "心理学実験",
+          "認知心理学",
+          "社会心理学",
+          "発達心理学",
+          "専攻演習Ⅰ",
+          "専攻演習Ⅱ"
+        ],
+        "retryAfterMet": false,
+        "target": {
+          "kind": "course",
+          "courses": [
+            "卒業研究"
+          ]
+        },
+        "minCredits": 100,
+        "creditBasis": "earned"
+      },
+      {
+        "id": "gate-thesis-soc",
+        "clause": "4 進級と卒業研究",
+        "sourceQuote": "4年次の卒業研究に着手するには、3年次の終わりまでに100単位以上を修得し、専攻必修科目（卒業研究を除く）の修得を要します。",
+        "when": {
+          "major": "社会学専攻"
+        },
+        "ambiguityIds": [
+          "amb-credit-basis"
+        ],
+        "name": "卒業研究着手条件",
+        "checkAtEndOfYear": 3,
+        "requiredCourses": [
+          "社会学概論",
+          "社会統計Ⅰ",
+          "社会統計Ⅱ",
+          "社会調査法",
+          "社会調査実習",
+          "家族社会学",
+          "地域社会学",
+          "専攻演習Ⅰ",
+          "専攻演習Ⅱ"
+        ],
+        "retryAfterMet": false,
+        "target": {
+          "kind": "course",
+          "courses": [
+            "卒業研究"
+          ]
+        },
+        "minCredits": 100,
+        "creditBasis": "earned"
+      }
+    ],
+    "loadLimits": [
+      {
+        "id": "load-term",
+        "clause": "5 履修上限",
+        "sourceQuote": "各学期に履修できるのは22単位までです。",
+        "ambiguityIds": [
+          "amb-retake"
+        ],
+        "maxPerTerm": 22,
+        "retakeExclusion": "failed"
+      }
+    ],
+    "courseCountLimits": [
+      {
+        "id": "count-seminar",
+        "clause": "5 履修上限",
+        "sourceQuote": "演習科目は同一学期に2科目までとします。",
+        "group": "演習",
+        "maxPerTerm": 2
+      }
+    ],
+    "prerequisites": [
+      {
+        "id": "pre-psy-stat2",
+        "clause": "6 先修条件",
+        "sourceQuote": "| 心理統計Ⅱ | 心理統計Ⅰまたは社会統計Ⅰを修得していること |",
+        "course": "心理統計Ⅱ",
+        "conditions": [
+          [
+            "心理統計Ⅰ"
+          ],
+          [
+            "社会統計Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-soc-stat2",
+        "clause": "6 先修条件",
+        "sourceQuote": "| 社会統計Ⅱ | 心理統計Ⅰまたは社会統計Ⅰを修得していること |",
+        "course": "社会統計Ⅱ",
+        "conditions": [
+          [
+            "心理統計Ⅰ"
+          ],
+          [
+            "社会統計Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-psy-exp",
+        "clause": "6 先修条件",
+        "sourceQuote": "| 心理学実験 | 心理統計Ⅰを修得していること。同じ学期に履修してもよい |",
+        "course": "心理学実験",
+        "conditions": [
+          [
+            "心理統計Ⅰ"
+          ]
+        ],
+        "allowSameTerm": true
+      },
+      {
+        "id": "pre-soc-practicum",
+        "clause": "6 先修条件",
+        "sourceQuote": "| 社会調査実習 | 社会調査法を修得していること。同じ学期に履修してもよい |",
+        "course": "社会調査実習",
+        "conditions": [
+          [
+            "社会調査法"
+          ]
+        ],
+        "allowSameTerm": true
+      },
+      {
+        "id": "pre-seminar2",
+        "clause": "6 先修条件",
+        "sourceQuote": "| 専攻演習Ⅱ | 専攻演習Ⅰを修得していること |",
+        "course": "専攻演習Ⅱ",
+        "conditions": [
+          [
+            "専攻演習Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      }
+    ],
+    "ambiguities": [
+      {
+        "id": "amb-credit-basis",
+        "clause": "4 進級と卒業研究",
+        "sourceQuote": "1年次の終わりまでに30単位以上を修得している必要があります。",
+        "question": "進級および卒業研究着手の単位数（30単位・100単位）は、修得したすべての単位で数えますか、それとも卒業に必要な単位に算入される単位（例：40単位を超えたコア科目の単位を除く）だけで数えますか。",
+        "options": [
+          {
+            "id": "earned",
+            "label": "修得したすべての単位で数える",
+            "patches": [
+              {
+                "ruleId": "gate-promote-2",
+                "field": "creditBasis",
+                "value": "earned"
+              },
+              {
+                "ruleId": "gate-thesis-psy",
+                "field": "creditBasis",
+                "value": "earned"
+              },
+              {
+                "ruleId": "gate-thesis-soc",
+                "field": "creditBasis",
+                "value": "earned"
+              }
+            ]
+          },
+          {
+            "id": "countable",
+            "label": "卒業に必要な単位に算入される単位だけで数える",
+            "patches": [
+              {
+                "ruleId": "gate-promote-2",
+                "field": "creditBasis",
+                "value": "countable"
+              },
+              {
+                "ruleId": "gate-thesis-psy",
+                "field": "creditBasis",
+                "value": "countable"
+              },
+              {
+                "ruleId": "gate-thesis-soc",
+                "field": "creditBasis",
+                "value": "countable"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "amb-retake",
+        "clause": "5 履修上限",
+        "sourceQuote": "再履修科目は上限に含めません。",
+        "question": "上限に含めない「再履修科目」には、不合格となった科目のほかに、失格（出席不足等）となった科目の再履修も含まれますか。",
+        "options": [
+          {
+            "id": "failed",
+            "label": "不合格となった科目の再履修だけを上限から除く",
+            "patches": [
+              {
+                "ruleId": "load-term",
+                "field": "retakeExclusion",
+                "value": "failed"
+              }
+            ]
+          },
+          {
+            "id": "failed_or_disqualified",
+            "label": "不合格・失格となった科目の再履修を上限から除く",
+            "patches": [
+              {
+                "ruleId": "load-term",
+                "field": "retakeExclusion",
+                "value": "failed_or_disqualified"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "amb-shared-courses",
+        "clause": "1 卒業に必要な単位、2 超過した単位の扱い",
+        "sourceQuote": "副専攻を登録すると、もう一方の専攻の科目を副専攻科目として修得します。",
+        "question": "専攻演習Ⅰ・専攻演習Ⅱ・卒業研究は両専攻の必修科目に含まれています。これらの科目は、自分の専攻の専攻科目としてだけ数えますか、それとも「もう一方の専攻の科目」として副専攻科目または自由科目にも数えられますか。",
+        "options": [
+          {
+            "id": "own-major-only",
+            "label": "自分の専攻の専攻科目としてだけ数え、副専攻科目・自由科目（もう一方の専攻の科目として）には数えない",
+            "patches": null
+          },
+          {
+            "id": "either",
+            "label": "もう一方の専攻の科目として副専攻科目・自由科目にも数えられる",
+            "patches": null
+          }
+        ]
+      }
+    ]
+  }
+}

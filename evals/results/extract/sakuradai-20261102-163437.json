@@ -1,0 +1,455 @@
+{
+  "source": "sakuradai",
+  "commit": "ac7ad639564f3a18635ac099ecec22a4d3d7d55c",
+  "requestedModel": "claude-opus-5-5",
+  "seconds": 62,
+  "costUsd": 0.1942,
+  "attempts": [
+    {
+      "problems": 0,
+      "model": "claude-opus-5-5",
+      "usage": {
+        "inputTokens": 17,
+        "outputTokens": 7708,
+        "cacheReadTokens": 0,
+        "cacheWriteTokens": 7994
+      }
+    }
+  ],
+  "comparison": {
+    "first": {
+      "rate": 1,
+      "matched": 68,
+      "total": 68,
+      "mismatches": [],
+      "missing": [],
+      "extra": [],
+      "ambiguities": [
+        {
+          "id": "seminar-credit-basis",
+          "clause": "第6条",
+          "detected": "same_field",
+          "matchedId": "amb-gate-credit-basis"
+        }
+      ],
+      "extraAmbiguities": []
+    },
+    "final": {
+      "rate": 1,
+      "matched": 68,
+      "total": 68,
+      "mismatches": [],
+      "missing": [],
+      "extra": [],
+      "ambiguities": [
+        {
+          "id": "seminar-credit-basis",
+          "clause": "第6条",
+          "detected": "same_field",
+          "matchedId": "amb-gate-credit-basis"
+        }
+      ],
+      "extraAmbiguities": []
+    }
+  },
+  "judgments": [
+    {
+      "scenario": "未回答",
+      "matched": 2700,
+      "total": 2700,
+      "differences": {}
+    },
+    {
+      "scenario": "seminar-credit-basis=earned",
+      "matched": 2700,
+      "total": 2700,
+      "differences": {}
+    },
+    {
+      "scenario": "seminar-credit-basis=countable",
+      "matched": 2700,
+      "total": 2700,
+      "differences": {}
+    }
+  ],
+  "outcome": "ok",
+  "problems": [],
+  "notes": [
+    {
+      "clause": "第5条",
+      "sourceQuote": "他学科および他学部の科目は、自由の区分に限り、合計10単位まで算入できる。",
+      "reason": "科目一覧には「他学科」の科目群しかなく、他学部の科目は名前を挙げられないため、10単位の上限は自由の区分の subLimits で「他学科」の科目群にだけかけています。他学部の科目の扱いは職員の確認が必要です。"
+    },
+    {
+      "clause": "第6章 他学科の科目",
+      "sourceQuote": "第5条の対象となる科目の例を示す。",
+      "reason": "表は例示であり、表にない他学科の科目が存在しうることを示していますが、科目一覧にない名前は作れないため、ルールでは科目一覧の「他学科」の科目群だけを扱っています。"
+    },
+    {
+      "clause": "第8条",
+      "sourceQuote": "通年の科目は、単位の半分を前期と後期にそれぞれ数える。",
+      "reason": "プログラムの既定の数え方と同じなので、ルールの項目はありません。"
+    },
+    {
+      "clause": "第10条",
+      "sourceQuote": "履修上限には、再履修科目と集中講義を含め、履修するすべての科目の単位を数える。",
+      "reason": "再履修科目を含める点は load の retakeExclusion を none にして反映しました。集中講義を含める点はプログラムの既定の扱いと同じなので、項目はありません。"
+    },
+    {
+      "clause": "第13条",
+      "sourceQuote": "修得した科目を再び履修することはできない。",
+      "reason": "enrollment ルール（id: enroll）の forbidRetakeOfPassed に反映しました。sourceQuote は1つの連続した文しか書けないため、ここに根拠を記します。不合格科目の再履修を認める前段は、既定で許されるため項目はありません。"
+    },
+    {
+      "clause": "第6章",
+      "sourceQuote": "単位の記載がない科目は、各2単位とする。",
+      "reason": "各科目の単位数と配当年次は科目の属性であり、ルールの種類で表す項目がないため、ルールにしていません。"
+    },
+    {
+      "clause": "第6章",
+      "sourceQuote": "「演習Ⅰ」と「演習Ⅱ」は通年の科目とする。",
+      "reason": "科目の開講形態は科目の属性であり、ルールの種類で表す項目がないため、ルールにしていません。"
+    }
+  ],
+  "impacts": [
+    {
+      "ambiguityId": "amb-gate-credit-basis",
+      "question": "演習Ⅰの履修条件の「修得単位が合計60単位以上」は、修得したすべての単位で数えますか。それとも、第4条・第5条の上限を超えて卒業単位に算入されない単位を除いた、卒業に算入される単位だけで数えますか。",
+      "computable": true,
+      "options": [
+        {
+          "optionId": "earned",
+          "label": "修得したすべての単位で数える",
+          "counts": {
+            "short": 78,
+            "expected": 28,
+            "satisfied": 178,
+            "needs_staff": 16
+          }
+        },
+        {
+          "optionId": "countable",
+          "label": "卒業に算入される単位だけで数える",
+          "counts": {
+            "short": 78,
+            "expected": 34,
+            "satisfied": 172,
+            "needs_staff": 16
+          }
+        }
+      ],
+      "affected": 6
+    }
+  ],
+  "rules": {
+    "id": "sakuradai",
+    "name": "さくら台大学（架空）",
+    "admissionYears": [
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "graduation": {
+      "id": "grad",
+      "clause": "第1条",
+      "sourceQuote": "卒業するには、4年以上在学し、次の表に定める区分ごとの最低単位を満たしたうえで、合計124単位以上を修得しなければならない。",
+      "minYears": 4,
+      "totalCredits": 124
+    },
+    "categories": [
+      {
+        "id": "cat-kiso-hissu",
+        "clause": "第1条（表）・第2条",
+        "sourceQuote": "| 基礎教育 | 必修 | 8 |",
+        "name": "基礎教育/必修",
+        "groups": [
+          "基礎教育/必修"
+        ],
+        "minCredits": 8,
+        "requireAll": true,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-kiso-senhissu",
+        "clause": "第1条（表）・第3条",
+        "sourceQuote": "| 基礎教育 | 選択必修 | 6 |",
+        "name": "基礎教育/選択必修",
+        "groups": [
+          "基礎教育/選択必修"
+        ],
+        "minCredits": 6,
+        "requireAll": false,
+        "overflowTo": "cat-free"
+      },
+      {
+        "id": "cat-kiso-sentaku",
+        "clause": "第1条（表）・第3条",
+        "sourceQuote": "| 基礎教育 | 選択 | 10 |",
+        "name": "基礎教育/選択",
+        "groups": [
+          "基礎教育/選択"
+        ],
+        "minCredits": 10,
+        "requireAll": false,
+        "overflowTo": "cat-free"
+      },
+      {
+        "id": "cat-senmon-hissu",
+        "clause": "第1条（表）・第2条",
+        "sourceQuote": "| 専門教育 | 必修 | 28 |",
+        "name": "専門教育/必修",
+        "groups": [
+          "専門教育/必修"
+        ],
+        "minCredits": 28,
+        "requireAll": true,
+        "overflowTo": null
+      },
+      {
+        "id": "cat-senmon-senhissu",
+        "clause": "第1条（表）・第3条",
+        "sourceQuote": "| 専門教育 | 選択必修 | 16 |",
+        "name": "専門教育/選択必修",
+        "groups": [
+          "専門教育/選択必修"
+        ],
+        "minCredits": 16,
+        "requireAll": false,
+        "overflowTo": "cat-free"
+      },
+      {
+        "id": "cat-senmon-sentaku",
+        "clause": "第1条（表）・第3条",
+        "sourceQuote": "| 専門教育 | 選択 | 36 |",
+        "name": "専門教育/選択",
+        "groups": [
+          "専門教育/選択"
+        ],
+        "minCredits": 36,
+        "requireAll": false,
+        "overflowTo": "cat-free"
+      },
+      {
+        "id": "cat-free",
+        "clause": "第1条（表）・第4条・第5条",
+        "sourceQuote": "| 自由 | なし | 20 |",
+        "name": "自由",
+        "groups": [
+          "他学科"
+        ],
+        "minCredits": 20,
+        "requireAll": false,
+        "overflowTo": null,
+        "maxCredits": 20,
+        "subLimits": [
+          {
+            "groups": [
+              "他学科"
+            ],
+            "maxCredits": 10
+          }
+        ]
+      }
+    ],
+    "gates": [
+      {
+        "id": "gate-enshu1",
+        "clause": "第6条・第7条",
+        "sourceQuote": "3年次配当の「演習Ⅰ」を履修するには、2年次終了時点で次の両方を満たさなければならない。",
+        "ambiguityIds": [
+          "amb-gate-credit-basis"
+        ],
+        "name": "演習Ⅰの履修条件",
+        "checkAtEndOfYear": 2,
+        "requiredCourses": [
+          "基礎演習",
+          "ミクロ経済学Ⅰ",
+          "マクロ経済学Ⅰ",
+          "統計学Ⅰ"
+        ],
+        "retryAfterMet": true,
+        "target": {
+          "kind": "course",
+          "courses": [
+            "演習Ⅰ"
+          ]
+        },
+        "minCredits": 60,
+        "creditBasis": "earned"
+      }
+    ],
+    "loadLimits": [
+      {
+        "id": "load-normal",
+        "clause": "第8条・第10条",
+        "sourceQuote": "履修できる単位は、年間48単位以内、かつ前期・後期それぞれ24単位以内とする。",
+        "maxPerTerm": 24,
+        "retakeExclusion": "none",
+        "maxPerYear": 48
+      },
+      {
+        "id": "load-gpa",
+        "clause": "第9条・第10条",
+        "sourceQuote": "前年度のGPAが3.0以上の学生は、年間56単位以内、かつ前期・後期それぞれ28単位以内まで履修できる。",
+        "when": {
+          "minPreviousGpa": 3,
+          "minStudentYear": 2
+        },
+        "maxPerTerm": 28,
+        "retakeExclusion": "none",
+        "maxPerYear": 56
+      }
+    ],
+    "courseCountLimits": [],
+    "prerequisites": [
+      {
+        "id": "pre-eigo2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 英語Ⅱ | 英語Ⅰ |",
+        "course": "英語Ⅱ",
+        "conditions": [
+          [
+            "英語Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-chugoku2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 中国語Ⅱ | 中国語Ⅰ |",
+        "course": "中国語Ⅱ",
+        "conditions": [
+          [
+            "中国語Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-micro2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| ミクロ経済学Ⅱ | ミクロ経済学Ⅰ |",
+        "course": "ミクロ経済学Ⅱ",
+        "conditions": [
+          [
+            "ミクロ経済学Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-macro2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| マクロ経済学Ⅱ | マクロ経済学Ⅰ |",
+        "course": "マクロ経済学Ⅱ",
+        "conditions": [
+          [
+            "マクロ経済学Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-tokei2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 統計学Ⅱ | 統計学Ⅰ |",
+        "course": "統計学Ⅱ",
+        "conditions": [
+          [
+            "統計学Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-zaisei2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 財政学Ⅱ | 財政学Ⅰ |",
+        "course": "財政学Ⅱ",
+        "conditions": [
+          [
+            "財政学Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-kinyu2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 金融論Ⅱ | 金融論Ⅰ |",
+        "course": "金融論Ⅱ",
+        "conditions": [
+          [
+            "金融論Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-kokusai2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 国際経済学Ⅱ | 国際経済学Ⅰ |",
+        "course": "国際経済学Ⅱ",
+        "conditions": [
+          [
+            "国際経済学Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      },
+      {
+        "id": "pre-enshu2",
+        "clause": "第11条（表）",
+        "sourceQuote": "| 演習Ⅱ | 演習Ⅰ |",
+        "course": "演習Ⅱ",
+        "conditions": [
+          [
+            "演習Ⅰ"
+          ]
+        ],
+        "allowSameTerm": false
+      }
+    ],
+    "enrollment": {
+      "id": "enroll",
+      "clause": "第12条・第13条",
+      "sourceQuote": "配当年次より前の年次には履修できない。",
+      "forbidBeforeAssignedYear": true,
+      "forbidRetakeOfPassed": true
+    },
+    "ambiguities": [
+      {
+        "id": "amb-gate-credit-basis",
+        "clause": "第6条第1号",
+        "sourceQuote": "修得単位が合計60単位以上であること",
+        "question": "演習Ⅰの履修条件の「修得単位が合計60単位以上」は、修得したすべての単位で数えますか。それとも、第4条・第5条の上限を超えて卒業単位に算入されない単位を除いた、卒業に算入される単位だけで数えますか。",
+        "options": [
+          {
+            "id": "earned",
+            "label": "修得したすべての単位で数える",
+            "patches": [
+              {
+                "ruleId": "gate-enshu1",
+                "field": "creditBasis",
+                "value": "earned"
+              }
+            ]
+          },
+          {
+            "id": "countable",
+            "label": "卒業に算入される単位だけで数える",
+            "patches": [
+              {
+                "ruleId": "gate-enshu1",
+                "field": "creditBasis",
+                "value": "countable"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
