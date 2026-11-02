@@ -3,6 +3,8 @@ import {
   datasetsResponseSchema,
   overviewResponseSchema,
   planCheckResponseSchema,
+  proposalResponseSchema,
+  sourcesResponseSchema,
   studentResponseSchema,
   type Answers,
   type PlanEntry,
@@ -27,6 +29,15 @@ function post(path: string, body: unknown) {
 
 export async function fetchDatasets() {
   return readJson(await fetch("/api/datasets"), datasetsResponseSchema);
+}
+
+export async function fetchSources() {
+  return readJson(await fetch("/api/sources"), sourcesResponseSchema);
+}
+
+export async function extractProposal(sourceId: string, handbook: string) {
+  const res = await post(`/api/sources/${sourceId}/extract`, { handbook });
+  return readJson(res, proposalResponseSchema);
 }
 
 export async function fetchOverview(datasetId: string, answers: Answers) {

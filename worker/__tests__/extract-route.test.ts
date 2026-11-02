@@ -75,16 +75,19 @@ describe("POST /api/sources/:id/extract", () => {
   });
 
   it("問題が残る案は影響人数を計算せず、問題を返す", async () => {
-    const quote = "ない文";
-    const base = { clause: "第1条", sourceQuote: quote, status: "confirmed", when: [], ambiguityIds: [] };
     const output = {
-      graduation: { ...base, id: "graduation", minYears: 4, totalCredits: 124 },
-      categories: [],
-      gates: [],
-      loadLimits: [],
-      courseCountLimits: [],
-      prerequisites: [],
-      enrollment: null,
+      rules: [
+        {
+          kind: "graduation",
+          id: "graduation",
+          clause: "第1条",
+          sourceQuote: "ない文",
+          status: "confirmed",
+          when: [],
+          ambiguityIds: [],
+          detail: JSON.stringify({ minYears: 4, totalCredits: 124 }),
+        },
+      ],
       ambiguities: [],
       notes: [],
     };

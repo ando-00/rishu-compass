@@ -22,6 +22,13 @@ const PLAN_LABELS = {
   needs_staff: { label: "職員確認", tone: "warn" },
 } as const;
 
+// 職員が確定するまで緑にしない
+const REVIEW_LABELS = {
+  plain: { label: "案", tone: "neutral" },
+  ambiguous: { label: "曖昧箇所あり", tone: "warn" },
+  needs_review: { label: "要確認", tone: "warn" },
+} as const;
+
 function Badge({ label, tone }: { label: string; tone: Tone }) {
   return <span className={`badge badge-${tone}`}>{label}</span>;
 }
@@ -32,6 +39,10 @@ export function JudgmentBadge({ status }: { status: JudgmentStatus }) {
 
 export function StateBadge({ state }: { state: keyof typeof STATE_LABELS }) {
   return <Badge {...STATE_LABELS[state]} />;
+}
+
+export function ReviewBadge({ review }: { review: keyof typeof REVIEW_LABELS }) {
+  return <Badge {...REVIEW_LABELS[review]} />;
 }
 
 export function PlanBadge({ status }: { status: keyof typeof PLAN_LABELS }) {

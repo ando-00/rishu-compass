@@ -23,7 +23,7 @@ function toModelError(cause: unknown) {
     return new ModelError("timeout", "API の応答が時間内に届きませんでした。");
   }
   if (cause instanceof Anthropic.APIError) {
-    return new ModelError("api_error", `API の呼び出しに失敗しました（${cause.status ?? "通信"}）。`);
+    return new ModelError("api_error", `API の呼び出しに失敗しました: ${cause.message}`);
   }
   return cause;
 }

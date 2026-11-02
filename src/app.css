@@ -276,6 +276,28 @@ blockquote {
   white-space: nowrap;
 }
 
+.extract-form label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.extract-form textarea {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

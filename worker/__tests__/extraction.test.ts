@@ -52,23 +52,39 @@ const INPUT: ExtractionInput = {
   students: STUDENTS,
 };
 
-const base = { status: "confirmed" as const, when: [], ambiguityIds: [] };
+type Row = ExtractionOutput["rules"][number];
+
+function row(kind: Row["kind"], id: string, clause: string, sourceQuote: string, detail: object): Row {
+  return {
+    kind,
+    id,
+    clause,
+    sourceQuote,
+    status: "confirmed",
+    when: [],
+    ambiguityIds: [],
+    detail: JSON.stringify(detail),
+  };
+}
+
+const GATE_DETAIL = {
+  name: "応用Bの履修条件",
+  target: { kind: "course", courses: ["応用B"], toYear: null },
+  checkAtEndOfYear: 1,
+  minCredits: 6,
+  creditBasis: "earned",
+  requiredCourses: [],
+  requiredMayBeEnrolled: false,
+  retryAfterMet: false,
+};
 
 const OUTPUT: ExtractionOutput = {
-  graduation: {
-    ...base,
-    id: "graduation",
-    clause: "第1条",
-    sourceQuote: "卒業には3年以上の在学と合計10単位以上の修得が必要である。",
-    minYears: 3,
-    totalCredits: 10,
-  },
-  categories: [
-    {
-      ...base,
-      id: "category-common",
-      clause: "第1条",
-      sourceQuote: "| 共通 | 6 |",
+  rules: [
+    row("graduation", "graduation", "第1条", "卒業には3年以上の在学と合計10単位以上の修得が必要である。", {
+      minYears: 3,
+      totalCredits: 10,
+    }),
+    row("category", "category-common", "第1条", "| 共通 | 6 |", {
       name: "共通",
       groups: ["共通"],
       minCredits: 6,
@@ -76,12 +92,8 @@ const OUTPUT: ExtractionOutput = {
       maxCredits: 6,
       overflowTo: null,
       subLimits: [],
-    },
-    {
-      ...base,
-      id: "category-advanced",
-      clause: "第1条",
-      sourceQuote: "| 応用 | 4 |",
+    }),
+    row("category", "category-advanced", "第1条", "| 応用 | 4 |", {
       name: "応用",
       groups: ["応用"],
       minCredits: 4,
@@ -89,39 +101,23 @@ const OUTPUT: ExtractionOutput = {
       maxCredits: null,
       overflowTo: null,
       subLimits: [],
-    },
-  ],
-  gates: [
+    }),
     {
-      ...base,
+      ...row(
+        "gate",
+        "gate-advanced",
+        "第3条",
+        "応用Bを履修するには、1年次終了時点で6単位以上を修得しなければならない。",
+        GATE_DETAIL,
+      ),
       ambiguityIds: ["gate-basis"],
-      id: "gate-advanced",
-      clause: "第3条",
-      sourceQuote: "応用Bを履修するには、1年次終了時点で6単位以上を修得しなければならない。",
-      name: "応用Bの履修条件",
-      target: { kind: "course", courses: ["応用B"], toYear: null },
-      checkAtEndOfYear: 1,
-      minCredits: 6,
-      creditBasis: "earned",
-      requiredCourses: [],
-      requiredMayBeEnrolled: false,
-      retryAfterMet: false,
     },
-  ],
-  loadLimits: [
-    {
-      ...base,
-      id: "load",
-      clause: "第4条",
-      sourceQuote: "履修は学期あたり12単位までとする。",
+    row("load", "load", "第4条", "履修は学期あたり12単位までとする。", {
       maxPerYear: null,
       maxPerTerm: 12,
       retakeExclusion: "none",
-    },
+    }),
   ],
-  courseCountLimits: [],
-  prerequisites: [],
-  enrollment: null,
   ambiguities: [
     {
       id: "gate-basis",
@@ -144,6 +140,22 @@ const OUTPUT: ExtractionOutput = {
   ],
   notes: [],
 };
+
+function changeRule(id: string, change: (rule: Row) => Row): ExtractionOutput {
+  return { ...OUTPUT, rules: OUTPUT.rules.map((rule) => (rule.id === id ? change(rule) : rule)) };
+}
+
+function withWhen(when: Row["when"]) {
+  return changeRule("graduation", (rule) => ({ ...rule, when }));
+}
+
+function withGate(detail: object, ambiguityIds = ["gate-basis"]) {
+  return changeRule("gate-advanced", (rule) => ({
+    ...rule,
+    ambiguityIds,
+    detail: JSON.stringify({ ...GATE_DETAIL, ...detail }),
+  }));
+}
 
 function reply(output: unknown, overrides: Partial<ModelReply> = {}): ModelReply {
   return {
@@ -169,7 +181,7 @@ function textOf(call: Parameters<StructuredModel>[0]) {
 }
 
 function withQuote(quote: string): ExtractionOutput {
-  return { ...OUTPUT, graduation: { ...OUTPUT.graduation, sourceQuote: quote } };
+  return changeRule("graduation", (rule) => ({ ...rule, sourceQuote: quote }));
 }
 
 function converted(output: ExtractionOutput) {
@@ -204,28 +216,24 @@ describe("toRuleSet", () => {
   it("空の項目を省く", () => {
     const { rules, problems } = converted(OUTPUT);
     expect(problems).toEqual([]);
-    expect(rules.graduation).not.toHaveProperty("when");
-    expect(rules.graduation).not.toHaveProperty("ambiguityIds");
-    expect(rules.loadLimits[0]).not.toHaveProperty("maxPerYear");
-    expect(rules.categories[0]).not.toHaveProperty("subLimits");
+    expect(rules?.graduation).not.toHaveProperty("when");
+    expect(rules?.graduation).not.toHaveProperty("ambiguityIds");
+    expect(rules?.loadLimits[0]).not.toHaveProperty("maxPerYear");
+    expect(rules?.categories[0]).not.toHaveProperty("subLimits");
     expect(rules).not.toHaveProperty("enrollment");
   });
 
   it("条件の値を型に合わせて変える", () => {
-    const { rules, problems } = converted({
-      ...OUTPUT,
-      graduation: {
-        ...OUTPUT.graduation,
-        when: [
-          { field: "major", value: "甲" },
-          { field: "hasMinor", value: "true" },
-          { field: "minStudentYear", value: "2" },
-          { field: "minPreviousGpa", value: "3.0" },
-        ],
-      },
-    });
+    const { rules, problems } = converted(
+      withWhen([
+        { field: "major", value: "甲" },
+        { field: "hasMinor", value: "true" },
+        { field: "minStudentYear", value: "2" },
+        { field: "minPreviousGpa", value: "3.0" },
+      ]),
+    );
     expect(problems).toEqual([]);
-    expect(rules.graduation.when).toEqual({
+    expect(rules?.graduation.when).toEqual({
       major: "甲",
       hasMinor: true,
       minStudentYear: 2,
@@ -234,47 +242,91 @@ describe("toRuleSet", () => {
   });
 
   it("条件の値が読めなければ問題にする", () => {
-    const { problems } = converted({
-      ...OUTPUT,
-      graduation: {
-        ...OUTPUT.graduation,
-        when: [
-          { field: "hasMinor", value: "あり" },
-          { field: "minStudentYear", value: "二年" },
-        ],
-      },
-    });
+    const { problems } = converted(
+      withWhen([
+        { field: "hasMinor", value: "あり" },
+        { field: "minStudentYear", value: "二年" },
+      ]),
+    );
     expect(problems).toHaveLength(2);
   });
 
   it("同じ条件を2回書いたら問題にする", () => {
-    const { problems } = converted({
-      ...OUTPUT,
-      graduation: {
-        ...OUTPUT.graduation,
-        when: [
-          { field: "minStudentYear", value: "2" },
-          { field: "minStudentYear", value: "3" },
-        ],
-      },
-    });
+    const { problems } = converted(
+      withWhen([
+        { field: "minStudentYear", value: "2" },
+        { field: "minStudentYear", value: "3" },
+      ]),
+    );
     expect(problems).toHaveLength(1);
   });
 
   it("進級の条件に進級先の年次がなければ問題にする", () => {
-    const gate = OUTPUT.gates[0]!;
-    const { problems } = converted({
-      ...OUTPUT,
-      gates: [{ ...gate, target: { kind: "promotion", courses: [], toYear: null } }],
-    });
+    const { problems } = converted(withGate({ target: { kind: "promotion", courses: [], toYear: null } }));
     expect(problems).toHaveLength(1);
+  });
+
+  it("detail が JSON でなければ問題にして、そのルールを含めない", () => {
+    const { rules, problems } = converted(changeRule("load", (rule) => ({ ...rule, detail: "読めない" })));
+    expect(problems).toEqual(["load: detail を JSON として読めません"]);
+    expect(rules?.loadLimits).toEqual([]);
+  });
+
+  it("detail の型が違えば問題にする", () => {
+    const { problems } = converted(withGate({ minCredits: "六十" }));
+    expect(problems[0]).toContain("gate-advanced: detail の minCredits");
+  });
+
+  it("detail の項目が足りなければ問題にする", () => {
+    const { problems } = converted(
+      changeRule("graduation", (rule) => ({ ...rule, detail: JSON.stringify({ minYears: 3 }) })),
+    );
+    expect(problems[0]).toContain("totalCredits");
+  });
+
+  it("書き間違えた項目を黙って捨てない", () => {
+    const { problems } = converted(withGate({ creditBasiss: "earned" }));
+    expect(problems[0]).toContain("creditBasiss");
+  });
+
+  it("負の単位を問題にする", () => {
+    const { problems } = converted(withGate({ minCredits: -1 }));
+    expect(problems[0]).toContain("minCredits");
+  });
+
+  it("卒業要件がなければルールを作らない", () => {
+    const { rules, problems } = converted({
+      ...OUTPUT,
+      rules: OUTPUT.rules.filter(({ kind }) => kind !== "graduation"),
+    });
+    expect(rules).toBeNull();
+    expect(problems[0]).toContain("graduation");
+  });
+
+  it("卒業要件が2件あれば問題にする", () => {
+    const first = OUTPUT.rules[0]!;
+    const { problems } = converted({ ...OUTPUT, rules: [...OUTPUT.rules, { ...first, id: "graduation-2" }] });
+    expect(problems[0]).toContain("1件だけ");
+  });
+
+  it("履修の基本が2件あれば問題にする", () => {
+    const enrollment = row("enrollment", "enrollment", "第4条", "履修は学期あたり12単位までとする。", {
+      forbidBeforeAssignedYear: true,
+      forbidRetakeOfPassed: true,
+    });
+    const { problems, rules } = converted({
+      ...OUTPUT,
+      rules: [...OUTPUT.rules, enrollment, { ...enrollment, id: "enrollment-2" }],
+    });
+    expect(problems[0]).toContain("1件以下");
+    expect(rules?.enrollment?.forbidRetakeOfPassed).toBe(true);
   });
 });
 
 describe("checkProposal", () => {
   function problemsOf(output: ExtractionOutput) {
     const { rules, notes, problems } = converted(output);
-    return checkProposal({ rules, notes, input: INPUT, problems });
+    return rules ? checkProposal({ rules, notes, input: INPUT, problems }) : problems;
   }
 
   it("問題がなければ空を返す", () => {
@@ -294,29 +346,16 @@ describe("checkProposal", () => {
   });
 
   it("科目がなければ落ちる", () => {
-    const gate = OUTPUT.gates[0]!;
-    const output = {
-      ...OUTPUT,
-      gates: [{ ...gate, target: { kind: "course" as const, courses: ["ない科目"], toYear: null } }],
-    };
+    const output = withGate({ target: { kind: "course", courses: ["ない科目"], toYear: null } });
     expect(problemsOf(output)[0]).toContain("ない科目");
   });
 
   it("学生にない専攻を条件にすれば落ちる", () => {
-    const output = {
-      ...OUTPUT,
-      graduation: { ...OUTPUT.graduation, when: [{ field: "major" as const, value: "乙" }] },
-    };
-    expect(problemsOf(output)[0]).toContain("乙");
+    expect(problemsOf(withWhen([{ field: "major", value: "乙" }]))[0]).toContain("乙");
   });
 
   it("単位の条件に数え方がなければ落ちる", () => {
-    const gate = OUTPUT.gates[0]!;
-    const output = {
-      ...OUTPUT,
-      gates: [{ ...gate, creditBasis: null, ambiguityIds: [] }],
-      ambiguities: [],
-    };
+    const output = { ...withGate({ creditBasis: null }, []), ambiguities: [] };
     expect(problemsOf(output)[0]).toContain("gate-advanced");
   });
 
@@ -346,7 +385,7 @@ describe("checkProposal", () => {
 
   it("変換の問題も一覧に含める", () => {
     const { rules, notes } = converted(OUTPUT);
-    expect(checkProposal({ rules, notes, input: INPUT, problems: ["変換の問題"] })).toContain(
+    expect(checkProposal({ rules: rules!, notes, input: INPUT, problems: ["変換の問題"] })).toContain(
       "変換の問題",
     );
   });
@@ -411,11 +450,29 @@ describe("extractRules", () => {
   it("修正したあとの案を返す", async () => {
     const model = scripted(reply(withQuote("言い換えた文")), reply(OUTPUT));
     const result = await extractRules(model, INPUT);
-    expect(result.ok && result.rules.graduation.sourceQuote).toBe(OUTPUT.graduation.sourceQuote);
+    expect(result.ok && result.rules.graduation.sourceQuote).toBe(OUTPUT.rules[0]!.sourceQuote);
+  });
+
+  it("detail の誤りは問題として直させる", async () => {
+    const broken = changeRule("load", (rule) => ({ ...rule, detail: "読めない" }));
+    const model = scripted(reply(broken), reply(OUTPUT));
+    const result = await extractRules(model, INPUT);
+    expect(textOf(model.mock.calls[1]![0])).toContain("detail を JSON として読めません");
+    expect(result).toMatchObject({ ok: true, problems: [] });
+  });
+
+  it("卒業要件が読めないまま上限に達したら失敗にする", async () => {
+    const empty = { ...OUTPUT, rules: [] };
+    const replies = Array.from({ length: MAX_REPAIRS + 1 }, () => reply(empty));
+    const model = scripted(...replies);
+    const result = await extractRules(model, INPUT);
+    expect(model).toHaveBeenCalledTimes(MAX_REPAIRS + 1);
+    expect(result).toMatchObject({ ok: false, failure: { kind: "invalid_format" } });
+    expect(result.attempts).toHaveLength(MAX_REPAIRS + 1);
   });
 
   it("形式が違う応答は推測せず失敗にする", async () => {
-    for (const text of ["JSON ではない", JSON.stringify({ ...OUTPUT, graduation: null })]) {
+    for (const text of ["JSON ではない", JSON.stringify({ ...OUTPUT, rules: null })]) {
       const result = await extractRules(scripted(reply(text)), INPUT);
       expect(result).toMatchObject({ ok: false, failure: { kind: "invalid_format" } });
     }

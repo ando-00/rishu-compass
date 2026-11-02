@@ -9,7 +9,7 @@ type Props = {
   onClear: (ambiguityId: string) => void;
 };
 
-function ImpactCounts({ impact }: { impact: Impact }) {
+export function ImpactCounts({ impact }: { impact: Impact }) {
   if (!impact.computable) {
     return <p className="notice">この候補はルールの差分で表せないため、人数は計算できません。</p>;
   }
@@ -47,7 +47,7 @@ function ImpactCounts({ impact }: { impact: Impact }) {
   );
 }
 
-function ChangeList({ impact }: { impact: Impact }) {
+export function ChangeList({ impact }: { impact: Impact }) {
   if (impact.changes.length === 0) return null;
   return (
     <details>

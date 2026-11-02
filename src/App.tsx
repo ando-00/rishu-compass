@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import type { Answers, DatasetsResponse, OverviewResponse } from "../shared/api";
 import { fetchDatasets, fetchOverview } from "./api";
+import { ExtractionPanel } from "./ExtractionPanel";
 import { OutreachPanel } from "./OutreachPanel";
 import { QuestionsPanel } from "./QuestionsPanel";
 import { StudentsPanel } from "./StudentsPanel";
 import "./app.css";
 
-type Tab = "questions" | "outreach" | "students";
+type Tab = "import" | "questions" | "outreach" | "students";
 type Summary = OverviewResponse["summary"];
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: "import", label: "要項の取り込み" },
   { id: "questions", label: "確認事項" },
   { id: "outreach", label: "声かけ" },
   { id: "students", label: "学生別" },
@@ -181,6 +183,11 @@ export function App() {
           )}
         </>
       )}
+
+      {/* 変換には数分かかるので、タブを切り替えても結果を残す */}
+      <div hidden={tab !== "import"}>
+        <ExtractionPanel />
+      </div>
     </main>
   );
 }

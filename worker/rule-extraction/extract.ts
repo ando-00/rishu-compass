@@ -63,11 +63,14 @@ export async function extractRules(
     for (let round = 0; ; round += 1) {
       const reply = await model(buildContent(input, repair));
       const { rules, notes, problems: converted } = toRuleSet(parseReply(reply), input);
-      const problems = checkProposal({ rules, notes, input, problems: converted });
+      const problems = rules ? checkProposal({ rules, notes, input, problems: converted }) : converted;
       attempts.push({ problems: problems.length, model: reply.model, usage: reply.usage });
-      observe?.({ rules, notes, problems });
-      if (problems.length === 0 || round === MAX_REPAIRS) {
+      if (rules) observe?.({ rules, notes, problems });
+      if (rules && (problems.length === 0 || round === MAX_REPAIRS)) {
         return { ok: true, rules, notes, problems, attempts };
+      }
+      if (round === MAX_REPAIRS) {
+        throw new ModelError("invalid_format", "卒業要件を読み取れませんでした。");
       }
       repair = { output: reply.text, problems };
     }

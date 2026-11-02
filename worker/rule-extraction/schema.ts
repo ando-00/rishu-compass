@@ -2,9 +2,22 @@ import { z } from "zod";
 import type { Course, RuleSet, Student } from "../../engine";
 import type { GateTarget, StudentCondition } from "../../engine/rules";
 
-// Structured Outputs には任意の項目と型の組み合わせの数に制限がある。
-// そのため engine の RuleSet とは別に、項目をすべて必須にした形で受け取り、toRuleSet で変換する。
-const ruleBase = {
+// Structured Outputs はスキーマの文法の大きさに上限がある。ルールの種類ごとに別の形を書くと
+// 「The compiled grammar is too large」で拒まれる（項目を減らしても通らなかった）。
+// そのため API で保証するのは共通の行の形までとし、種類ごとの項目は detail の JSON 文字列で受け取って、
+// ここの detailSchemas で検証する。
+const RULE_KINDS = [
+  "graduation",
+  "category",
+  "gate",
+  "load",
+  "courseCount",
+  "prerequisite",
+  "enrollment",
+] as const;
+
+const ruleRowSchema = z.object({
+  kind: z.enum(RULE_KINDS),
   id: z.string(),
   clause: z.string(),
   sourceQuote: z.string(),
@@ -16,71 +29,11 @@ const ruleBase = {
     }),
   ),
   ambiguityIds: z.array(z.string()),
-};
+  detail: z.string(),
+});
 
 export const extractionOutputSchema = z.object({
-  graduation: z.object({
-    ...ruleBase,
-    minYears: z.number().int(),
-    totalCredits: z.number().int(),
-  }),
-  categories: z.array(
-    z.object({
-      ...ruleBase,
-      name: z.string(),
-      groups: z.array(z.string()),
-      minCredits: z.number().int(),
-      requireAll: z.boolean(),
-      maxCredits: z.number().int().nullable(),
-      overflowTo: z.string().nullable(),
-      subLimits: z.array(
-        z.object({ groups: z.array(z.string()), maxCredits: z.number().int() }),
-      ),
-    }),
-  ),
-  gates: z.array(
-    z.object({
-      ...ruleBase,
-      name: z.string(),
-      target: z.object({
-        kind: z.enum(["course", "promotion"]),
-        courses: z.array(z.string()),
-        toYear: z.number().int().nullable(),
-      }),
-      checkAtEndOfYear: z.number().int(),
-      minCredits: z.number().int().nullable(),
-      creditBasis: z.enum(["earned", "countable"]).nullable(),
-      requiredCourses: z.array(z.string()),
-      requiredMayBeEnrolled: z.boolean(),
-      retryAfterMet: z.boolean(),
-    }),
-  ),
-  loadLimits: z.array(
-    z.object({
-      ...ruleBase,
-      maxPerYear: z.number().int().nullable(),
-      maxPerTerm: z.number().int(),
-      retakeExclusion: z.enum(["none", "failed", "failed_or_disqualified"]),
-    }),
-  ),
-  courseCountLimits: z.array(
-    z.object({ ...ruleBase, group: z.string(), maxPerTerm: z.number().int() }),
-  ),
-  prerequisites: z.array(
-    z.object({
-      ...ruleBase,
-      course: z.string(),
-      conditions: z.array(z.array(z.string())),
-      allowSameTerm: z.boolean(),
-    }),
-  ),
-  enrollment: z
-    .object({
-      ...ruleBase,
-      forbidBeforeAssignedYear: z.boolean(),
-      forbidRetakeOfPassed: z.boolean(),
-    })
-    .nullable(),
+  rules: z.array(ruleRowSchema),
   ambiguities: z.array(
     z.object({
       id: z.string(),
@@ -109,8 +62,56 @@ export const extractionOutputSchema = z.object({
   ),
 });
 
+const count = z.number().int().min(0);
+
+// 書き間違えた項目が黙って消えないよう、未知の項目を拒む。
+const detailSchemas = {
+  graduation: z.strictObject({ minYears: count, totalCredits: count }),
+  category: z.strictObject({
+    name: z.string(),
+    groups: z.array(z.string()),
+    minCredits: count,
+    requireAll: z.boolean(),
+    maxCredits: count.nullable(),
+    overflowTo: z.string().nullable(),
+    subLimits: z.array(z.strictObject({ groups: z.array(z.string()), maxCredits: count })),
+  }),
+  gate: z.strictObject({
+    name: z.string(),
+    target: z.strictObject({
+      kind: z.enum(["course", "promotion"]),
+      courses: z.array(z.string()),
+      toYear: count.nullable(),
+    }),
+    checkAtEndOfYear: count,
+    minCredits: count.nullable(),
+    creditBasis: z.enum(["earned", "countable"]).nullable(),
+    requiredCourses: z.array(z.string()),
+    requiredMayBeEnrolled: z.boolean(),
+    retryAfterMet: z.boolean(),
+  }),
+  load: z.strictObject({
+    maxPerYear: count.nullable(),
+    maxPerTerm: count,
+    retakeExclusion: z.enum(["none", "failed", "failed_or_disqualified"]),
+  }),
+  courseCount: z.strictObject({ group: z.string(), maxPerTerm: count }),
+  prerequisite: z.strictObject({
+    course: z.string(),
+    conditions: z.array(z.array(z.string())),
+    allowSameTerm: z.boolean(),
+  }),
+  enrollment: z.strictObject({
+    forbidBeforeAssignedYear: z.boolean(),
+    forbidRetakeOfPassed: z.boolean(),
+  }),
+};
+
 export type ExtractionOutput = z.infer<typeof extractionOutputSchema>;
 export type ExtractionNote = ExtractionOutput["notes"][number];
+
+type RuleRow = ExtractionOutput["rules"][number];
+type RuleKind = RuleRow["kind"];
 
 export type RuleSetMeta = {
   id: string;
@@ -123,9 +124,7 @@ export type ExtractionSource = RuleSetMeta & {
   students: Student[];
 };
 
-type OutputBase = Pick<ExtractionOutput["graduation"], "id" | "clause" | "sourceQuote" | "status" | "when" | "ambiguityIds">;
-
-function toCondition(rule: OutputBase, problems: string[]) {
+function toCondition(rule: RuleRow, problems: string[]) {
   const condition: StudentCondition = {};
   const invalid = (field: string, value: string) =>
     problems.push(`${rule.id}: 適用条件 ${field} の値を読めません: ${value}`);
@@ -147,7 +146,7 @@ function toCondition(rule: OutputBase, problems: string[]) {
   return condition;
 }
 
-function toBase(rule: OutputBase, problems: string[]) {
+function toBase(rule: RuleRow, problems: string[]) {
   const when = toCondition(rule, problems);
   return {
     id: rule.id,
@@ -159,71 +158,98 @@ function toBase(rule: OutputBase, problems: string[]) {
   };
 }
 
-function toTarget(gate: ExtractionOutput["gates"][number], problems: string[]): GateTarget {
-  const { kind, courses, toYear } = gate.target;
+function parseDetail<K extends RuleKind>(rule: RuleRow, kind: K, problems: string[]) {
+  let json: unknown;
+  try {
+    json = JSON.parse(rule.detail);
+  } catch {
+    problems.push(`${rule.id}: detail を JSON として読めません`);
+    return null;
+  }
+  const parsed = detailSchemas[kind].safeParse(json);
+  if (parsed.success) return parsed.data as z.infer<(typeof detailSchemas)[K]>;
+  for (const issue of parsed.error.issues) {
+    problems.push(`${rule.id}: detail の ${issue.path.join(".") || "全体"}: ${issue.message}`);
+  }
+  return null;
+}
+
+function toTarget(
+  id: string,
+  { kind, courses, toYear }: z.infer<typeof detailSchemas.gate>["target"],
+  problems: string[],
+): GateTarget {
   if (kind === "course") return { kind, courses };
-  if (toYear === null) problems.push(`${gate.id}: 進級先の年次がありません`);
+  if (toYear === null) problems.push(`${id}: 進級先の年次がありません`);
   return { kind, toYear: toYear ?? 0 };
 }
 
 export function toRuleSet(output: ExtractionOutput, meta: RuleSetMeta) {
   const problems: string[] = [];
+
+  const collect = <K extends RuleKind, R>(
+    kind: K,
+    build: (base: ReturnType<typeof toBase>, detail: z.infer<(typeof detailSchemas)[K]>) => R,
+  ) =>
+    output.rules
+      .filter((rule) => rule.kind === kind)
+      .flatMap((rule) => {
+        const detail = parseDetail(rule, kind, problems);
+        return detail ? [build(toBase(rule, problems), detail)] : [];
+      });
+
+  const [graduation, ...extraGraduation] = collect("graduation", (base, detail) => ({
+    ...base,
+    ...detail,
+  }));
+  const [enrollment, ...extraEnrollment] = collect("enrollment", (base, detail) => ({
+    ...base,
+    ...detail,
+  }));
+  if (extraGraduation.length > 0) problems.push("graduation は1件だけ書いてください");
+  if (extraEnrollment.length > 0) problems.push("enrollment は1件以下にしてください");
+
+  const categories = collect("category", (base, { maxCredits, subLimits, ...detail }) => ({
+    ...base,
+    ...detail,
+    ...(maxCredits === null ? {} : { maxCredits }),
+    ...(subLimits.length > 0 ? { subLimits } : {}),
+  }));
+  const gates = collect(
+    "gate",
+    (base, { target, minCredits, creditBasis, requiredMayBeEnrolled, ...detail }) => ({
+      ...base,
+      ...detail,
+      target: toTarget(base.id, target, problems),
+      ...(minCredits === null ? {} : { minCredits }),
+      ...(creditBasis === null ? {} : { creditBasis }),
+      ...(requiredMayBeEnrolled ? { requiredMayBeEnrolled } : {}),
+    }),
+  );
+  const loadLimits = collect("load", (base, { maxPerYear, ...detail }) => ({
+    ...base,
+    ...detail,
+    ...(maxPerYear === null ? {} : { maxPerYear }),
+  }));
+  const courseCountLimits = collect("courseCount", (base, detail) => ({ ...base, ...detail }));
+  const prerequisites = collect("prerequisite", (base, detail) => ({ ...base, ...detail }));
+
+  if (!graduation) {
+    problems.push("graduation（卒業要件）がありません");
+    return { rules: null, notes: output.notes, problems };
+  }
+
   const rules: RuleSet = {
     id: meta.id,
     name: meta.name,
     admissionYears: meta.admissionYears,
-    graduation: {
-      ...toBase(output.graduation, problems),
-      minYears: output.graduation.minYears,
-      totalCredits: output.graduation.totalCredits,
-    },
-    categories: output.categories.map((category) => ({
-      ...toBase(category, problems),
-      name: category.name,
-      groups: category.groups,
-      minCredits: category.minCredits,
-      requireAll: category.requireAll,
-      ...(category.maxCredits === null ? {} : { maxCredits: category.maxCredits }),
-      overflowTo: category.overflowTo,
-      ...(category.subLimits.length > 0 ? { subLimits: category.subLimits } : {}),
-    })),
-    gates: output.gates.map((gate) => ({
-      ...toBase(gate, problems),
-      name: gate.name,
-      target: toTarget(gate, problems),
-      checkAtEndOfYear: gate.checkAtEndOfYear,
-      ...(gate.minCredits === null ? {} : { minCredits: gate.minCredits }),
-      ...(gate.creditBasis === null ? {} : { creditBasis: gate.creditBasis }),
-      requiredCourses: gate.requiredCourses,
-      ...(gate.requiredMayBeEnrolled ? { requiredMayBeEnrolled: true } : {}),
-      retryAfterMet: gate.retryAfterMet,
-    })),
-    loadLimits: output.loadLimits.map((limit) => ({
-      ...toBase(limit, problems),
-      ...(limit.maxPerYear === null ? {} : { maxPerYear: limit.maxPerYear }),
-      maxPerTerm: limit.maxPerTerm,
-      retakeExclusion: limit.retakeExclusion,
-    })),
-    courseCountLimits: output.courseCountLimits.map((limit) => ({
-      ...toBase(limit, problems),
-      group: limit.group,
-      maxPerTerm: limit.maxPerTerm,
-    })),
-    prerequisites: output.prerequisites.map((prerequisite) => ({
-      ...toBase(prerequisite, problems),
-      course: prerequisite.course,
-      conditions: prerequisite.conditions,
-      allowSameTerm: prerequisite.allowSameTerm,
-    })),
-    ...(output.enrollment
-      ? {
-          enrollment: {
-            ...toBase(output.enrollment, problems),
-            forbidBeforeAssignedYear: output.enrollment.forbidBeforeAssignedYear,
-            forbidRetakeOfPassed: output.enrollment.forbidRetakeOfPassed,
-          },
-        }
-      : {}),
+    graduation,
+    categories,
+    gates,
+    loadLimits,
+    courseCountLimits,
+    prerequisites,
+    ...(enrollment ? { enrollment } : {}),
     ambiguities: output.ambiguities,
   };
   return { rules, notes: output.notes, problems };

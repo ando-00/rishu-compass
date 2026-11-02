@@ -18,26 +18,34 @@ export const SYSTEM_PROMPT = `あなたは、大学の履修要項を判定プ�
 
 | 項目 | 書くこと |
 |---|---|
-| graduation | 卒業に必要な在学年数（minYears）と合計単位（totalCredits） |
-| categories | 区分ごとの要件 |
-| gates | 科目の履修条件と進級条件 |
-| loadLimits | 履修上限 |
-| courseCountLimits | 科目群ごとの、1学期の科目数の上限。なければ空の配列 |
-| prerequisites | 先修条件 |
-| enrollment | 履修の基本ルール。要項に定めがなければ null |
+| rules | ルールの一覧 |
 | ambiguities | 読み方が分かれる箇所 |
 | notes | 形式で表せない要件と、ルールにしなかった条文 |
+
+rules の各行の kind は次のどれかです。
+
+| kind | 書くこと | 件数 |
+|---|---|---|
+| graduation | 卒業に必要な在学年数と合計単位 | 必ず1件 |
+| category | 区分ごとの要件 | |
+| gate | 科目の履修条件と進級条件 | |
+| load | 履修上限 | |
+| courseCount | 科目群ごとの、1学期の科目数の上限 | |
+| prerequisite | 先修条件 | |
+| enrollment | 履修の基本ルール | 定めがなければ書かない。書くなら1件 |
 
 # どのルールにも書く項目
 
 | 項目 | 書くこと |
 |---|---|
+| kind | ルールの種類 |
 | id | ルールの名前。半角英数字とハイフン。重複させない |
 | clause | 根拠の条文。要項の条番号や節の見出しを短く書く |
 | sourceQuote | 根拠の文 |
 | status | 要項から値を確定できるなら confirmed、確定できないなら needs_review |
 | when | 適用する学生の条件。全学生に適用するなら空の配列 |
 | ambiguityIds | 関係する曖昧箇所の id。なければ空の配列 |
+| detail | kind ごとの項目を1つの JSON オブジェクトにして、文字列で書く。下の各節の項目をすべて書き、それ以外の項目を書かない |
 
 when の各要素は field と value の組です。
 
@@ -48,7 +56,11 @@ when の各要素は field と value の組です。
 | minStudentYear | この年次以上の学生に適用。数字の文字列 |
 | minPreviousGpa | 前年度の GPA がこの値以上の学生に適用。数字の文字列 |
 
-# categories
+# graduation の detail
+
+minYears は卒業に必要な在学年数、totalCredits は合計単位です。
+
+# category の detail
 
 | 項目 | 書くこと |
 |---|---|
@@ -58,7 +70,7 @@ when の各要素は field と value の組です。
 | requireAll | 指定の科目をすべて修得する区分なら true |
 | maxCredits | 算入できる単位の上限。なければ null |
 | overflowTo | 超過分の算入先の区分の id。算入先がなければ null |
-| subLimits | 区分の一部の科目群にかかる上限。なければ空の配列 |
+| subLimits | 区分の一部の科目群にかかる上限。groups と maxCredits の組の配列。なければ空の配列 |
 
 超過分は次のように書きます。
 
@@ -68,12 +80,12 @@ when の各要素は field と value の組です。
 | 超過分を卒業単位に数えない | overflowTo を null にして maxCredits に数える上限を書く |
 | 算入に上限がない | overflowTo と maxCredits を null にする |
 
-# gates
+# gate の detail
 
 | 項目 | 書くこと |
 |---|---|
 | name | 条件の名前 |
-| target | 科目の履修条件なら kind を course にして courses に科目を書き、toYear は null。進級の条件なら kind を promotion にして toYear に進級先の年次を書き、courses は空の配列 |
+| target | kind、courses、toYear を持つオブジェクト。科目の履修条件なら kind を course にして courses に科目を書き、toYear は null。進級の条件なら kind を promotion にして toYear に進級先の年次を書き、courses は空の配列 |
 | checkAtEndOfYear | 何年次の終わりに判定するか |
 | minCredits | 必要な単位。なければ null |
 | creditBasis | 修得した全単位で数えるなら earned、卒業に算入される単位だけなら countable。minCredits を書くなら必ず書く。minCredits が null なら null |
@@ -81,7 +93,7 @@ when の各要素は field と value の組です。
 | requiredMayBeEnrolled | 必要な科目は履修中でもよいなら true |
 | retryAfterMet | 判定の時点で満たせなくても、後から満たせば認めるなら true |
 
-# loadLimits
+# load の detail
 
 上から順に見て、条件に合う最後のものを使います。通常の上限を先に、緩和の上限を後に書きます。
 
@@ -93,9 +105,13 @@ when の各要素は field と value の組です。
 
 プログラムは、集中講義を常に上限に含め、通年の科目の単位の半分を前期と後期に数えます。要項がこれと違う定めをしているなら notes に書きます。
 
-# prerequisites
+# courseCount の detail
 
-conditions は「ANDの組をORで並べる」形で書きます。
+group は科目群、maxPerTerm は1学期に履修できる科目数です。
+
+# prerequisite の detail
+
+course は条件のかかる科目です。conditions は「ANDの組をORで並べる」形で書きます。
 
 | 要項の文 | 書き方 |
 |---|---|
@@ -106,7 +122,7 @@ conditions は「ANDの組をORで並べる」形で書きます。
 
 allowSameTerm は、先修科目と同じ学期に履修してよいなら true です。
 
-# enrollment
+# enrollment の detail
 
 forbidBeforeAssignedYear は配当年次より前の履修を禁じるなら true、forbidRetakeOfPassed は修得済みの科目の再履修を禁じるなら true です。
 
@@ -129,11 +145,11 @@ patches で変えられる field は次のものだけです。
 | ルールの種類 | field |
 |---|---|
 | graduation | minYears, totalCredits |
-| categories | minCredits, requireAll, maxCredits, overflowTo |
-| gates | checkAtEndOfYear, minCredits, creditBasis, requiredMayBeEnrolled, retryAfterMet |
-| loadLimits | maxPerYear, maxPerTerm, retakeExclusion |
-| courseCountLimits | maxPerTerm |
-| prerequisites | allowSameTerm |
+| category | minCredits, requireAll, maxCredits, overflowTo |
+| gate | checkAtEndOfYear, minCredits, creditBasis, requiredMayBeEnrolled, retryAfterMet |
+| load | maxPerYear, maxPerTerm, retakeExclusion |
+| courseCount | maxPerTerm |
+| prerequisite | allowSameTerm |
 | enrollment | forbidBeforeAssignedYear, forbidRetakeOfPassed |
 
 ルールの本体には、候補のどれかの値を仮に入れます。未回答の間は ambiguityIds によって判定が止まるので、どの候補を入れても結果を確定させることはありません。
