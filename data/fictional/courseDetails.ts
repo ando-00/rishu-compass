@@ -13,6 +13,7 @@ export type CourseDetailsConfig = {
 };
 
 const TERMS: Term[] = ["前期", "後期"];
+const REQUIRED_YEAR = 0;
 
 function isRequired(course: Course) {
   return course.groups.some((group) => group.endsWith("/必修"));
@@ -42,10 +43,11 @@ function assignTerms(courses: Course[], config: CourseDetailsConfig) {
   return terms;
 }
 
-// 同じ配当年次の必修が重ならないよう、必修から順に空いた時限を割り当てる。
+// 必修は再履修があるので、配当年次にかかわらず重ならないよう先に時限を割り当てる。
 function assignSlots(courses: Course[], terms: Map<string, OfferedTerm>, config: CourseDetailsConfig) {
   const grid = config.periods.flatMap((period) => config.days.map((day) => ({ day, period })));
   const used = new Map<string, number>();
+  const count = (key: string) => used.get(key) ?? 0;
   const usedKey = (year: number, term: Term, index: number) => `${year}:${term}:${index}`;
   const slots = new Map<string, CourseSlot[]>();
   const partnerOf = new Map(config.quarterPairs?.map(([first, second]) => [second, first]));
@@ -62,13 +64,22 @@ function assignSlots(courses: Course[], terms: Map<string, OfferedTerm>, config:
     const partner = partnerOf.get(course.name);
     if (partner) continue;
     const held = termsOf(terms.get(course.name)!);
+    // 必修は年次 0 にまとめて数え、選択は同じ配当年次の選択と全ての必修を避ける。
+    const required = isRequired(course);
+    const year = required ? REQUIRED_YEAR : course.assignedYear;
     const load = (index: number) =>
-      Math.max(...held.map((term) => used.get(usedKey(course.assignedYear, term, index)) ?? 0));
+      Math.max(
+        ...held.map(
+          (term) =>
+            count(usedKey(REQUIRED_YEAR, term, index)) +
+            (required ? 0 : count(usedKey(year, term, index))),
+        ),
+      );
     const lightest = Math.min(...grid.map((_, index) => load(index)));
     const index = grid.findIndex((_, candidate) => load(candidate) === lightest);
     for (const term of held) {
-      const key = usedKey(course.assignedYear, term, index);
-      used.set(key, (used.get(key) ?? 0) + 1);
+      const key = usedKey(year, term, index);
+      used.set(key, count(key) + 1);
     }
     const quarter = quarterOf.get(course.name);
     slots.set(course.name, [{ ...grid[index]!, ...(quarter ? { quarter } : {}) }]);

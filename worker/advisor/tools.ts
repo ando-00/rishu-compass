@@ -33,10 +33,12 @@ export type AdvisorTool = {
 
 const MAX_RESULTS = 30;
 
+// strict の道具は件数や長さの制約を受け付けないので、スキーマの外のコードで検査する。
+const filled = z.string().refine((text) => text.trim().length > 0, "空にできません");
+
 const planSchema = z
   .array(z.object({ course: z.string(), term: z.enum(["前期", "後期", "通年"]) }))
-  .min(1)
-  .max(40);
+  .refine((plan) => plan.length >= 1 && plan.length <= 40, "科目は1〜40件にしてください");
 
 function defineTool<T extends z.ZodType>(
   name: string,
@@ -173,7 +175,7 @@ export function createAdvisorTools(input: AdvisorInput) {
     defineTool(
       "escalate_to_staff",
       "案を出さず、職員の確認に回す。判断できないとき、検査に通る案を組めないときに使う。",
-      z.object({ reason: z.string().min(1).describe("職員に伝える理由") }),
+      z.object({ reason: filled.describe("職員に伝える理由。2文までにする。単位数は書かない") }),
       ({ reason }) => {
         state.escalated = reason;
         return "職員の確認に回しました。ここで終えてください。";
@@ -184,7 +186,7 @@ export function createAdvisorTools(input: AdvisorInput) {
       "検査に通った案と、声かけ文の下書きを職員の画面へ出す。通らない案は違反を返して受け付けない。",
       z.object({
         plan: planSchema,
-        draft: z.string().min(1).describe("学生に送る声かけ文の下書き"),
+        draft: filled.describe("学生に送る声かけ文の下書き"),
       }),
       ({ plan, draft }) => {
         if (state.escalated !== null) return "職員の確認に回したので、案は受け付けません。";

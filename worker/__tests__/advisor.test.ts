@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import adviceRules from "../../data/fictional/advice-rules.md?raw";
 import { exampleCourses } from "../../data/fictional/example/courses";
 import { exampleRules } from "../../data/fictional/example/rules";
@@ -79,6 +80,14 @@ describe("履修案の結果", () => {
       ["submit_plan", { plan: GOOD_PLAN, draft: DRAFT }],
     ]);
     expect((await adviseStudent(loop, input())).status).toBe("passed");
+  });
+
+  it("空の案と空の下書きは提出できない", async () => {
+    const { tools, state } = createAdvisorTools(input());
+    const submit = tools.find((tool) => tool.name === "submit_plan")!;
+    expect(() => submit.run({ plan: [], draft: DRAFT })).toThrow();
+    expect(() => submit.run({ plan: GOOD_PLAN, draft: "  " })).toThrow();
+    expect(state.submitted).toBeNull();
   });
 
   it("未回答の曖昧箇所に関わる案は受け付けない", async () => {
@@ -185,6 +194,14 @@ describe("声かけ文の検査", () => {
 });
 
 describe("道具", () => {
+  it("入力のスキーマに strict で使えない制約がない", () => {
+    for (const { name, inputSchema } of createAdvisorTools(input()).tools) {
+      expect(JSON.stringify(z.toJSONSchema(inputSchema)), name).not.toMatch(
+        /minItems|maxItems|minLength|maxLength|pattern/,
+      );
+    }
+  });
+
   it("check_requirements は engine の判定と案を組む年次を返す", () => {
     const result = runTool("check_requirements", {});
     expect(result.planningYear).toBe(3);

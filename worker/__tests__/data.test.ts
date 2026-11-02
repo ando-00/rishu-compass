@@ -52,10 +52,10 @@ describe.each([
     }
   });
 
-  it("同じ配当年次の必修どうしは時限が重ならない", () => {
+  it("必修どうしは、再履修があるので配当年次にかかわらず時限が重ならない", () => {
     for (const course of required) {
       for (const other of required) {
-        if (course === other || course.assignedYear !== other.assignedYear) continue;
+        if (course === other) continue;
         if (!termsOf(course).some((term) => termsOf(other).includes(term))) continue;
         const [a, b] = [course.slots?.[0], other.slots?.[0]];
         expect(`${a?.day}${a?.period}`).not.toBe(`${b?.day}${b?.period}`);
