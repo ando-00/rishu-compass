@@ -39,7 +39,11 @@ export type Student = {
   admissionYear: number;
   studentYear: number;
   currentTerm: Term;
+  // 在学した年数。卒業要件を「満たした」にするのは、これが graduation.minYears 以上のときだけ。
+  // 生成データでは年次と同じ値（今の年度を含む）。翌年度の履修案の検査では1足す
   yearsEnrolled: number;
+  // 卒業予定の年次と学期。ないときは延期見込みを計算しないので、単位が足りなければ「不足」のまま。
+  // 生成データでは全員が4年次後期
   expectedGraduation?: TermPoint;
   major?: string;
   hasMinor?: boolean;
