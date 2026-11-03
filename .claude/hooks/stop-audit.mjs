@@ -11,7 +11,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const input = JSON.parse(readFileSync(0, "utf8") || "{}");
-const root = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
+// VS Code は c:\ と小文字で渡すことがある。小文字のまま vitest を動かすと全テストが落ちるので大文字にそろえる
+const root = (process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd()).replace(/^[a-z]:/, (drive) => drive.toUpperCase());
 const stateDir = join(root, "evals/tmp/audit");
 const statePath = join(stateDir, "stop-hook.json");
 const MAX_BLOCKS = 3;

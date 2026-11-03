@@ -14,7 +14,8 @@ import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+// Windows のドライブ名を大文字にそろえる。小文字の c:\ から vitest を動かすと、同じモジュールを2回読んで全テストが落ちる
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..").replace(/^[a-z]:/, (drive) => drive.toUpperCase());
 const FULL = process.argv.includes("--full");
 const SKIP_BUILD = process.argv.includes("--skip-build");
 const CI = process.argv.includes("--ci");
