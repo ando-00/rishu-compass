@@ -126,6 +126,8 @@ export const outreachSchema = z.object({
       actual: z.number().optional(),
       enrolled: z.number().optional(),
       missingCourses: z.array(z.string()).optional(),
+      // 未回答の確認事項に関わる量。回答で変わりうる（H19）
+      mayChange: z.literal(true).optional(),
     }),
   ),
   // 声かけの対象にだけ下書きを作る

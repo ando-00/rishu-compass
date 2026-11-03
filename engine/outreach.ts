@@ -14,6 +14,8 @@ export type OutreachReason = {
   actual?: number;
   enrolled?: number;
   missingCourses?: string[];
+  // 未回答の確認事項に関わる量（区分に未回答が残る卒業要件の不足）。回答で変わりうる（H19）
+  mayChange?: true;
 };
 
 export type OutreachEntry = {
@@ -25,7 +27,7 @@ export type OutreachEntry = {
 };
 
 function toReason(judgment: Judgment): OutreachReason {
-  const { ruleId, name, clause, sourceQuote, status, reason, grounds, required, actual, enrolled, missingCourses } = judgment;
+  const { ruleId, name, clause, sourceQuote, status, reason, grounds, required, actual, enrolled, missingCourses, ambiguityIds } = judgment;
   const amounts =
     status === "needs_staff"
       ? {}
@@ -34,6 +36,7 @@ function toReason(judgment: Judgment): OutreachReason {
           ...(actual === undefined ? {} : { actual }),
           ...(enrolled === undefined ? {} : { enrolled }),
           ...(missingCourses && missingCourses.length > 0 ? { missingCourses } : {}),
+          ...(ambiguityIds.length > 0 ? { mayChange: true as const } : {}),
         };
   return { ruleId, name, clause, sourceQuote, status, detail: reason, ...(grounds ? { grounds } : {}), ...amounts };
 }
@@ -45,6 +48,7 @@ export function describeAmounts(reason: OutreachReason) {
     parts.push(`修得 ${reason.actual} / 必要 ${reason.required} 単位${reason.enrolled ? `、履修中 ${reason.enrolled}` : ""}`);
   }
   if (reason.missingCourses && reason.missingCourses.length > 0) parts.push(`未修得: ${reason.missingCourses.join("、")}`);
+  if (parts.length > 0 && reason.mayChange) parts.push("未回答の確認事項があり、変わることがあります");
   return parts.join("。");
 }
 

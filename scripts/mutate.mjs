@@ -170,6 +170,7 @@ const M = [
   ["outreach", "const inReview = excludedReason !== null || !settled.has(studentId);", "const inReview = !settled.has(studentId);", "声かけ: 全判定が職員確認の学生"],
   ["outreach", '.filter((reason) => reason.status !== "needs_staff")', "", "下書き: 職員確認を入れない"],
   ["outreach", 'status === "needs_staff"\n      ? {}', 'false\n      ? {}', "声かけ: 職員確認の判定に量を付けない"],
+  ["outreach", "...(ambiguityIds.length > 0 ? { mayChange: true as const } : {}),", "", "声かけ: 未回答に関わる量に注記を添える（H19）"],
   ["plan", "if (exclusionReason(prepared, student)) return [];", "", "案: 適用外の学生"],
   ["plan", "const met = rule.conditions.find((names) => names.every(available));", "const met = rule.conditions.find((names) => names.some(available));", "先修: かつの組"],
   ["plan", "if (student.studentYear >= firstYear) continue;", "continue;", "案: 判定年次のうちは履修できない"],
