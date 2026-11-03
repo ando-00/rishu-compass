@@ -22,7 +22,19 @@ export const answerRecordSchema = z.object({
   answeredAt: z.string(),
 });
 
-export const answerRecordsResponseSchema = z.object({ records: z.array(answerRecordSchema) });
+// 回答の経過。取り消しは optionId が null
+export const answerHistoryEntrySchema = z.object({
+  ambiguityId: z.string(),
+  optionId: z.string().nullable(),
+  respondent: respondentSchema,
+  answeredAt: z.string(),
+});
+
+export const answerRecordsResponseSchema = z.object({
+  records: z.array(answerRecordSchema),
+  // 新しい順。曖昧箇所ごとの最新だけでなく、回答し直しと取り消しも残す
+  history: z.array(answerHistoryEntrySchema),
+});
 
 export const planEntrySchema = z.object({
   course: z.string().min(1),
@@ -166,6 +178,15 @@ export const studentResponseSchema = z.object({
   }),
   excludedReason: z.string().nullable(),
   judgments: z.array(judgmentSchema),
+  // 履修の記録。判定案を成績と突き合わせて確かめるために出す
+  records: z.array(
+    z.object({
+      course: z.string(),
+      studentYear: z.number(),
+      term: z.enum(["前期", "後期", "通年"]),
+      result: z.enum(["passed", "failed", "disqualified", "enrolled"]),
+    }),
+  ),
 });
 
 export const planCheckResponseSchema = z.object({
@@ -284,6 +305,7 @@ export type Answers = z.infer<typeof answersSchema>;
 export type Respondent = z.infer<typeof respondentSchema>;
 export type AnswerRecord = z.infer<typeof answerRecordSchema>;
 export type AnswerRecordsResponse = z.infer<typeof answerRecordsResponseSchema>;
+export type AnswerHistoryEntry = z.infer<typeof answerHistoryEntrySchema>;
 export type PlanEntry = z.infer<typeof planEntrySchema>;
 export type JudgmentStatus = z.infer<typeof judgmentStatusSchema>;
 export type Judgment = z.infer<typeof judgmentSchema>;

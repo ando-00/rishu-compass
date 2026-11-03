@@ -1,4 +1,4 @@
-import type { AnswerRecord, Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
+import type { AnswerHistoryEntry, AnswerRecord, Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
 import { JudgmentBadge } from "./StatusBadge";
 
 const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
@@ -6,6 +6,7 @@ const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "ex
 type Props = {
   overview: OverviewResponse;
   records: AnswerRecord[];
+  history: AnswerHistoryEntry[];
   onAnswer: (ambiguityId: string, optionId: string) => void;
   onClear: (ambiguityId: string) => void;
 };
@@ -96,6 +97,26 @@ function AnswerMeta({ record }: { record: AnswerRecord | undefined }) {
   );
 }
 
+// 回答の経過（誰がいつどの読み方にし、いつ取り消したか）。記録は追記だけなので、すべて残っている
+function AnswerHistory({ impact, history }: { impact: Impact; history: AnswerHistoryEntry[] }) {
+  const entries = history.filter((entry) => entry.ambiguityId === impact.ambiguityId);
+  if (entries.length === 0) return null;
+  const label = (optionId: string | null) =>
+    optionId === null ? "回答を取り消した" : `「${impact.options.find((o) => o.id === optionId)?.label ?? optionId}」に回答`;
+  return (
+    <details className="answer-history">
+      <summary className="muted">回答の経過（{entries.length}件）</summary>
+      <ul>
+        {entries.map((entry, index) => (
+          <li key={`${entry.answeredAt}-${index}`} className="muted">
+            {new Date(entry.answeredAt).toLocaleString("ja-JP")} {entry.respondent}が{label(entry.optionId)}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function UnreflectedNote({ impact }: { impact: Impact }) {
   const labels = impact.options.filter(({ reflected }) => !reflected).map(({ label }) => `「${label}」`);
   if (labels.length === 0) return null;
@@ -106,7 +127,7 @@ function UnreflectedNote({ impact }: { impact: Impact }) {
   );
 }
 
-export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) {
+export function QuestionsPanel({ overview, records, history, onAnswer, onClear }: Props) {
   const { unanswered, answered } = overview;
   return (
     <section>
@@ -122,6 +143,7 @@ export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) 
           <blockquote>{impact.sourceQuote}</blockquote>
           <ImpactCounts impact={impact} />
           <UnreflectedNote impact={impact} />
+          <AnswerHistory impact={impact} history={history} />
           <div className="actions">
             {impact.options.map((option) => (
               <button
@@ -157,6 +179,7 @@ export function QuestionsPanel({ overview, records, onAnswer, onClear }: Props) 
             </button>
           </div>
           <ChangeList impact={impact} />
+          <AnswerHistory impact={impact} history={history} />
         </article>
       ))}
     </section>

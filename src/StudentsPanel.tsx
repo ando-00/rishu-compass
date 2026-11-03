@@ -117,6 +117,45 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
   );
 }
 
+const RESULT_LABELS = { passed: "修得", failed: "不合格", disqualified: "失格", enrolled: "履修中" } as const;
+const TERM_ORDER = { 前期: 0, 通年: 1, 後期: 2 } as const;
+
+// 履修の記録。判定案を成績と突き合わせて確かめるために出す。判定には使わない表示だけの表
+function RecordsTable({ records }: { records: StudentResponse["records"] }) {
+  const sorted = [...records].sort(
+    (a, b) => a.studentYear - b.studentYear || TERM_ORDER[a.term] - TERM_ORDER[b.term] || a.course.localeCompare(b.course, "ja"),
+  );
+  return (
+    <>
+      <h3>履修の記録（{records.length}件）</h3>
+      {records.length === 0 ? (
+        <p className="muted">記録がありません。</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>年次</th>
+              <th>学期</th>
+              <th>科目</th>
+              <th>結果</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((record, index) => (
+              <tr key={`${record.course}-${record.studentYear}-${record.term}-${index}`}>
+                <td className="nowrap">{record.studentYear}年次</td>
+                <td className="nowrap">{record.term}</td>
+                <td>{record.course}</td>
+                <td className="nowrap">{RESULT_LABELS[record.result]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
 export function StudentsPanel({ datasetId, answers, students, selectedId, onSelect }: Props) {
   const [detail, setDetail] = useState<StudentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +269,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 ))}
               </tbody>
             </table>
+            <RecordsTable records={detail.records} />
             <AdvisorPanel datasetId={datasetId} studentId={selectedId} answers={answers} />
             <PlanForm datasetId={datasetId} studentId={selectedId} answers={answers} />
           </>

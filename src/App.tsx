@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   respondentSchema,
+  type AnswerHistoryEntry,
   type AnswerRecord,
   type DatasetsResponse,
   type OverviewResponse,
@@ -40,6 +41,7 @@ export function App() {
   const [datasets, setDatasets] = useState<DatasetsResponse["datasets"]>([]);
   const [datasetId, setDatasetId] = useState<string | null>(null);
   const [records, setRecords] = useState<AnswerRecord[] | null>(null);
+  const [history, setHistory] = useState<AnswerHistoryEntry[]>([]);
   const [respondent, setRespondent] = useState<Respondent>("教務職員A");
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [previous, setPrevious] = useState<OverviewResponse | null>(null);
@@ -73,7 +75,10 @@ export function App() {
     let active = true;
     fetchAnswerRecords(datasetId)
       .then((result) => {
-        if (active) setRecords(result.records);
+        if (active) {
+          setRecords(result.records);
+          setHistory(result.history);
+        }
       })
       .catch((cause: unknown) => {
         if (!active) return;
@@ -114,6 +119,7 @@ export function App() {
       const result = await saveAnswer(datasetId, { ambiguityId, optionId, respondent });
       setPrevious(overview);
       setRecords(result.records);
+      setHistory(result.history);
       setAnswerError(null);
     } catch (cause) {
       setAnswerError(cause instanceof Error ? cause.message : "回答を記録できませんでした。");
@@ -264,6 +270,7 @@ export function App() {
             <QuestionsPanel
               overview={overview}
               records={records ?? []}
+              history={history}
               onAnswer={(id, optionId) => void submitAnswer(id, optionId)}
               onClear={(id) => void submitAnswer(id, null)}
             />

@@ -139,3 +139,38 @@ describe("記録できないとき", () => {
     expect((await post(answer)).status).toBe(503);
   });
 });
+
+// H14 の C（B20）: 回答の経過を新しい順に返す。取り消しも1件として残る
+describe("回答の経過", () => {
+  async function history(path = PATH) {
+    const res = await request(path);
+    expect(res.status).toBe(200);
+    return answerRecordsResponseSchema.parse(await res.json()).history;
+  }
+
+  it("回答がなければ空", async () => {
+    expect(await history()).toEqual([]);
+  });
+
+  it("回答、回答し直し、取り消しを新しい順にすべて残す", async () => {
+    await post({ ambiguityId: ID, optionId: "exclude", respondent: "教務職員A" });
+    await post({ ambiguityId: ID, optionId: "include", respondent: "教務職員B" });
+    await post({ ambiguityId: ID, optionId: null, respondent: "教務職員A" });
+    const entries = await history();
+    expect(entries.map((e) => [e.ambiguityId, e.optionId, e.respondent])).toEqual([
+      [ID, null, "教務職員A"],
+      [ID, "include", "教務職員B"],
+      [ID, "exclude", "教務職員A"],
+    ]);
+    for (const entry of entries) expect(Date.parse(entry.answeredAt)).not.toBeNaN();
+    // 今の回答は取り消し済みなので records は空
+    expect(await records()).toEqual([]);
+  });
+
+  it("回答の直後の応答にも経過が入る", async () => {
+    const res = await post(answer);
+    const body = answerRecordsResponseSchema.parse(await res.json());
+    expect(body.history).toHaveLength(1);
+    expect(body.history[0]).toMatchObject({ ambiguityId: ID, optionId: "exclude", respondent: "教務職員A" });
+  });
+});

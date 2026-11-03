@@ -48,7 +48,27 @@ async function currentRecords(db: D1Database, dataset: Dataset): Promise<AnswerR
       ? [{ ambiguityId: ambiguity_id, optionId: option_id, respondent, answeredAt: answered_at }]
       : [],
   );
-  return { records };
+  return { records, history: await answerHistory(db, dataset) };
+}
+
+// 回答の経過を新しい順に返す。今のルールにある曖昧箇所の行だけ。取り消しは optionId が null
+async function answerHistory(db: D1Database, dataset: Dataset) {
+  const known = new Set(dataset.rules.ambiguities.map((ambiguity) => ambiguity.id));
+  const { results } = await db
+    .prepare(
+      `SELECT ambiguity_id, option_id, respondent, answered_at
+       FROM ambiguity_answers WHERE dataset_id = ?1 ORDER BY id DESC`,
+    )
+    .bind(dataset.id)
+    .all<Row>();
+  return results
+    .filter(({ ambiguity_id }) => known.has(ambiguity_id))
+    .map(({ ambiguity_id, option_id, respondent, answered_at }) => ({
+      ambiguityId: ambiguity_id,
+      optionId: option_id,
+      respondent,
+      answeredAt: answered_at,
+    }));
 }
 
 answerRoutes.get("/:id/answers", async (c) => {

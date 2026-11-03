@@ -175,3 +175,14 @@ describe("経路", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// H14 の F（B21）: 学生の詳細に履修の記録を返す。判定は変えない
+describe("学生の詳細の履修の記録", () => {
+  it("学生の記録（科目、年次、学期、結果）をそのまま返す", async () => {
+    const res = await post(`/api/datasets/example/students/${normal.id}`, { answers: {} });
+    expect(res.status).toBe(200);
+    const body = studentResponseSchema.parse(await res.json());
+    expect(body.records).toEqual(normal.records);
+    expect(body.records.length).toBeGreaterThan(0);
+  });
+});

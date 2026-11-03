@@ -181,6 +181,7 @@ app.post("/api/datasets/:id/students/:studentId", async (c) => {
     },
     excludedReason,
     judgments,
+    records: student.records,
   };
   return c.json(response);
 });

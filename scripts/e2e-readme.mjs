@@ -225,6 +225,7 @@ async function main() {
     await page.getByText(/直前 \d+人/).first().waitFor();
     const after = await summary("声かけ");
     if (!(after > before)) throw new Error(`声かけが ${before}人 から ${after}人`);
+    await page.getByText(/回答の経過（\d+件）/).first().waitFor();
     return `声かけ ${before}人 → ${after}人`;
   });
   await step("8 声かけの一覧に理由と根拠の条文がある", async () => {
@@ -236,6 +237,7 @@ async function main() {
   await step("9 S0095 を開くと区分別の不足と根拠がある", async () => {
     await page.getByText("S0095").first().click();
     await page.getByRole("heading", { name: "履修案", exact: true }).waitFor();
+    await page.getByRole("heading", { name: /履修の記録（\d+件）/ }).waitFor();
     const body = await page.locator("main").innerText();
     if (!/第\d+条/.test(body)) throw new Error("根拠の条文が見当たらない");
   });
