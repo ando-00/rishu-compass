@@ -5,6 +5,7 @@ import {
   type AnswerRecord,
   type DatasetsResponse,
   type OverviewResponse,
+  type PreviousAnswer,
   type Respondent,
 } from "../shared/api";
 import { diffStudentStates } from "../engine/stateChanges";
@@ -58,6 +59,7 @@ export function App() {
   const [datasetId, setDatasetId] = useState<string | null>(null);
   const [records, setRecords] = useState<AnswerRecord[] | null>(null);
   const [history, setHistory] = useState<AnswerHistoryEntry[]>([]);
+  const [previousAnswers, setPreviousAnswers] = useState<PreviousAnswer[]>([]);
   const [respondent, setRespondent] = useState<Respondent>("教務職員A");
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [previous, setPrevious] = useState<OverviewResponse | null>(null);
@@ -94,6 +96,7 @@ export function App() {
         if (active) {
           setRecords(result.records);
           setHistory(result.history);
+          setPreviousAnswers(result.previous);
         }
       })
       .catch((cause: unknown) => {
@@ -136,6 +139,7 @@ export function App() {
       setPrevious(overview);
       setRecords(result.records);
       setHistory(result.history);
+      setPreviousAnswers(result.previous);
       setAnswerError(null);
     } catch (cause) {
       setAnswerError(cause instanceof Error ? cause.message : "回答を記録できませんでした。");
@@ -342,6 +346,7 @@ export function App() {
                 }
                 records={records ?? []}
                 history={history}
+                previousAnswers={previousAnswers}
                 onAnswer={(id, optionId) => void submitAnswer(id, optionId)}
                 onClear={(id) => void submitAnswer(id, null)}
               />

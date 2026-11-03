@@ -29,7 +29,7 @@ type ConfirmationRow = {
   confirmed_at: string;
 };
 
-const DATASET_PREFIX = "ruleset-";
+export const DATASET_PREFIX = "ruleset-";
 
 export const ruleSetRoutes = new Hono<{ Bindings: Env }>();
 

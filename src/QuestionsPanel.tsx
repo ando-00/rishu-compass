@@ -1,5 +1,12 @@
 import { useState } from "react";
-import type { AnswerHistoryEntry, AnswerRecord, Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
+import type {
+  AnswerHistoryEntry,
+  AnswerRecord,
+  Impact,
+  JudgmentStatus,
+  OverviewResponse,
+  PreviousAnswer,
+} from "../shared/api";
 import { buildMeetingSheet } from "./meetingSheet";
 import { MeetingSheetView } from "./MeetingSheetView";
 import { JudgmentBadge, judgmentLabel } from "./StatusBadge";
@@ -11,6 +18,8 @@ type Props = {
   datasetName: string;
   records: AnswerRecord[];
   history: AnswerHistoryEntry[];
+  // 同じ大学の前の版で、同じ ID の曖昧箇所にした回答。参考に見せるだけで反映しない
+  previousAnswers: PreviousAnswer[];
   onAnswer: (ambiguityId: string, optionId: string) => void;
   onClear: (ambiguityId: string) => void;
 };
@@ -151,6 +160,25 @@ function AnswerHistory({ impact, history }: { impact: Impact; history: AnswerHis
   );
 }
 
+// 前の版の回答。曖昧箇所の ID が同じものだけを出し、この版には反映しない（H25）
+function PreviousAnswers({ impact, previousAnswers }: { impact: Impact; previousAnswers: PreviousAnswer[] }) {
+  const entries = previousAnswers.filter((entry) => entry.ambiguityId === impact.ambiguityId);
+  if (entries.length === 0) return null;
+  return (
+    <div className="previous-answers">
+      <p className="muted">前の版の回答（参考。この版には反映していません）</p>
+      <ul>
+        {entries.map((entry) => (
+          <li key={entry.version}>
+            第{entry.version}版で「{entry.optionLabel}」（{entry.respondent}、
+            {new Date(entry.answeredAt).toLocaleString("ja-JP")}）
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function UnreflectedNote({ impact }: { impact: Impact }) {
   const labels = impact.options.filter(({ reflected }) => !reflected).map(({ label }) => `「${label}」`);
   if (labels.length === 0) return null;
@@ -174,7 +202,7 @@ function QuestionHead({ impact, answered }: { impact: Impact; answered?: boolean
   );
 }
 
-export function QuestionsPanel({ overview, datasetName, records, history, onAnswer, onClear }: Props) {
+export function QuestionsPanel({ overview, datasetName, records, history, previousAnswers, onAnswer, onClear }: Props) {
   const { unanswered, answered } = overview;
   const [sheetOpen, setSheetOpen] = useState(false);
   if (sheetOpen) {
@@ -209,6 +237,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, onAnsw
       {unanswered.map((impact) => (
         <article className="card" key={impact.ambiguityId}>
           <QuestionHead impact={impact} />
+          <PreviousAnswers impact={impact} previousAnswers={previousAnswers} />
           <ImpactCounts impact={impact} onAnswer={(optionId) => onAnswer(impact.ambiguityId, optionId)} />
           <UnreflectedNote impact={impact} />
           <div className="links-row">

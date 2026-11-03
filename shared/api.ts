@@ -30,10 +30,23 @@ export const answerHistoryEntrySchema = z.object({
   answeredAt: z.string(),
 });
 
+// 同じ大学の前の版で、同じ ID の曖昧箇所にした回答。参考に見せるだけで、今の版には反映しない
+export const previousAnswerSchema = z.object({
+  ambiguityId: z.string(),
+  // 前の版のルール案の番号（「確定ルール 第N版」の N）
+  version: z.number(),
+  // 前の版のルール案での読み方の名前。今の版の選択肢と同じとは限らない
+  optionLabel: z.string(),
+  respondent: respondentSchema,
+  answeredAt: z.string(),
+});
+
 export const answerRecordsResponseSchema = z.object({
   records: z.array(answerRecordSchema),
   // 新しい順。曖昧箇所ごとの最新だけでなく、回答し直しと取り消しも残す
   history: z.array(answerHistoryEntrySchema),
+  // 新しい版から順
+  previous: z.array(previousAnswerSchema),
 });
 
 export const planEntrySchema = z.object({
@@ -340,6 +353,7 @@ export type Answers = z.infer<typeof answersSchema>;
 export type Respondent = z.infer<typeof respondentSchema>;
 export type AnswerRecord = z.infer<typeof answerRecordSchema>;
 export type AnswerRecordsResponse = z.infer<typeof answerRecordsResponseSchema>;
+export type PreviousAnswer = z.infer<typeof previousAnswerSchema>;
 export type AnswerHistoryEntry = z.infer<typeof answerHistoryEntrySchema>;
 export type PlanEntry = z.infer<typeof planEntrySchema>;
 export type JudgmentStatus = z.infer<typeof judgmentStatusSchema>;

@@ -1272,6 +1272,19 @@ button.option:hover:not(:disabled) {
   padding-left: 18px;
 }
 
+.previous-answers {
+  margin: 8px 0;
+}
+
+.previous-answers p {
+  margin: 0;
+}
+
+.previous-answers ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
 .help {
   margin: 0 0 12px;
   font-size: 13px;

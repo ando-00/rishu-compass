@@ -3,9 +3,11 @@ import {
   saveAnswerRequestSchema,
   type AnswerRecord,
   type AnswerRecordsResponse,
+  type PreviousAnswer,
+  type StoredProposal,
 } from "../shared/api";
 import type { Dataset } from "./datasets";
-import { resolveDataset } from "./ruleSets";
+import { DATASET_PREFIX, resolveDataset } from "./ruleSets";
 
 type Row = {
   ambiguity_id: string;
@@ -48,7 +50,40 @@ async function currentRecords(db: D1Database, dataset: Dataset): Promise<AnswerR
       ? [{ ambiguityId: ambiguity_id, optionId: option_id, respondent, answeredAt: answered_at }]
       : [],
   );
-  return { records, history: await answerHistory(db, dataset) };
+  return { records, history: await answerHistory(db, dataset), previous: await previousAnswers(db, dataset) };
+}
+
+// 同じ大学の前の版（番号の小さいルール案）で、今の版と同じ ID の曖昧箇所にした今の回答。取り消しは除く。
+// 曖昧箇所の ID は変換のたびに付くので、ID が同じものだけを対応させる（H25）。反映はしない
+async function previousAnswers(db: D1Database, dataset: Dataset): Promise<PreviousAnswer[]> {
+  if (!dataset.confirmation || !dataset.sourceId) return [];
+  const known = new Set(dataset.rules.ambiguities.map((ambiguity) => ambiguity.id));
+  const { results: versions } = await db
+    .prepare("SELECT id, proposal FROM rule_sets WHERE source_id = ?1 AND id < ?2 ORDER BY id DESC")
+    .bind(dataset.sourceId, dataset.confirmation.proposalId)
+    .all<{ id: number; proposal: string }>();
+
+  const previous: PreviousAnswer[] = [];
+  for (const version of versions) {
+    const { rules } = JSON.parse(version.proposal) as StoredProposal;
+    const { results } = await db
+      .prepare(
+        `SELECT ambiguity_id, option_id, respondent, answered_at
+         FROM ambiguity_answers
+         WHERE id IN (SELECT MAX(id) FROM ambiguity_answers WHERE dataset_id = ?1 GROUP BY ambiguity_id)`,
+      )
+      .bind(`${DATASET_PREFIX}${version.id}`)
+      .all<Row>();
+    for (const { ambiguity_id, option_id, respondent, answered_at } of results) {
+      if (option_id === null || !known.has(ambiguity_id)) continue;
+      const label = rules.ambiguities
+        .find((ambiguity) => ambiguity.id === ambiguity_id)
+        ?.options.find((option) => option.id === option_id)?.label;
+      if (!label) continue;
+      previous.push({ ambiguityId: ambiguity_id, version: version.id, optionLabel: label, respondent, answeredAt: answered_at });
+    }
+  }
+  return previous;
 }
 
 // 回答の経過を新しい順に返す。今のルールにある曖昧箇所の行だけ。取り消しは optionId が null
