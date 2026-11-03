@@ -66,5 +66,5 @@
 - push が拒まれたら、`rebase` や `force push` をせず原因を確認する
 - 鍵は `.githooks/pre-commit` と `.githooks/pre-push` でも止める。clone したら `git config core.hooksPath .githooks` を実行する。Claude Code では `.claude/settings.json` の SessionStart フックがこれを行う
 - `.claude/hooks/stop-audit.mjs` が、Claude Code の作業を終える前に `node scripts/audit.mjs` を回し、FAIL があれば終了を止めて直させる。push のあとは `.claude/hooks/after-push.mjs` が CI の確認を促す
-- `.claude/hooks/guard-bash.mjs` が、`git add -A`、`rebase`、`pull --rebase`、`force push`、`--amend`、`--no-verify`、`reset --hard`、ブランチの作成、フックの場所の変更を止め、コードを含むコミットの前に `npm run build` と `npm test` を回す。事例は `scripts/__tests__/hooks.test.mjs` にある
+- `.claude/hooks/guard-bash.mjs` が、`git add -A`、`rebase`、`pull --rebase`、`force push`、`--amend`、`--no-verify`、`reset --hard`、ブランチの作成、フックの場所の変更を止める。コードを含むコミットは、`.githooks/pre-commit` が、コミットされる中身（索引）を一時フォルダに書き出して `npm run build` と `npm test` を回し、通らなければ止める。事例は `scripts/__tests__/hooks.test.mjs` にある
 - ビルドで `.dev.vars` が `dist/` にコピーされる。`.dev.vars` がある環境の `dist/` を共有も提出もしない

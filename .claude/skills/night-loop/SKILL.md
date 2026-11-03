@@ -13,7 +13,8 @@ description: 履修コンパスの夜間ループの1周。機械検査とテス
 |---|---|
 | 定期の起動（claude.ai のスケジュール） | 毎晩決まった時刻に新しいクラウドセッションを起こし、この手順を1周回させる |
 | SessionStart フック | フックの場所の設定、依存の導入、浅い履歴の取得 |
-| PreToolUse フック | 履歴を書き換える git 操作を止め、コードを含むコミットの前に build と test を回す |
+| PreToolUse フック | 履歴を書き換える git 操作を止める |
+| git の pre-commit フック | 鍵を止め、コードを含むコミットは、コミットされる中身で build と test を回す |
 | PostToolUse フック | push のあとに CI の確認を促す |
 | Stop フック | 終える前に `node scripts/audit.mjs` を回し、FAIL があれば終了を止めて直させる（3回まで。鍵の検出は止めずに人へ知らせる） |
 

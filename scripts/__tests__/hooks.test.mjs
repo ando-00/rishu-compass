@@ -1,5 +1,6 @@
 // Claude Code のフックに JSON を渡し、止める（終了コード 2）か通す（0）かを確かめる。
-// 監査の第2.5回の A25-7、A25-8 の事例を含む。
+// git の pre-commit フックは、仮のリポジトリで実際にコミットして確かめる。
+// 監査の第2.5回の A25-7、A25-8 と、L-12 の事例を含む。
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const HOOKS = join(dirname(fileURLToPath(import.meta.url)), "../../.claude/hooks");
+const GITHOOKS = join(dirname(fileURLToPath(import.meta.url)), "../../.githooks");
 // git のリポジトリでない場所。コミットの前の build と test は走らない
 const plain = mkdtempSync(join(tmpdir(), "hook-plain-"));
 
@@ -88,44 +90,73 @@ describe("guard-bash", () => {
   it.each(ALLOW)("通す: %s", (command) => expect(guard(command)).toBe(0));
 });
 
-describe("guard-bash のコミットの前の build と test（A25-7）", () => {
-  // build が必ず落ちる仮のリポジトリ
-  function repo() {
+describe("pre-commit のコミットされる中身での build と test（A25-7、L-12）", () => {
+  // build は engine/ に BROKEN を含むファイルがあれば落ちる。フックは本物の .githooks を使う
+  function repo({ test = "exit 0" } = {}) {
     const dir = mkdtempSync(join(tmpdir(), "hook-repo-"));
-    const git = (...args) => spawnSync("git", args, { cwd: dir, encoding: "utf8" });
+    const git = (...args) => spawnSync("git", args, { cwd: dir, encoding: "utf8", timeout: 60000 });
     git("init", "-q");
     git("config", "user.email", "t@t");
     git("config", "user.name", "t");
-    writeFileSync(join(dir, "package.json"), JSON.stringify({ scripts: { build: "exit 1", test: "exit 0" } }));
+    git("config", "core.hooksPath", GITHOOKS);
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ scripts: { build: "node check.js", test } }));
+    writeFileSync(
+      join(dir, "check.js"),
+      'const fs = require("fs");\nprocess.exit(fs.readdirSync("engine").some((f) => fs.readFileSync("engine/" + f, "utf8").includes("BROKEN")) ? 1 : 0);\n',
+    );
     mkdirSync(join(dir, "engine"));
     writeFileSync(join(dir, "engine/a.ts"), "export const a = 1;\n");
     writeFileSync(join(dir, "note.md"), "a\n");
-    git("add", "package.json", "engine/a.ts", "note.md");
-    git("commit", "-q", "-m", "init");
-    return { dir, git };
+    git("add", "package.json", "check.js", "engine/a.ts", "note.md");
+    git("commit", "-q", "--no-verify", "-m", "init");
+    const head = () => git("rev-parse", "HEAD").stdout.trim();
+    return { dir, git, head };
   }
+  const BROKEN = "export const a = 'BROKEN';\n";
+  const FIXED = "export const a = 2;\n";
+
+  it("索引が壊れていれば、作業ツリーが直っていても止める（2a3628f の形）", () => {
+    const { dir, git, head } = repo();
+    const before = head();
+    writeFileSync(join(dir, "engine/a.ts"), BROKEN);
+    git("add", "engine/a.ts");
+    writeFileSync(join(dir, "engine/a.ts"), FIXED);
+    expect(git("commit", "-q", "-m", "x").status).not.toBe(0);
+    expect(head()).toBe(before);
+  }, 60000);
+
+  it("索引が通れば、作業ツリーの未ステージの壊れた変更では止めない", () => {
+    const { dir, git, head } = repo();
+    const before = head();
+    writeFileSync(join(dir, "engine/a.ts"), FIXED);
+    git("add", "engine/a.ts");
+    writeFileSync(join(dir, "engine/a.ts"), BROKEN);
+    expect(git("commit", "-q", "-m", "x").status).toBe(0);
+    expect(head()).not.toBe(before);
+  }, 60000);
 
   it.each([
-    "git add engine/a.ts && git commit -m x",
-    "git commit -am x",
-    "git commit -m x -- engine/a.ts",
-  ])("未ステージのコードの変更があれば build を回して止める: %s", (command) => {
-    const { dir } = repo();
-    writeFileSync(join(dir, "engine/a.ts"), "export const a = 2;\n");
-    expect(guard(command, dir)).toBe(2);
-  });
+    ["commit -a", ["commit", "-q", "-am", "x"]],
+    ["commit -- パス", ["commit", "-q", "-m", "x", "--", "engine/a.ts"]],
+  ])("%s で入る壊れた変更を止める", (_, args) => {
+    const { dir, git } = repo();
+    writeFileSync(join(dir, "engine/a.ts"), BROKEN);
+    expect(git(...args).status).not.toBe(0);
+  }, 60000);
 
-  it("同じコマンドで足す新しいコードのファイルも見る", () => {
-    const { dir } = repo();
-    writeFileSync(join(dir, "engine/b.ts"), "export const b = 1;\n");
-    expect(guard("git add engine/b.ts && git commit -m x", dir)).toBe(2);
-  });
+  it("新しく足したコードのファイルも見る", () => {
+    const { dir, git } = repo();
+    writeFileSync(join(dir, "engine/b.ts"), BROKEN);
+    git("add", "engine/b.ts");
+    expect(git("commit", "-q", "-m", "x").status).not.toBe(0);
+  }, 60000);
 
-  it("コードを含まないコミットは build を回さない", () => {
-    const { dir } = repo();
+  it("コードを含まないコミットは build と test を回さない", () => {
+    const { dir, git } = repo({ test: "exit 1" });
     writeFileSync(join(dir, "note.md"), "b\n");
-    expect(guard("git add note.md && git commit -m x", dir)).toBe(0);
-  });
+    git("add", "note.md");
+    expect(git("commit", "-q", "-m", "x").status).toBe(0);
+  }, 60000);
 });
 
 describe("after-push", () => {
