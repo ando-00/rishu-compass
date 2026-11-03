@@ -97,16 +97,23 @@ function checkKeys() {
 
 // ---- 名前 ----
 function checkNames() {
+  // 作成者とコミット者のメールは、名前の一覧がなくても確かめられる。noreply の宛先だけを許す
+  const people = lines(git(["log", "--all", "--format=%h %ae %ce"]).stdout);
+  const personal = people.filter((line) =>
+    line.split(" ").slice(1).some((mail) => !/^(noreply@anthropic\.com|[0-9]+\+[A-Za-z0-9-]+@users\.noreply\.github\.com)$/.test(mail)),
+  );
+  expectEmpty("N3", "名前: 作成者とコミット者のメールが noreply だけ", personal.map((l) => l.split(" ")[0]).join("\n"));
   const list = join(homedir(), ".claude/rishu-compass-denylist.txt");
   if (!existsSync(list)) {
     record("N1", "未検証", "名前: 作業ツリーとコミットメッセージ", `${list} がない。人が作る（docs/AUDIT.md）`);
     return;
   }
   expectEmpty("N1", "名前: 作業ツリー", git(["grep", "-n", "-i", "-F", "-f", list]).stdout);
-  const log = git(["log", "--format=%h %B"]).stdout;
+  // 本文と、作成者・コミット者の名前とメール（トレーラーは本文に含まれる）
+  const log = git(["log", "--all", "--format=%h %an %ae %cn %ce%n%h %B"]).stdout;
   const words = lines(readFileSync(list, "utf8")).map((w) => w.toLowerCase());
   const hits = lines(log).filter((line) => words.some((w) => line.toLowerCase().includes(w)));
-  expectEmpty("N2", "名前: コミットメッセージ", hits.map((l) => l.slice(0, 12)).join("\n"));
+  expectEmpty("N2", "名前: コミットメッセージと作成者欄", hits.map((l) => l.slice(0, 12)).join("\n"));
 }
 
 // ---- 依存の向き、作らないもの、型の抜け道 ----

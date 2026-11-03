@@ -60,7 +60,7 @@ async function loadConfirmation(db: D1Database, ruleSetId: number) {
 }
 
 // 職員が認めたルールだけ、要確認を外す。
-function acceptRules(rules: RuleSet, acceptedRuleIds: string[]): RuleSet {
+export function acceptRules(rules: RuleSet, acceptedRuleIds: string[]): RuleSet {
   const accepted = new Set(acceptedRuleIds);
   const clear = <T extends { id: string; status?: "confirmed" | "needs_review" }>(rule: T): T => {
     if (!accepted.has(rule.id)) return rule;
@@ -79,7 +79,7 @@ function acceptRules(rules: RuleSet, acceptedRuleIds: string[]): RuleSet {
   };
 }
 
-function needsReviewIds(rules: RuleSet) {
+export function needsReviewIds(rules: RuleSet) {
   return [
     rules.graduation,
     ...rules.categories,

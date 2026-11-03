@@ -54,6 +54,19 @@ describe.each(conditions)("%s", (_, student) => {
     expect(impact?.affectedStudentIds).toEqual([]);
     expect(impact?.staffReviewStudentIds).toEqual([student.id]);
   });
+
+  // 画面は一覧での今の対応を回答の前の状態として渡す（B17、A25-2）。その経路でも同じになる
+  it("一覧の状態を渡した computeImpact と computeImpacts でも同じになる", () => {
+    const evaluation = evaluateStudent(exampleRules, exampleCourses, student, {});
+    const states = new Map(listOutreach([evaluation], [student]).map((entry) => [entry.studentId, entry.kind]));
+    expect(states.get(student.id)).toBe("staff_review");
+    const single = computeImpact(exampleRules, exampleCourses, [student], {}, ID, states);
+    expect(single.affectedStudentIds).toEqual([]);
+    expect(single.staffReviewStudentIds).toEqual([student.id]);
+    const [impact] = computeImpacts(exampleRules, exampleCourses, [student], {}, states);
+    expect(impact?.affectedStudentIds).toEqual([]);
+    expect(impact?.staffReviewStudentIds).toEqual([student.id]);
+  });
 });
 
 describe("1人の学生のデータに問題があっても全体を止めない", () => {

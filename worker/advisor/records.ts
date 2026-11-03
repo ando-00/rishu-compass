@@ -43,7 +43,8 @@ export async function recordAdvice(
       .run();
     return recordedAt;
   } catch (cause) {
-    console.error("履修案の記録に失敗しました", cause instanceof Error ? cause.message : cause);
+    // Error 以外の値は中身（案や下書きを含みうる）をログに出さず、型だけを出す
+    console.error("履修案の記録に失敗しました", cause instanceof Error ? cause.message : typeof cause);
     return null;
   }
 }
