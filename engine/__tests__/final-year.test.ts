@@ -88,6 +88,18 @@ describe("summarizeFinalYear（4年次の卒業要件の内訳。B33）", () => 
     expect(reversed).toEqual(forward);
   });
 
+  it("判定がない学生は、卒業要件を職員確認に数え、区分は当てはまらないに数える", () => {
+    const students = [makeStudent({ id: "S0001" })];
+    const summary = summarizeFinalYear(exampleRules, students, []);
+    const graduation = summary.rows.find((row) => row.kind === "graduation");
+    expect(graduation?.counts.needs_staff).toBe(1);
+    expect(graduation?.notApplicable).toBe(0);
+    for (const row of summary.rows.filter((r) => r.kind === "category")) {
+      expect(total(row.counts)).toBe(0);
+      expect(row.notApplicable).toBe(1);
+    }
+  });
+
   it("最終年次の学生がいなければ、人数はすべて0", () => {
     const summary = summarize([makeStudent({ id: "S0001", studentYear: 2, yearsEnrolled: 2 })]);
     expect(summary.studentCount).toBe(0);

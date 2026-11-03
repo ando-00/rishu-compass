@@ -19,6 +19,16 @@ describe("GET /api/datasets/:id/courses（履修案の検査の候補。B32）",
     });
   });
 
+  it("開講学期の指定がある科目には、その学期を添える", async () => {
+    const res = await app.request("/api/datasets/example/courses");
+    const body = coursesResponseSchema.parse(await res.json());
+    const withTerm = exampleCourses.filter((course) => course.offeredIn);
+    expect(withTerm.length).toBeGreaterThan(0);
+    for (const source of withTerm) {
+      expect(body.courses.find((course) => course.name === source.name)?.offeredIn).toBe(source.offeredIn);
+    }
+  });
+
   it("ない対象は 404", async () => {
     const res = await app.request("/api/datasets/none/courses");
     expect(res.status).toBe(404);

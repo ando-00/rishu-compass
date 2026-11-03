@@ -46,6 +46,14 @@ describe("buildMeetingSheet（確認事項の会議資料。B31）", () => {
     ]);
   });
 
+  it("影響の人数は学生の人数で、関わる判定の数ではない", () => {
+    const change = impact.changes[0]!;
+    const twoRules: Impact = { ...impact, changes: [...impact.changes, { ...change, ruleId: "graduation", name: "卒業要件" }] };
+    const [item] = buildMeetingSheet({ ...overview, unanswered: [twoRules] }).items;
+    expect(twoRules.changes).toHaveLength(3);
+    expect(item?.affected).toBe(2);
+  });
+
   it("学生 ID を含まない", () => {
     const text = JSON.stringify(buildMeetingSheet(overview));
     for (const id of ["S0007", "S0095", "S0042"]) expect(text).not.toContain(id);

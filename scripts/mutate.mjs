@@ -186,6 +186,17 @@ const M = [
   ["verifyQuotes", 'return quote === "" || !body.includes(quote);', "return !body.includes(quote);", "根拠: 空の文"],
   ["compareRules", "byKey.delete(spec.key(rule));", "", "比較: 突き合わせ済みを除く"],
   ["checkCases", 'status === "needs_staff" ? "pending" : "failed"', '"failed"', "ケース: 職員確認は保留"],
+  ["finalYear", "student.studentYear >= minYears", "student.studentYear > minYears", "最終年次: 境界"],
+  ["finalYear", "else if (row.kind === \"graduation\") row.counts.needs_staff += 1;", "else if (false) row.counts.needs_staff += 1;", "最終年次: 判定のない卒業要件を職員確認に"],
+  ["finalYear", "if (judgment) row.counts[judgment.status] += 1;", "if (judgment) row.counts.satisfied += 1;", "最終年次: 判定の状態で数える"],
+  ["finalYear", "if (when.hasMinor !== undefined)", "if (when.hasMinor)", "最終年次: 副専攻なしの条件"],
+  ["finalYear", "byId.get(student.id)?.judgments", "evaluations[0]?.judgments", "最終年次: 学生 ID で対応させる"],
+  ["src/meetingSheet", "affected: impact.affectedStudentIds.length,", "affected: impact.changes.length,", "会議資料: 影響は学生の人数"],
+  ["src/meetingSheet", "items: overview.unanswered.map(", "items: [...overview.unanswered, ...overview.answered].map(", "会議資料: 回答済みを載せない"],
+  ["src/meetingSheet", "      computable: impact.computable,\n", "      computable: impact.computable,\n      studentIds: impact.affectedStudentIds,\n", "会議資料: 学生 ID を載せない"],
+  ["src/courseCandidates", "offeredIn === undefined || offeredIn === term", "offeredIn === term", "候補: 開講学期の指定がない科目"],
+  ["src/courseCandidates", "offeredIn === undefined || offeredIn === term", "true", "候補: 開講学期の合わない科目を出さない"],
+  ["worker/index", "      ...(offeredIn ? { offeredIn } : {}),\n    })),", "    })),", "科目の候補: 開講学期を返す"],
 ];
 
 function runTests() {
@@ -205,7 +216,8 @@ let killed = 0;
 const survivors = [];
 const skipped = [];
 for (const [file, search, replace, label] of M) {
-  const path = join(root, "engine", `${file}.ts`);
+  // engine の外は、作業用コピーの根からのパスで書く（例: src/meetingSheet）
+  const path = file.includes("/") ? join(root, `${file}.ts`) : join(root, "engine", `${file}.ts`);
   const original = readFileSync(path, "utf8").replace(/\r\n/g, "\n");
   if (!original.includes(search)) {
     skipped.push(label);
