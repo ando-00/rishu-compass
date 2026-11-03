@@ -118,9 +118,11 @@ export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
       </div>
       <h2>声をかける学生（{count(contact, shownContact)}）</h2>
       {contact.length === 0 && <p className="muted">声をかける学生はいません。</p>}
+      {contact.length > 0 && shownContact.length === 0 && <p className="muted">絞り込みに当てはまる学生はいません。</p>}
       {shownContact.map(card)}
       <h2>職員が確認する学生（{count(review, shownReview)}）</h2>
       {review.length === 0 && <p className="muted">職員が確認する学生はいません。</p>}
+      {review.length > 0 && shownReview.length === 0 && <p className="muted">絞り込みに当てはまる学生はいません。</p>}
       {shownReview.map(card)}
     </section>
   );
