@@ -233,6 +233,15 @@ async function main() {
     await page.getByText("S0095").first().waitFor();
     const body = await page.locator("main").innerText();
     if (!/第\d+条/.test(body)) throw new Error("条文が見当たらない");
+    if (!/修得 \d+ \/ 必要 \d+ 単位/.test(body)) throw new Error("不足の量が見当たらない");
+    // 年次で絞ると表示が減り、戻すと元に戻る
+    const heading = () => page.getByRole("heading", { name: /声をかける学生/ }).innerText();
+    const all = await heading();
+    await page.getByLabel("年次").first().selectOption("3");
+    const filtered = await heading();
+    if (!/のうち\d+人を表示/.test(filtered)) throw new Error(`絞り込みの表示が「${filtered}」`);
+    await page.getByLabel("年次").first().selectOption("all");
+    if ((await heading()) !== all) throw new Error("絞り込みを戻しても元に戻らない");
   });
   await step("9 S0095 を開くと区分別の不足と根拠がある", async () => {
     await page.getByText("S0095").first().click();

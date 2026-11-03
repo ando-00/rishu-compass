@@ -13,7 +13,7 @@ export type {
   Term,
   TermPoint,
 } from "./model";
-export { draftOutreachMessage, listOutreach } from "./outreach";
+export { describeAmounts, draftOutreachMessage, listOutreach } from "./outreach";
 export type { OutreachEntry, OutreachReason } from "./outreach";
 export {
   checkPlan,

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { describeAmounts } from "../engine/outreach";
 import type { StateChange } from "../engine/stateChanges";
 import type { Outreach } from "../shared/api";
 import { JudgmentBadge, NewlyListedBadge, StateBadge } from "./StatusBadge";
@@ -44,6 +46,7 @@ function OutreachCard({ entry, newlyListed, onOpenStudent }: CardProps) {
             <JudgmentBadge status={reason.status} />
             <span>
               {reason.name}（{reason.clause}）: {reason.detail}
+              {describeAmounts(reason) && <span className="muted">（{describeAmounts(reason)}）</span>}
             </span>
           </li>
         ))}
@@ -63,8 +66,19 @@ function OutreachCard({ entry, newlyListed, onOpenStudent }: CardProps) {
 }
 
 export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
+  // 絞り込みは画面の中だけで行う。人数の計算は engine の結果のまま
+  const [year, setYear] = useState("all");
+  const [ruleName, setRuleName] = useState("all");
+  const years = [...new Set(outreach.map((entry) => entry.studentYear))].sort((a, b) => a - b);
+  const ruleNames = [...new Set(outreach.flatMap((entry) => entry.reasons.map((reason) => reason.name)))];
+  const matches = (entry: Outreach) =>
+    (year === "all" || String(entry.studentYear) === year) &&
+    (ruleName === "all" || entry.reasons.some((reason) => reason.name === ruleName));
+  const filtering = year !== "all" || ruleName !== "all";
   const contact = outreach.filter((entry) => entry.kind === "contact");
   const review = outreach.filter((entry) => entry.kind === "staff_review");
+  const shownContact = contact.filter(matches);
+  const shownReview = review.filter(matches);
   const changed = new Set(changes.map(({ studentId }) => studentId));
   const card = (entry: Outreach) => (
     <OutreachCard
@@ -74,14 +88,40 @@ export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
       onOpenStudent={onOpenStudent}
     />
   );
+  const count = (all: Outreach[], shown: Outreach[]) =>
+    filtering ? `${all.length}人のうち${shown.length}人を表示` : `${all.length}人`;
   return (
     <section>
-      <h2>声をかける学生（{contact.length}人）</h2>
+      <div className="student-filter">
+        <label>
+          年次
+          <select value={year} onChange={(event) => setYear(event.target.value)}>
+            <option value="all">すべて</option>
+            {years.map((value) => (
+              <option key={value} value={String(value)}>
+                {value}年次
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          判定の種類
+          <select value={ruleName} onChange={(event) => setRuleName(event.target.value)}>
+            <option value="all">すべて</option>
+            {ruleNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <h2>声をかける学生（{count(contact, shownContact)}）</h2>
       {contact.length === 0 && <p className="muted">声をかける学生はいません。</p>}
-      {contact.map(card)}
-      <h2>職員が確認する学生（{review.length}人）</h2>
+      {shownContact.map(card)}
+      <h2>職員が確認する学生（{count(review, shownReview)}）</h2>
       {review.length === 0 && <p className="muted">職員が確認する学生はいません。</p>}
-      {review.map(card)}
+      {shownReview.map(card)}
     </section>
   );
 }

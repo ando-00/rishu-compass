@@ -9,6 +9,11 @@ export type OutreachReason = {
   status: JudgmentStatus;
   detail: string;
   grounds?: Ground[];
+  // 不足の量。職員確認の判定には付けない（未確定を確定に見せない）
+  required?: number;
+  actual?: number;
+  enrolled?: number;
+  missingCourses?: string[];
 };
 
 export type OutreachEntry = {
@@ -20,8 +25,27 @@ export type OutreachEntry = {
 };
 
 function toReason(judgment: Judgment): OutreachReason {
-  const { ruleId, name, clause, sourceQuote, status, reason, grounds } = judgment;
-  return { ruleId, name, clause, sourceQuote, status, detail: reason, ...(grounds ? { grounds } : {}) };
+  const { ruleId, name, clause, sourceQuote, status, reason, grounds, required, actual, enrolled, missingCourses } = judgment;
+  const amounts =
+    status === "needs_staff"
+      ? {}
+      : {
+          ...(required === undefined ? {} : { required }),
+          ...(actual === undefined ? {} : { actual }),
+          ...(enrolled === undefined ? {} : { enrolled }),
+          ...(missingCourses && missingCourses.length > 0 ? { missingCourses } : {}),
+        };
+  return { ruleId, name, clause, sourceQuote, status, detail: reason, ...(grounds ? { grounds } : {}), ...amounts };
+}
+
+// 理由に添える量の文。「修得 18 / 必要 28 単位、履修中 6。未修得: 演習Ⅰ」
+export function describeAmounts(reason: OutreachReason) {
+  const parts: string[] = [];
+  if (reason.required !== undefined && reason.actual !== undefined) {
+    parts.push(`修得 ${reason.actual} / 必要 ${reason.required} 単位${reason.enrolled ? `、履修中 ${reason.enrolled}` : ""}`);
+  }
+  if (reason.missingCourses && reason.missingCourses.length > 0) parts.push(`未修得: ${reason.missingCourses.join("、")}`);
+  return parts.join("。");
 }
 
 // 数字が大きいほど危険。延期見込み、卒業の不足、履修条件の不足、見込みの危険の順に並べる。
@@ -65,7 +89,10 @@ export function listOutreach(
 export function draftOutreachMessage(entry: OutreachEntry) {
   const lines = entry.reasons
     .filter((reason) => reason.status !== "needs_staff")
-    .map((reason) => `・${reason.name}（${reason.clause}）: ${reason.detail}`);
+    .map((reason) => {
+      const amounts = describeAmounts(reason);
+      return `・${reason.name}（${reason.clause}）: ${reason.detail}${amounts ? `（${amounts}）` : ""}`;
+    });
   return [
     "【下書き】職員が内容を確認してから使ってください。",
     "",

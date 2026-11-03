@@ -161,9 +161,13 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<StateFilter>("all");
   const [keyword, setKeyword] = useState("");
+  const [year, setYear] = useState("all");
+  const years = [...new Set(students.map((student) => student.studentYear))].sort((a, b) => a - b);
   const shown = students.filter(
-    ({ id, state }) =>
-      (filter === "all" || state === filter) && id.toLowerCase().includes(keyword.trim().toLowerCase()),
+    ({ id, state, studentYear }) =>
+      (filter === "all" || state === filter) &&
+      (year === "all" || String(studentYear) === year) &&
+      id.toLowerCase().includes(keyword.trim().toLowerCase()),
   );
 
   useEffect(() => {
@@ -194,6 +198,17 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
               {STATE_FILTERS.map(({ id, label }) => (
                 <option key={id} value={id}>
                   {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            年次
+            <select value={year} onChange={(event) => setYear(event.target.value)}>
+              <option value="all">すべて</option>
+              {years.map((value) => (
+                <option key={value} value={String(value)}>
+                  {value}年次
                 </option>
               ))}
             </select>

@@ -121,6 +121,11 @@ export const outreachSchema = z.object({
       status: judgmentStatusSchema,
       detail: z.string(),
       grounds: z.array(groundSchema).optional(),
+      // 不足の量。職員確認の判定には付かない
+      required: z.number().optional(),
+      actual: z.number().optional(),
+      enrolled: z.number().optional(),
+      missingCourses: z.array(z.string()).optional(),
     }),
   ),
   // 声かけの対象にだけ下書きを作る
