@@ -1,5 +1,13 @@
 import { Hono } from "hono";
-import { collectQuotes, computeImpacts, strayCourses, validateRuleSet, verifyQuotes, type RuleSet } from "../engine";
+import {
+  collectQuotes,
+  computeImpacts,
+  diffVersions,
+  strayCourses,
+  validateRuleSet,
+  verifyQuotes,
+  type RuleSet,
+} from "../engine";
 import { runCheckCases } from "../engine/checkCases";
 import {
   confirmRequestSchema,
@@ -9,6 +17,7 @@ import {
   type ProposalResponse,
   type Respondent,
   type StoredProposal,
+  type VersionCompareResponse,
 } from "../shared/api";
 import { createDataset, datasets, findRecordedProposal, findSource, type Dataset } from "./datasets";
 
@@ -268,4 +277,31 @@ ruleSetRoutes.post("/proposals/:id/withdraw", async (c) => {
     .bind(row.id, parsed.data.respondent, new Date().toISOString())
     .run();
   return c.json({ ok: true });
+});
+
+// 要項の版の比較。同じ大学で番号の小さい案のうち、今も確定している最新の版と比べる（H25 の G）
+ruleSetRoutes.get("/proposals/:id/compare", async (c) => {
+  const row = await loadRuleSet(c.env.DB, Number(c.req.param("id")));
+  if (!row) return c.json({ error: "ルール案がありません" }, 404);
+  const { results } = await c.env.DB.prepare(
+    "SELECT id, source_id, handbook, proposal FROM rule_sets WHERE source_id = ?1 AND id < ?2 ORDER BY id DESC",
+  )
+    .bind(row.source_id, row.id)
+    .all<RuleSetRow>();
+
+  for (const previous of results) {
+    const confirmation = await loadConfirmation(c.env.DB, previous.id);
+    if (!confirmation) continue;
+    const before = acceptRules(
+      (JSON.parse(previous.proposal) as StoredProposal).rules,
+      JSON.parse(confirmation.accepted_rule_ids) as string[],
+    );
+    const body: VersionCompareResponse = {
+      base: { version: previous.id, respondent: confirmation.respondent, confirmedAt: confirmation.confirmed_at },
+      diff: diffVersions(before, (JSON.parse(row.proposal) as StoredProposal).rules),
+    };
+    return c.json(body);
+  }
+  const body: VersionCompareResponse = { base: null, diff: null };
+  return c.json(body);
 });

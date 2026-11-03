@@ -186,8 +186,9 @@ function compareAmbiguities(base: RuleSet, other: RuleSet) {
   return { ambiguities, extraAmbiguities };
 }
 
-export function compareRules(base: RuleSet, other: RuleSet): Comparison {
-  const skip = patchedFields(base);
+// 版の比較（versionDiff）では、曖昧箇所の差分が変える項目の値も比べる（includeProvisional）
+export function compareRules(base: RuleSet, other: RuleSet, { includeProvisional = false } = {}): Comparison {
+  const skip = includeProvisional ? new Set<string>() : patchedFields(base);
   const mismatches: Mismatch[] = [];
   const missing: string[] = [];
   const extra: string[] = [];

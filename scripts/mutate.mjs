@@ -197,6 +197,11 @@ const M = [
   ["src/courseCandidates", "offeredIn === undefined || offeredIn === term", "offeredIn === term", "候補: 開講学期の指定がない科目"],
   ["src/courseCandidates", "offeredIn === undefined || offeredIn === term", "true", "候補: 開講学期の合わない科目を出さない"],
   ["worker/index", "      ...(offeredIn ? { offeredIn } : {}),\n    })),", "    })),", "科目の候補: 開講学期を返す"],
+  ["versionDiff", "{ includeProvisional: true }", "{}", "版の比較: 曖昧箇所の読み方で変わる値も比べる"],
+  ["versionDiff", "previous.ambiguities.filter(({ id }) => !ids(current).has(id))", "previous.ambiguities.filter(() => false)", "版の比較: なくなった確認事項"],
+  ["worker/ruleSets", "    if (!confirmation) continue;\n    const before", "    const before", "版の比較: 確定していない版と比べない"],
+  ["worker/answers", "      if (option_id === null || !known.has(ambiguity_id)) continue;", "      if (option_id === null) continue;", "前の版の回答: ID が今の版にあるものだけ"],
+  ["worker/answers", ".bind(dataset.sourceId, dataset.confirmation.proposalId)", ".bind(dataset.sourceId, 1e9)", "前の版の回答: あとの版を出さない"],
 ];
 
 function runTests() {

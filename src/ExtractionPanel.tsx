@@ -6,12 +6,14 @@ import {
   type ProposalResponse,
   type Respondent,
   type SourcesResponse,
+  type VersionCompareResponse,
 } from "../shared/api";
 import {
   confirmProposal,
   extractProposal,
   fetchLatestProposal,
   fetchSources,
+  fetchVersionCompare,
   loadRecordedProposal,
 } from "./api";
 import { ChangeList, ImpactCounts } from "./QuestionsPanel";
@@ -125,6 +127,82 @@ function Disagreements({ proposal }: { proposal: ProposalResponse }) {
           </tbody>
         </table>
       </div>
+    </>
+  );
+}
+
+// 要項の版の比較。同じ大学の一つ前の確定版と、この案のルールの差分（H25 の G）
+function VersionDiff({ proposalId }: { proposalId: number | null }) {
+  const [compare, setCompare] = useState<VersionCompareResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (proposalId === null) return;
+    let active = true;
+    fetchVersionCompare(proposalId)
+      .then((result) => {
+        if (active) setCompare(result);
+      })
+      .catch((cause: unknown) => {
+        if (active) setError(cause instanceof Error ? cause.message : "取得に失敗しました。");
+      });
+    return () => {
+      active = false;
+    };
+  }, [proposalId]);
+
+  if (error) return <p className="notice">前の確定版と比べられませんでした: {error}</p>;
+  if (!compare) return null;
+  const { base, diff } = compare;
+  if (!base || !diff) return <p className="muted">この大学に確定した前の版はないので、版の比較はありません。</p>;
+  const count =
+    diff.changed.length + diff.removed.length + diff.added.length + diff.ambiguitiesRemoved.length + diff.ambiguitiesAdded.length;
+  return (
+    <>
+      <h3>
+        前の確定版（第{base.version}版）との違い（{count}件）
+      </h3>
+      <p className="muted">
+        {base.respondent}が {new Date(base.confirmedAt).toLocaleString("ja-JP")} に確定した版と、ルールを比べました。曖昧箇所は ID が同じものを同じとみなします。
+      </p>
+      {count === 0 && <p className="muted">ルールの違いはありません。</p>}
+      {diff.changed.length > 0 && (
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>項目</th>
+                <th>内容</th>
+                <th>第{base.version}版</th>
+                <th>この案</th>
+              </tr>
+            </thead>
+            <tbody>
+              {diff.changed.map(({ item, field, before, after }) => (
+                <tr key={`${item}-${field}`}>
+                  <td>{item}</td>
+                  <td>{fieldLabel(field)}</td>
+                  <td>{before}</td>
+                  <td>{after}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {diff.removed.length > 0 && <p>この案でなくなったルール: {diff.removed.join("、")}</p>}
+      {diff.added.length > 0 && <p>この案で増えたルール: {diff.added.join("、")}</p>}
+      {diff.ambiguitiesRemoved.length > 0 && (
+        <p>
+          この案でなくなった確認事項:{" "}
+          {diff.ambiguitiesRemoved.map(({ clause, question }) => `${clause}「${question}」`).join("、")}
+        </p>
+      )}
+      {diff.ambiguitiesAdded.length > 0 && (
+        <p>
+          この案で増えた確認事項:{" "}
+          {diff.ambiguitiesAdded.map(({ clause, question }) => `${clause}「${question}」`).join("、")}
+        </p>
+      )}
     </>
   );
 }
@@ -373,6 +451,7 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
           <p className="muted">{proposal.strayCourses.join("、")}</p>
         </div>
       )}
+      <VersionDiff proposalId={proposal.proposalId} />
       <CaseResults results={caseResults} />
       <Disagreements proposal={proposal} />
       <Questions ambiguities={rules.ambiguities} proposal={proposal} />

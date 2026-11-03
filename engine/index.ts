@@ -30,5 +30,6 @@ export type { RuleSet } from "./rules";
 export { diffStudentStates } from "./stateChanges";
 export type { StateChange, StudentState } from "./stateChanges";
 export { strayCourses, validateRuleSet } from "./validate";
+export { diffVersions, type VersionDiff } from "./versionDiff";
 export { collectQuotes, verifyQuotes } from "./verifyQuotes";
 export type { Quote } from "./verifyQuotes";

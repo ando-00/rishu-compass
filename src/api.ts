@@ -11,6 +11,7 @@ import {
   proposalResponseSchema,
   sourcesResponseSchema,
   studentResponseSchema,
+  versionCompareResponseSchema,
   type Answers,
   type PlanEntry,
   type Respondent,
@@ -57,6 +58,10 @@ export async function confirmProposal(
 export async function withdrawProposal(proposalId: number, respondent: Respondent) {
   const res = await post(`/api/proposals/${proposalId}/withdraw`, { respondent });
   if (!res.ok) await readJson(res, confirmResponseSchema);
+}
+
+export async function fetchVersionCompare(proposalId: number) {
+  return readJson(await fetch(`/api/proposals/${proposalId}/compare`), versionCompareResponseSchema);
 }
 
 export async function fetchSources() {
