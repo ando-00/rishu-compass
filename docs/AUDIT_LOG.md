@@ -362,3 +362,16 @@
 Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は FAIL 0（build と test 907件を含む）、フックのテスト64件が通り、dist/client に偽の鍵を置くと K4 が FAIL になり、消すと PASS に戻った（B6 の未検証）。手元にだけ残っていた空のフォルダ5つ（git は追跡しない）を F3 が WARN にしたので消した。
 
 まだ確かめていないもの: 名前の一覧を使う検査（H7）。Windows での画面の操作（`scripts/e2e-readme.mjs`。手元に Playwright がない）、Mac の実機、Chromium 以外のブラウザ。API キーありの画面の通しと、実際の API での要項の命令の混入、拒否と代替の応答の形（鍵と費用が要る）。色のコントラスト、キーボード操作、読み上げ（どの監査の回にも入っていない）。
+
+## テストの期待値の手計算の続き 2026-11-03（作り手の依頼で、ループの続き）
+
+監査の回ではない。B4 のあとに足した engine のテスト8ファイル（delay-capacity、each-ambiguity、enrolled-after-check、excluded の 3d82da6 以降の1件、final-year、outreach-amounts、timetable-clause、uncategorized）を、B4 と同じく作者の文脈を持たないサブエージェントが、テスト、テスト用のルールと科目、`docs/RULE_FORMAT.md`、型の定義から手で求め直した。実装は読ませていない。対象コミット: 8d48795。`it` の定義30件（展開後57件）のうち、一致26件（53件）、不一致0件、判断できない4件（4件）。期待値は変えていない。
+
+| ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
+|---|---|---|---|---|---|
+| N-3 | 未定 | 修得がない4年次後期の学生の卒業要件を「不足」とする期待値。卒業予定（`expectedGraduation`）を指定しない学生について、延期見込みを計算するか、卒業予定の既定値をどうするかが、`docs/RULE_FORMAT.md`、README、型の説明のどれにも書かれていない。4年次後期とみなすと、残りの余地（0か20単位）が不足50単位に届かず延期見込みにもなりうる | engine/__tests__/final-year.test.ts:59 | 人の判断 | `docs/BACKLOG.md` の H24 |
+| N-4 | 未定 | N-3 と同じ点。修得2単位の4年次後期の学生（不足122単位）の卒業要件を「不足」とする期待値 | engine/__tests__/uncategorized.test.ts:25 | 人の判断 | 同 H24 |
+| N-5 | 未定 | 区分の条件の文字列（「甲専攻・副専攻なし」）の書式がどの文書にもない。条件のない区分に付けない点は B33 と一致する | engine/__tests__/final-year.test.ts:74 | 記録 | 表示の書式で、判定と人数には関わらない |
+| N-6 | 未定 | 時間割の項目がないルールでの時限の重なりの根拠。条文が「時間割」になる点は B12 の記録と一致するが、`ruleId` が `timetable`、原文が空になる値はどの文書にもない | engine/__tests__/timetable-clause.test.ts:29 | 記録 | 根拠の表示で、検査の結果には関わらない |
+
+補足: delay-capacity の学生は3年次で `yearsEnrolled` が2。`yearsEnrolled` の意味が型に書かれておらず、手計算では「終えた年数」と読んだ。「今の年度を含む年数」と読むと3件目（延期見込みにしない）の結果に関わる。each-ambiguity の、判定を持たない規則（かもめ大学の retake など）は、`docs/RULE_FORMAT.md` の「未回答の間は職員確認」を文字どおり読んで一致とした。
