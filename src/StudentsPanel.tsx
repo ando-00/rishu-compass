@@ -22,6 +22,8 @@ const STATE_FILTERS = [
 
 type StateFilter = (typeof STATE_FILTERS)[number]["id"];
 
+const STATE_ORDER = { contact: 0, staff_review: 1, clear: 2 } as const;
+
 type Props = {
   datasetId: string;
   answers: Answers;
@@ -125,34 +127,40 @@ function RecordsTable({ records }: { records: StudentResponse["records"] }) {
   const sorted = [...records].sort(
     (a, b) => a.studentYear - b.studentYear || TERM_ORDER[a.term] - TERM_ORDER[b.term] || a.course.localeCompare(b.course, "ja"),
   );
+  // 判定を確かめるときだけ開く。見出しは閉じていても見える
   return (
-    <>
-      <h3>履修の記録（{records.length}件）</h3>
+    <details className="records">
+      <summary>
+        <h3>履修の記録（{records.length}件）</h3>
+        <span className="muted">修得・不合格・失格・履修中を年次と学期の順に並べます</span>
+      </summary>
       {records.length === 0 ? (
         <p className="muted">記録がありません。</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>年次</th>
-              <th>学期</th>
-              <th>科目</th>
-              <th>結果</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((record, index) => (
-              <tr key={`${record.course}-${record.studentYear}-${record.term}-${index}`}>
-                <td className="nowrap">{record.studentYear}年次</td>
-                <td className="nowrap">{record.term}</td>
-                <td>{record.course}</td>
-                <td className="nowrap">{RESULT_LABELS[record.result]}</td>
+        <div className="records-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>年次</th>
+                <th>学期</th>
+                <th>科目</th>
+                <th>結果</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sorted.map((record, index) => (
+                <tr key={`${record.course}-${record.studentYear}-${record.term}-${index}`}>
+                  <td className="nowrap">{record.studentYear}年次</td>
+                  <td className="nowrap">{record.term}</td>
+                  <td>{record.course}</td>
+                  <td className="nowrap">{RESULT_LABELS[record.result]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </>
+    </details>
   );
 }
 
@@ -163,12 +171,17 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
   const [keyword, setKeyword] = useState("");
   const [year, setYear] = useState("all");
   const years = [...new Set(students.map((student) => student.studentYear))].sort((a, b) => a - b);
-  const shown = students.filter(
-    ({ id, state, studentYear }) =>
-      (filter === "all" || state === filter) &&
-      (year === "all" || String(studentYear) === year) &&
-      id.toLowerCase().includes(keyword.trim().toLowerCase()),
-  );
+  // 対応が要る学生を上に出す。同じ対応の中は学生 ID の順
+  const shown = students
+    .filter(
+      ({ id, state, studentYear }) =>
+        (filter === "all" || state === filter) &&
+        (year === "all" || String(studentYear) === year) &&
+        id.toLowerCase().includes(keyword.trim().toLowerCase()),
+    )
+    .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state]);
+
+  const state = students.find(({ id }) => id === selectedId)?.state;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -190,18 +203,20 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
 
   return (
     <section className="students">
-      <div>
+      <div className="student-side">
+        <div className="segmented" role="group" aria-label="絞り込み">
+          {STATE_FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
+            >
+              {label} {id === "all" ? students.length : students.filter(({ state }) => state === id).length}
+            </button>
+          ))}
+        </div>
         <div className="student-filter">
-          <label>
-            絞り込み
-            <select value={filter} onChange={(event) => setFilter(event.target.value as StateFilter)}>
-              {STATE_FILTERS.map(({ id, label }) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
           <label>
             年次
             <select value={year} onChange={(event) => setYear(event.target.value)}>
@@ -215,9 +230,9 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
           </label>
           <label>
             学生 ID
-            <input value={keyword} onChange={(event) => setKeyword(event.target.value)} />
+            <input value={keyword} placeholder="例: S0095" onChange={(event) => setKeyword(event.target.value)} />
           </label>
-          <p className="muted">{shown.length}人</p>
+          <p className="muted">{shown.length}人を表示（声かけ、職員確認、対応なしの順）</p>
         </div>
         <ul className="student-list" aria-label="学生の一覧">
           {shown.map((student) => (
@@ -238,18 +253,30 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
       </div>
 
       <div className="student-detail">
-        {!selectedId && <p className="muted">学生を選んでください。</p>}
+        {!selectedId && (
+          <div className="empty">
+            <p>
+              左の一覧から学生を選ぶと、区分ごとの判定と根拠、履修の記録、履修案がここに出ます。
+              <br />
+              声かけの学生から見るときは、上の「声かけ」の人数を押してください。
+            </p>
+          </div>
+        )}
         {error && <p role="alert" className="error">{error}</p>}
         {selectedId && detail && detail.student.id === selectedId && (
           <>
-            <h2>
-              {detail.student.id}（{detail.student.studentYear}年次）
-            </h2>
-            <p className="muted">
-              {detail.student.admissionYear}年度入学
-              {detail.student.major ? `・${detail.student.major}` : ""}
-              {detail.student.hasMinor ? "・副専攻あり" : ""}
-            </p>
+            <div className="card">
+            <div className="detail-head">
+              <h2>
+                {detail.student.id}（{detail.student.studentYear}年次）
+              </h2>
+              {state && <StateBadge state={state} />}
+              <p className="muted">
+                {detail.student.admissionYear}年度入学
+                {detail.student.major ? `・${detail.student.major}` : ""}
+                {detail.student.hasMinor ? "・副専攻あり" : ""}
+              </p>
+            </div>
             {detail.excludedReason && <p className="notice">{detail.excludedReason}</p>}
             <table>
               <thead>
@@ -284,9 +311,16 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 ))}
               </tbody>
             </table>
-            <RecordsTable records={detail.records} />
-            <AdvisorPanel datasetId={datasetId} studentId={selectedId} answers={answers} />
-            <PlanForm datasetId={datasetId} studentId={selectedId} answers={answers} />
+            </div>
+            <div className="card">
+              <AdvisorPanel datasetId={datasetId} studentId={selectedId} answers={answers} />
+            </div>
+            <div className="card">
+              <RecordsTable records={detail.records} />
+            </div>
+            <div className="card">
+              <PlanForm datasetId={datasetId} studentId={selectedId} answers={answers} />
+            </div>
           </>
         )}
       </div>

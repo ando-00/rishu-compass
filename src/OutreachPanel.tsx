@@ -29,39 +29,91 @@ function Grounds({ reasons }: { reasons: Outreach["reasons"] }) {
   );
 }
 
-function OutreachCard({ entry, newlyListed, onOpenStudent }: CardProps) {
+// 不足の決まり文句は「不足」のバッジと同じことを言うので、量があるときは量だけを出す
+const SHORT_DETAIL = "必要な単位または科目が不足しています。";
+
+function reasonText(reason: Outreach["reasons"][number]) {
+  const amounts = describeAmounts(reason);
+  if (reason.status === "short" && reason.detail === SHORT_DETAIL && amounts) return <>: {amounts}</>;
   return (
-    <article className="card">
-      <div className="card-head">
+    <>
+      : {reason.detail}
+      {amounts && <span className="muted">（{amounts}）</span>}
+    </>
+  );
+}
+
+// 重い判定から並べる。一覧の行には先頭の判定だけを出し、押すと全部を開く
+const REASON_ORDER = { delay_risk: 0, short: 1, needs_staff: 2, expected: 3, satisfied: 4 } as const;
+
+function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
+  const [open, setOpen] = useState(false);
+  const sorted = [...entry.reasons].sort((a, b) => REASON_ORDER[a.status] - REASON_ORDER[b.status]);
+  const top = sorted[0];
+  const detailId = `outreach-${entry.studentId}`;
+  return (
+    <li className={open ? "outreach-row open" : "outreach-row"}>
+      <div className="outreach-line">
         <button type="button" className="link" onClick={() => onOpenStudent(entry.studentId)}>
           {entry.studentId}
         </button>
-        <span className="muted">{entry.studentYear}年次</span>
-        <StateBadge state={entry.kind} />
-        {newlyListed && <NewlyListedBadge />}
+        <span className="muted nowrap">{entry.studentYear}年次</span>
+        <span className="outreach-badges">
+          <StateBadge state={entry.kind} />
+          {newlyListed && <NewlyListedBadge />}
+        </span>
+        <button
+          type="button"
+          className="outreach-toggle"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={() => setOpen(!open)}
+        >
+          {top && (
+            <>
+              <JudgmentBadge status={top.status} />
+              <span className="reason-name">
+                {top.name}（{top.clause}）
+              </span>
+              <span className="outreach-summary">{describeAmounts(top) || top.detail}</span>
+            </>
+          )}
+          <span className="outreach-more">
+            {sorted.length > 1 ? `ほか${sorted.length - 1}件` : ""}
+            <span aria-hidden="true">{open ? " ▲" : " ▼"}</span>
+          </span>
+        </button>
       </div>
-      <ul className="reasons">
-        {entry.reasons.map((reason) => (
-          <li key={reason.ruleId}>
-            <JudgmentBadge status={reason.status} />
-            <span>
-              {reason.name}（{reason.clause}）: {reason.detail}
-              {describeAmounts(reason) && <span className="muted">（{describeAmounts(reason)}）</span>}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <details open={entry.kind === "contact"}>
-        <summary>根拠の文</summary>
-        <Grounds reasons={entry.reasons} />
-      </details>
-      {entry.draft && (
-        <details>
-          <summary>声かけ文の下書きを見る</summary>
-          <pre>{entry.draft}</pre>
-        </details>
+      {open && (
+        <div className="outreach-detail" id={detailId}>
+          <ul className="reasons">
+            {sorted.map((reason) => (
+              <li key={reason.ruleId}>
+                <JudgmentBadge status={reason.status} />
+                <span>
+                  <span className="reason-name">
+                    {reason.name}（{reason.clause}）
+                  </span>
+                  {reasonText(reason)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="links-row">
+            <details>
+              <summary>根拠の文</summary>
+              <Grounds reasons={entry.reasons} />
+            </details>
+            {entry.draft && (
+              <details>
+                <summary>声かけ文の下書きを見る</summary>
+                <pre>{entry.draft}</pre>
+              </details>
+            )}
+          </div>
+        </div>
       )}
-    </article>
+    </li>
   );
 }
 
@@ -80,8 +132,8 @@ export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
   const shownContact = contact.filter(matches);
   const shownReview = review.filter(matches);
   const changed = new Set(changes.map(({ studentId }) => studentId));
-  const card = (entry: Outreach) => (
-    <OutreachCard
+  const row = (entry: Outreach) => (
+    <OutreachRow
       key={entry.studentId}
       entry={entry}
       newlyListed={changed.has(entry.studentId)}
@@ -92,7 +144,7 @@ export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
     filtering ? `${all.length}人のうち${shown.length}人を表示` : `${all.length}人`;
   return (
     <section>
-      <div className="student-filter">
+      <div className="filter-bar">
         <label>
           年次
           <select value={year} onChange={(event) => setYear(event.target.value)}>
@@ -115,15 +167,41 @@ export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
             ))}
           </select>
         </label>
+        {filtering && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              setYear("all");
+              setRuleName("all");
+            }}
+          >
+            絞り込みを外す
+          </button>
+        )}
       </div>
-      <h2>声をかける学生（{count(contact, shownContact)}）</h2>
-      {contact.length === 0 && <p className="muted">声をかける学生はいません。</p>}
-      {contact.length > 0 && shownContact.length === 0 && <p className="muted">絞り込みに当てはまる学生はいません。</p>}
-      {shownContact.map(card)}
-      <h2>職員が確認する学生（{count(review, shownReview)}）</h2>
-      {review.length === 0 && <p className="muted">職員が確認する学生はいません。</p>}
-      {review.length > 0 && shownReview.length === 0 && <p className="muted">絞り込みに当てはまる学生はいません。</p>}
-      {shownReview.map(card)}
+      <div className="section-head" id="outreach-contact">
+        <h2>声をかける学生（{count(contact, shownContact)}）</h2>
+      </div>
+      <p className="lead">
+        卒業の延期が見込まれる学生、最終年次で要件が足りない学生、履修条件を期限までに満たせない見込みの学生です。行を押すと理由と根拠を開き、学生 ID を押すと区分ごとの判定と履修案を開きます。
+      </p>
+      {contact.length === 0 && <p className="card muted">声をかける学生はいません。</p>}
+      {contact.length > 0 && shownContact.length === 0 && (
+        <p className="card muted">絞り込みに当てはまる学生はいません。</p>
+      )}
+      {shownContact.length > 0 && <ul className="outreach-list">{shownContact.map(row)}</ul>}
+      <div className="section-head" id="outreach-review">
+        <h2>職員が確認する学生（{count(review, shownReview)}）</h2>
+      </div>
+      <p className="lead">
+        未回答の確認事項や、編入・休学などの特別な状態があり、コードでは判定を決められない学生です。未回答の確認事項だけが理由の学生は、回答すると判定が決まります。
+      </p>
+      {review.length === 0 && <p className="card muted">職員が確認する学生はいません。</p>}
+      {review.length > 0 && shownReview.length === 0 && (
+        <p className="card muted">絞り込みに当てはまる学生はいません。</p>
+      )}
+      {shownReview.length > 0 && <ul className="outreach-list">{shownReview.map(row)}</ul>}
     </section>
   );
 }

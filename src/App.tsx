@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   respondentSchema,
   type AnswerHistoryEntry,
@@ -18,22 +18,38 @@ import "./app.css";
 
 type Tab = "import" | "questions" | "outreach" | "students";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "import", label: "要項の取り込み" },
-  { id: "questions", label: "確認事項" },
-  { id: "outreach", label: "声かけ" },
+// 職員の作業の順に並べる。学生別は順番の外にある
+const TABS: { id: Tab; label: string; step?: number }[] = [
+  { id: "import", label: "要項の取り込み", step: 1 },
+  { id: "questions", label: "確認事項", step: 2 },
+  { id: "outreach", label: "声かけ", step: 3 },
   { id: "students", label: "学生別" },
 ];
 
-function SummaryCell({ label, value, previous }: { label: string; value: number; previous?: number }) {
+type SummaryProps = {
+  label: string;
+  value: number;
+  note: string;
+  tone?: "bad" | "warn" | "good";
+  previous?: number;
+  onOpen: () => void;
+};
+
+function SummaryCell({ label, value, note, tone, previous, onOpen }: SummaryProps) {
   return (
-    <div className="summary-cell">
-      <p className="muted">{label}</p>
-      <p className="summary-value">{value}人</p>
-      {previous !== undefined && previous !== value && (
-        <p className="muted">直前 {previous}人</p>
-      )}
-    </div>
+    <button type="button" className={`summary-cell${tone ? ` tone-${tone}` : ""}`} onClick={onOpen}>
+      <p className="summary-label">{label}</p>
+      <p>
+        <span className="summary-value">{value}人</span>
+        {previous !== undefined && previous !== value && (
+          <span className="summary-delta">
+            直前 {previous}人（{value > previous ? "+" : ""}
+            {value - previous}）
+          </span>
+        )}
+      </p>
+      <p className="summary-note">{note}</p>
+    </button>
   );
 }
 
@@ -168,6 +184,25 @@ export function App() {
     setTab("students");
   }
 
+  function openTab(next: Tab, anchor?: string) {
+    setTab(next);
+    // 切り替えた画面が描かれてから、その節まで移る
+    requestAnimationFrame(() => {
+      const target = anchor ? document.getElementById(anchor) : null;
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.scrollTo({ top: 0 });
+    });
+  }
+
+  function tabCount(id: Tab) {
+    if (!overview) return null;
+    if (id === "questions" && overview.unanswered.length > 0)
+      return <span className="tab-count warn">未回答 {overview.unanswered.length}</span>;
+    if (id === "outreach" && overview.summary.contact > 0)
+      return <span className="tab-count bad">{overview.summary.contact}人</span>;
+    return null;
+  }
+
   const current = datasets.find(({ id }) => id === datasetId);
   const confirmation = current?.confirmation;
   // どのルールで判定しているかを常に示す（監査の A25-19、P3-14。3役が「初期の数字が何のルールか分からない」と挙げた）
@@ -180,129 +215,163 @@ export function App() {
         : "見本のルールで判定しています。";
 
   return (
-    <main>
-      <header className="page-head">
-        <div>
-          <h1>履修コンパス</h1>
-          <p className="muted">職員向けの判定案を作る試作品です。データはすべて架空です。</p>
-        </div>
-        <div className="page-controls">
-          <label>
-            対象
-            <select value={datasetId ?? ""} onChange={(event) => changeDataset(event.target.value)}>
-              {datasets.map((dataset) => (
-                <option key={dataset.id} value={dataset.id}>
-                  {dataset.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            回答者
-            <select
-              value={respondent}
-              onChange={(event) => setRespondent(respondentSchema.parse(event.target.value))}
-            >
-              {respondentSchema.options.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
+    <>
+      <header className="app-bar">
+        <div className="app-bar-inner">
+          <div className="brand">
+            <h1>履修コンパス</h1>
+            <p className="muted">職員向けの判定案を作る試作品です。データはすべて架空です。</p>
+          </div>
+          <div className="page-controls">
+            <label>
+              対象
+              <select value={datasetId ?? ""} onChange={(event) => changeDataset(event.target.value)}>
+                {datasets.map((dataset) => (
+                  <option key={dataset.id} value={dataset.id}>
+                    {dataset.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              回答者
+              <select
+                value={respondent}
+                onChange={(event) => setRespondent(respondentSchema.parse(event.target.value))}
+              >
+                {respondentSchema.options.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
       </header>
-
-      {ruleSource && (
-        <p className="confirmation" data-testid="rule-source">
-          <span className="muted">
-            {ruleSource}
-            {confirmation &&
-              `${confirmation.respondent}が${new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定しました。`}
-          </span>
-          {confirmation && (
-            <button type="button" className="secondary" onClick={() => void withdraw(confirmation.proposalId)}>
-              確定を取り消す
-            </button>
-          )}
-        </p>
-      )}
-
-      {error && <pre role="alert" className="error">{error}</pre>}
-      {answerError && <pre role="alert" className="error">{answerError}</pre>}
-
-      {overview && (
-        <>
-          <div className="summary">
-            <SummaryCell label="学生" value={overview.summary.total} />
-            <SummaryCell label="声かけ" value={overview.summary.contact} previous={previous?.summary.contact} />
-            <SummaryCell
-              label="職員確認"
-              value={overview.summary.staffReview}
-              previous={previous?.summary.staffReview}
-            />
-            <SummaryCell label="対応なし" value={overview.summary.clear} previous={previous?.summary.clear} />
-          </div>
-
-          {changes && tab !== "import" && (
-            <ChangesPanel
-              changes={changes}
-              onOpenStudent={openStudent}
-              onOpenOutreach={() => setTab("outreach")}
-            />
-          )}
-
-          <nav className="tabs" aria-label="画面の切り替え">
-            {TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                className={id === tab ? "tab active" : "tab"}
-                aria-current={id === tab ? "page" : undefined}
-                onClick={() => setTab(id)}
-              >
-                {label}
+      <main>
+        {ruleSource && (
+          <p className={confirmation ? "confirmation confirmed" : "confirmation"} data-testid="rule-source">
+            <span>
+              {ruleSource}
+              {confirmation &&
+                `${confirmation.respondent}が${new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定しました。`}
+            </span>
+            {confirmation && (
+              <button type="button" className="secondary" onClick={() => void withdraw(confirmation.proposalId)}>
+                確定を取り消す
               </button>
-            ))}
-          </nav>
-
-          {tab === "questions" && (
-            <QuestionsPanel
-              overview={overview}
-              records={records ?? []}
-              history={history}
-              onAnswer={(id, optionId) => void submitAnswer(id, optionId)}
-              onClear={(id) => void submitAnswer(id, null)}
-            />
-          )}
-          {tab === "outreach" && (
-            <OutreachPanel
-              outreach={overview.outreach}
-              changes={changes ?? []}
-              onOpenStudent={openStudent}
-            />
-          )}
-          {tab === "students" && datasetId && (
-            <StudentsPanel
-              datasetId={datasetId}
-              answers={answers}
-              students={overview.students}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-            />
-          )}
-        </>
-      )}
-
-      {/* 変換には数分かかるので、タブを切り替えても結果を残す */}
-      <div hidden={tab !== "import"}>
-        <ExtractionPanel
-          datasets={datasets}
-          sourceId={datasets.find(({ id }) => id === datasetId)?.sourceId}
-          respondent={respondent}
-          onConfirmed={(id) => void openConfirmed(id)}
-        />
-      </div>
-    </main>
+            )}
+          </p>
+        )}
+  
+        {error && <pre role="alert" className="error">{error}</pre>}
+        {answerError && <pre role="alert" className="error">{answerError}</pre>}
+  
+        {overview && (
+          <>
+            <div className="summary">
+              <SummaryCell
+                label="学生"
+                value={overview.summary.total}
+                note="全学生の一覧を開く"
+                onOpen={() => openTab("students")}
+              />
+              <SummaryCell
+                label="声かけ"
+                value={overview.summary.contact}
+                note="延期見込み・最終年次の不足など"
+                tone="bad"
+                previous={previous?.summary.contact}
+                onOpen={() => openTab("outreach", "outreach-contact")}
+              />
+              <SummaryCell
+                label="職員確認"
+                value={overview.summary.staffReview}
+                note="コードでは決められない判定がある"
+                tone="warn"
+                previous={previous?.summary.staffReview}
+                onOpen={() => openTab("outreach", "outreach-review")}
+              />
+              <SummaryCell
+                label="対応なし"
+                value={overview.summary.clear}
+                note="今は声をかけなくてよい"
+                tone="good"
+                previous={previous?.summary.clear}
+                onOpen={() => openTab("students")}
+              />
+            </div>
+  
+            {changes && tab !== "import" && (
+              <ChangesPanel
+                changes={changes}
+                onOpenStudent={openStudent}
+                onOpenOutreach={() => setTab("outreach")}
+              />
+            )}
+  
+            {/* 番号と件数は見た目の手がかり。読み上げではタブの名前だけにする */}
+            <nav className="tabs" aria-label="画面の切り替え">
+              {TABS.map(({ id, label, step }) => (
+                <Fragment key={id}>
+                  {step === undefined && <span className="tab-spacer" />}
+                  <button
+                    type="button"
+                    className={id === tab ? "tab active" : "tab"}
+                    aria-current={id === tab ? "page" : undefined}
+                    onClick={() => setTab(id)}
+                  >
+                    {step !== undefined && (
+                      <span className="step-number" aria-hidden="true">
+                        {step}
+                      </span>
+                    )}
+                    {label}
+                    <span aria-hidden="true">{tabCount(id)}</span>
+                  </button>
+                </Fragment>
+              ))}
+            </nav>
+  
+            {tab === "questions" && (
+              <QuestionsPanel
+                overview={overview}
+                records={records ?? []}
+                history={history}
+                onAnswer={(id, optionId) => void submitAnswer(id, optionId)}
+                onClear={(id) => void submitAnswer(id, null)}
+              />
+            )}
+            {tab === "outreach" && (
+              <OutreachPanel
+                outreach={overview.outreach}
+                changes={changes ?? []}
+                onOpenStudent={openStudent}
+              />
+            )}
+            {tab === "students" && datasetId && (
+              <StudentsPanel
+                datasetId={datasetId}
+                answers={answers}
+                students={overview.students}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            )}
+          </>
+        )}
+  
+        {/* 変換には数分かかるので、タブを切り替えても結果を残す */}
+        <div hidden={tab !== "import"}>
+          <ExtractionPanel
+            datasets={datasets}
+            sourceId={datasets.find(({ id }) => id === datasetId)?.sourceId}
+            respondent={respondent}
+            onConfirmed={(id) => void openConfirmed(id)}
+          />
+        </div>
+      </main>
+    </>
   );
 }

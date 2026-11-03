@@ -226,7 +226,7 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
 
   if (confirmedDatasetId) {
     return (
-      <>
+      <div className="card confirm-box" id="confirm-proposal">
         <h3>職員の確定</h3>
         <p className="muted">この案は確定済みです。</p>
         <div className="actions">
@@ -234,7 +234,7 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
             判定を見る
           </button>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -250,7 +250,7 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
           : null;
 
   return (
-    <>
+    <div className="card confirm-box" id="confirm-proposal">
       <h3>職員の確定</h3>
       <p className="muted">
         確定すると、このルールを新しい版として全学生を判定します。前の版の回答は引き継ぎません。確定者として {respondent} を記録します。
@@ -282,14 +282,54 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
         </button>
       </div>
       {error && <pre role="alert" className="error">{error}</pre>}
-    </>
+    </div>
+  );
+}
+
+type Tone = "good" | "bad" | "warn" | "neutral";
+
+function Stat({ label, value, tone }: { label: string; value: string; tone: Tone }) {
+  return (
+    <div className={`stat tone-${tone}`}>
+      <p className="muted">{label}</p>
+      <p className="stat-value">{value}</p>
+    </div>
+  );
+}
+
+// 案の全体を先に示す。数字の意味は下の各節にある
+function ProposalStats({ proposal, rows }: { proposal: ProposalResponse; rows: RuleRow[] }) {
+  const { caseResults, rules, notes, problems, runs } = proposal;
+  const passed = caseResults.filter(({ outcome }) => outcome === "passed").length;
+  const failed = caseResults.filter(({ outcome }) => outcome === "failed").length;
+  return (
+    <div className="stats">
+      <Stat label="ルール" value={`${rows.length}件`} tone="neutral" />
+      <Stat
+        label="変換の成功"
+        value={`${runs.succeeded}/${runs.requested}回`}
+        tone={runs.succeeded === runs.requested ? "good" : "warn"}
+      />
+      <Stat
+        label="検査用ケースの通過"
+        value={`${passed}/${caseResults.length}件`}
+        tone={failed > 0 ? "bad" : passed === caseResults.length ? "good" : "warn"}
+      />
+      <Stat
+        label="職員に確認する箇所"
+        value={`${rules.ambiguities.length}件`}
+        tone={rules.ambiguities.length > 0 ? "warn" : "neutral"}
+      />
+      <Stat label="反映できなかった箇所" value={`${notes.length}件`} tone={notes.length > 0 ? "warn" : "neutral"} />
+      {problems.length > 0 && <Stat label="検査で残った問題" value={`${problems.length}件`} tone="bad" />}
+    </div>
   );
 }
 
 type ProposalProps = Omit<ConfirmProps, "rows">;
 
 function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: ProposalProps) {
-  const { rules, notes, problems, attempts, runs, extraQuestions, caseResults, recording } = proposal;
+  const { rules, notes, problems, attempts, extraQuestions, caseResults, recording } = proposal;
   const rows = summarizeRules(rules);
   return (
     <section>
@@ -302,9 +342,19 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
           {recording.recordedAt} に {recording.model} で変換した記録を読み込みました。今回は Claude を呼んでいません。
         </p>
       )}
-      <p className="muted">
-        ルール {rows.length}件、変換 {runs.succeeded}/{runs.requested}回成功、修正を含む呼び出し {attempts.length}回（モデル {attempts.at(-1)?.model}）
-      </p>
+      <ProposalStats proposal={proposal} rows={rows} />
+      <div className="actions">
+        <span className="muted">
+          修正を含む呼び出し {attempts.length}回（モデル {attempts.at(-1)?.model}）
+        </span>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => document.getElementById("confirm-proposal")?.scrollIntoView({ behavior: "smooth" })}
+        >
+          確定の欄へ移る ↓
+        </button>
+      </div>
       {problems.length > 0 && (
         <div className="notice" role="alert">
           <p>検査で残った問題が {problems.length}件あります。</p>
@@ -443,12 +493,15 @@ export function ExtractionPanel({ datasets, sourceId, respondent, onConfirmed }:
           この環境では要項の変換を使えません。「記録を読み込む」を押すと、実際の変換の記録で確定から判定までを試せます。
         </p>
       )}
-      <div className="extract-form">
+      <p className="lead">
+        要項の文章から、Claude が根拠の条文つきのルール案と、読み方が分かれる箇所の質問を作ります。案はコードで検査し、職員が確定するまで判定に使いません。
+      </p>
+      <div className="card extract-form">
         <p>対象の大学: {selected?.name}（上の「対象」で変えられます）</p>
         <label>
           要項の文章
           <textarea
-            rows={12}
+            rows={8}
             value={handbook}
             onChange={(event) => setHandbook(event.target.value)}
           />
