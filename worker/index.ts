@@ -3,6 +3,7 @@ import type { z } from "zod";
 import {
   computeImpact,
   computeImpacts,
+  checkCurrentRegistrations,
   checkPlan,
   draftOutreachMessage,
   evaluatePrepared,
@@ -24,6 +25,7 @@ import {
   type OverviewResponse,
   type PlanCheckResponse,
   type ProposalResponse,
+  type RegistrationCheckResponse,
   type SourcesResponse,
   type StudentResponse,
 } from "../shared/api";
@@ -225,6 +227,41 @@ app.post("/api/datasets/:id/plan-check", async (c) => {
     ...check,
     warnings: [...lockedNotes, ...check.warnings],
     plan: isDisplayablePlan(check) ? body.plan : null,
+  };
+  return c.json(response);
+});
+
+// 今期の登録をまとめて検査する（H25 の J）。通らなかった学生だけを返し、声かけと職員確認の人数には足さない
+app.post("/api/datasets/:id/registration-check", async (c) => {
+  const dataset = await findDataset(c);
+  if (!dataset) return c.json({ error: "データがありません" }, 404);
+  if (dataset.problems.length > 0) {
+    return c.json({ error: "ルールに問題があります", problems: dataset.problems }, 422);
+  }
+  const body = await parseBody(c, answersRequestSchema);
+  if (!body || !isValidAnswers(dataset, body.answers)) {
+    return c.json({ error: "回答の形式が正しくありません" }, 400);
+  }
+  const { rules, courses, students } = dataset;
+  const checked = students.flatMap((student) => {
+    const result = checkCurrentRegistrations(rules, courses, student, body.answers);
+    return result ? [{ student, ...result }] : [];
+  });
+  const response: RegistrationCheckResponse = {
+    checked: checked.length,
+    results: checked.flatMap(({ student, courses: registered, check }) =>
+      check.status === "passed"
+        ? []
+        : [
+            {
+              studentId: student.id,
+              studentYear: student.studentYear,
+              status: check.status,
+              courses: registered,
+              issues: check.issues,
+            },
+          ],
+    ),
   };
   return c.json(response);
 });

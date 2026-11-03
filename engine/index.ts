@@ -18,6 +18,7 @@ export type {
 export { describeAmounts, draftOutreachMessage, listOutreach } from "./outreach";
 export type { OutreachEntry, OutreachReason } from "./outreach";
 export {
+  checkCurrentRegistrations,
   checkPlan,
   isDisplayablePlan,
   lockedEnrollments,

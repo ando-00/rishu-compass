@@ -9,6 +9,7 @@ import {
   overviewResponseSchema,
   planCheckResponseSchema,
   proposalResponseSchema,
+  registrationCheckResponseSchema,
   sourcesResponseSchema,
   studentResponseSchema,
   versionCompareResponseSchema,
@@ -113,6 +114,11 @@ export async function loadRecordedAdvice(datasetId: string, studentId: string, a
 export async function fetchLatestAdvice(datasetId: string, studentId: string, answers: Answers) {
   const res = await post(`/api/datasets/${datasetId}/students/${studentId}/advice/latest`, { answers });
   return readJson(res, savedAdviceSchema);
+}
+
+export async function checkRegistrations(datasetId: string, answers: Answers) {
+  const res = await post(`/api/datasets/${datasetId}/registration-check`, { answers });
+  return readJson(res, registrationCheckResponseSchema);
 }
 
 export async function checkPlan(

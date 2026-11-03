@@ -238,35 +238,51 @@ export const studentResponseSchema = z.object({
   ),
 });
 
+export const planIssueSchema = z.object({
+  code: z.enum([
+    "TIME_CONFLICT",
+    "OVER_LIMIT",
+    "PREREQUISITE_NOT_MET",
+    "NOT_OFFERED",
+    "WRONG_YEAR",
+    "ALREADY_EARNED",
+    "DISQUALIFIED_RETAKE",
+    "SEMINAR_LOCKED",
+    "CATEGORY_LIMIT",
+    "PENDING_RULE",
+    "UNKNOWN_COURSE",
+  ]),
+  ruleId: z.string(),
+  clause: z.string(),
+  sourceQuote: z.string(),
+  course: z.string().optional(),
+  message: z.string(),
+  hint: z.string(),
+  ambiguityIds: z.array(z.string()),
+});
+
 export const planCheckResponseSchema = z.object({
   status: z.enum(["passed", "failed", "needs_staff"]),
-  issues: z.array(
-    z.object({
-      code: z.enum([
-        "TIME_CONFLICT",
-        "OVER_LIMIT",
-        "PREREQUISITE_NOT_MET",
-        "NOT_OFFERED",
-        "WRONG_YEAR",
-        "ALREADY_EARNED",
-        "DISQUALIFIED_RETAKE",
-        "SEMINAR_LOCKED",
-        "CATEGORY_LIMIT",
-        "PENDING_RULE",
-        "UNKNOWN_COURSE",
-      ]),
-      ruleId: z.string(),
-      clause: z.string(),
-      sourceQuote: z.string(),
-      course: z.string().optional(),
-      message: z.string(),
-      hint: z.string(),
-      ambiguityIds: z.array(z.string()),
-    }),
-  ),
+  issues: z.array(planIssueSchema),
   warnings: z.array(z.string()),
   // 検査に通った履修案だけを返す
   plan: z.array(planEntrySchema).nullable(),
+});
+
+// 今期の登録をまとめて検査した結果（H25 の J）。検査に通らなかった学生だけを返す。
+// 声かけと職員確認の人数には足さない
+export const registrationCheckResponseSchema = z.object({
+  // 今年度の履修中の記録がある学生の数
+  checked: z.number(),
+  results: z.array(
+    z.object({
+      studentId: z.string(),
+      studentYear: z.number(),
+      status: z.enum(["failed", "needs_staff"]),
+      courses: z.array(z.string()),
+      issues: z.array(planIssueSchema),
+    }),
+  ),
 });
 
 // 費用の上限として、要項の長さを制限する
@@ -383,6 +399,7 @@ export type CoursesResponse = z.infer<typeof coursesResponseSchema>;
 export type OverviewResponse = z.infer<typeof overviewResponseSchema>;
 export type StudentResponse = z.infer<typeof studentResponseSchema>;
 export type PlanCheckResponse = z.infer<typeof planCheckResponseSchema>;
+export type RegistrationCheckResponse = z.infer<typeof registrationCheckResponseSchema>;
 export type SourcesResponse = z.infer<typeof sourcesResponseSchema>;
 export type StoredProposal = z.infer<typeof storedProposalSchema>;
 export type ProposalResponse = z.infer<typeof proposalResponseSchema>;

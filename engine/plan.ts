@@ -518,3 +518,23 @@ export function checkPlan(
     return needsStaffCheck(`案を検査できないため、職員が確認します（${detail}）。`);
   }
 }
+
+// 今期の登録をまとめて検査する（H25 の J）。今年度の履修中の記録を案とみなし、それを除いた記録の学生に、
+// 履修案の検査をそのまま掛ける。翌年度に読み替えない。今期はもう始まっているので、結果は職員確認の候補として使う
+export function checkCurrentRegistrations(
+  rules: RuleSet,
+  courses: Course[],
+  student: Student,
+  answers: Answers,
+): { courses: string[]; check: PlanCheck } | null {
+  const current = (record: CourseRecord) =>
+    record.result === "enrolled" && record.studentYear === student.studentYear;
+  const registered = student.records.filter(current);
+  if (registered.length === 0) return null;
+  const target = { ...student, records: student.records.filter((record) => !current(record)) };
+  const plan = registered.map(({ course, term }) => ({ course, term }));
+  return {
+    courses: registered.map(({ course }) => course),
+    check: checkPlan(rules, courses, target, plan, answers),
+  };
+}

@@ -10,6 +10,7 @@ import type {
 import { AdvisorPanel } from "./AdvisorPanel";
 import { checkPlan, fetchCourses, fetchStudent } from "./api";
 import { type CourseOption, candidatesFor, TERMS } from "./courseCandidates";
+import { RegistrationCheck } from "./RegistrationCheck";
 import { JudgmentBadge, PlanBadge, StateBadge } from "./StatusBadge";
 
 const STATE_FILTERS = [
@@ -239,128 +240,131 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
   }, [datasetId, selectedId, answers]);
 
   return (
-    <section className="students">
-      <div className="student-side">
-        <div className="segmented" role="group" aria-label="絞り込み">
-          {STATE_FILTERS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={filter === id}
-              onClick={() => setFilter(id)}
-            >
-              {label} {id === "all" ? students.length : students.filter(({ state }) => state === id).length}
-            </button>
-          ))}
-        </div>
-        <div className="student-filter">
-          <label>
-            年次
-            <select value={year} onChange={(event) => setYear(event.target.value)}>
-              <option value="all">すべて</option>
-              {years.map((value) => (
-                <option key={value} value={String(value)}>
-                  {value}年次
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            学生 ID
-            <input value={keyword} placeholder="例: S0095" onChange={(event) => setKeyword(event.target.value)} />
-          </label>
-          <p className="muted">{shown.length}人を表示（声かけ、職員確認、対応なしの順）</p>
-        </div>
-        <ul className="student-list" aria-label="学生の一覧">
-          {shown.map((student) => (
-            <li key={student.id}>
+    <>
+      <RegistrationCheck datasetId={datasetId} answers={answers} onSelect={onSelect} />
+      <section className="students">
+        <div className="student-side">
+          <div className="segmented" role="group" aria-label="絞り込み">
+            {STATE_FILTERS.map(({ id, label }) => (
               <button
+                key={id}
                 type="button"
-                className={student.id === selectedId ? "row selected" : "row"}
-                aria-current={student.id === selectedId}
-                onClick={() => onSelect(student.id)}
+                aria-pressed={filter === id}
+                onClick={() => setFilter(id)}
               >
-                <span>{student.id}</span>
-                <span className="muted">{student.studentYear}年次</span>
-                <StateBadge state={student.state} />
+                {label} {id === "all" ? students.length : students.filter(({ state }) => state === id).length}
               </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="student-detail">
-        {!selectedId && (
-          <div className="empty">
-            <p>
-              左の一覧から学生を選ぶと、区分ごとの判定と根拠、履修の記録、履修案がここに出ます。
-              <br />
-              声かけの学生から見るときは、上の「声かけ」の人数を押してください。
-            </p>
+            ))}
           </div>
-        )}
-        {error && <p role="alert" className="error">{error}</p>}
-        {selectedId && detail && detail.student.id === selectedId && (
-          <>
-            <div className="card">
-            <div className="detail-head">
-              <h2>
-                {detail.student.id}（{detail.student.studentYear}年次）
-              </h2>
-              {state && <StateBadge state={state} />}
-              <p className="muted">
-                {detail.student.admissionYear}年度入学
-                {detail.student.major ? `・${detail.student.major}` : ""}
-                {detail.student.hasMinor ? "・副専攻あり" : ""}
+          <div className="student-filter">
+            <label>
+              年次
+              <select value={year} onChange={(event) => setYear(event.target.value)}>
+                <option value="all">すべて</option>
+                {years.map((value) => (
+                  <option key={value} value={String(value)}>
+                    {value}年次
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              学生 ID
+              <input value={keyword} placeholder="例: S0095" onChange={(event) => setKeyword(event.target.value)} />
+            </label>
+            <p className="muted">{shown.length}人を表示（声かけ、職員確認、対応なしの順）</p>
+          </div>
+          <ul className="student-list" aria-label="学生の一覧">
+            {shown.map((student) => (
+              <li key={student.id}>
+                <button
+                  type="button"
+                  className={student.id === selectedId ? "row selected" : "row"}
+                  aria-current={student.id === selectedId}
+                  onClick={() => onSelect(student.id)}
+                >
+                  <span>{student.id}</span>
+                  <span className="muted">{student.studentYear}年次</span>
+                  <StateBadge state={student.state} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="student-detail">
+          {!selectedId && (
+            <div className="empty">
+              <p>
+                左の一覧から学生を選ぶと、区分ごとの判定と根拠、履修の記録、履修案がここに出ます。
+                <br />
+                声かけの学生から見るときは、上の「声かけ」の人数を押してください。
               </p>
             </div>
-            {detail.excludedReason && <p className="notice">{detail.excludedReason}</p>}
-            <table>
-              <thead>
-                <tr>
-                  <th>判定</th>
-                  <th>結果</th>
-                  <th>単位</th>
-                  <th>根拠</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.judgments.map((judgment) => (
-                  <Fragment key={judgment.ruleId}>
-                    <tr className="judgment-row">
-                      <td className="nowrap">{judgment.name}</td>
-                      <td>
-                        <JudgmentBadge status={judgment.status} />
-                      </td>
-                      <td className="nowrap">{credits(judgment)}</td>
-                      <td className="nowrap">{judgment.clause}</td>
-                    </tr>
-                    <tr className="judgment-detail">
-                      <td colSpan={4}>
-                        {judgment.reason}
-                        {judgment.missingCourses && judgment.missingCourses.length > 0 && (
-                          <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
-                        )}
-                        <span className="quote">{judgment.sourceQuote}</span>
-                      </td>
-                    </tr>
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-            </div>
-            <div className="card">
-              <AdvisorPanel datasetId={datasetId} studentId={selectedId} answers={answers} />
-            </div>
-            <div className="card">
-              <RecordsTable records={detail.records} />
-            </div>
-            <div className="card">
-              <PlanForm datasetId={datasetId} studentId={selectedId} answers={answers} />
-            </div>
-          </>
-        )}
-      </div>
-    </section>
+          )}
+          {error && <p role="alert" className="error">{error}</p>}
+          {selectedId && detail && detail.student.id === selectedId && (
+            <>
+              <div className="card">
+              <div className="detail-head">
+                <h2>
+                  {detail.student.id}（{detail.student.studentYear}年次）
+                </h2>
+                {state && <StateBadge state={state} />}
+                <p className="muted">
+                  {detail.student.admissionYear}年度入学
+                  {detail.student.major ? `・${detail.student.major}` : ""}
+                  {detail.student.hasMinor ? "・副専攻あり" : ""}
+                </p>
+              </div>
+              {detail.excludedReason && <p className="notice">{detail.excludedReason}</p>}
+              <table>
+                <thead>
+                  <tr>
+                    <th>判定</th>
+                    <th>結果</th>
+                    <th>単位</th>
+                    <th>根拠</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.judgments.map((judgment) => (
+                    <Fragment key={judgment.ruleId}>
+                      <tr className="judgment-row">
+                        <td className="nowrap">{judgment.name}</td>
+                        <td>
+                          <JudgmentBadge status={judgment.status} />
+                        </td>
+                        <td className="nowrap">{credits(judgment)}</td>
+                        <td className="nowrap">{judgment.clause}</td>
+                      </tr>
+                      <tr className="judgment-detail">
+                        <td colSpan={4}>
+                          {judgment.reason}
+                          {judgment.missingCourses && judgment.missingCourses.length > 0 && (
+                            <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
+                          )}
+                          <span className="quote">{judgment.sourceQuote}</span>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+              <div className="card">
+                <AdvisorPanel datasetId={datasetId} studentId={selectedId} answers={answers} />
+              </div>
+              <div className="card">
+                <RecordsTable records={detail.records} />
+              </div>
+              <div className="card">
+                <PlanForm datasetId={datasetId} studentId={selectedId} answers={answers} />
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </>
   );
 }

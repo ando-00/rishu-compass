@@ -202,6 +202,9 @@ const M = [
   ["worker/ruleSets", "    if (!confirmation) continue;\n    const before", "    const before", "版の比較: 確定していない版と比べない"],
   ["worker/answers", "      if (option_id === null || !known.has(ambiguity_id)) continue;", "      if (option_id === null) continue;", "前の版の回答: ID が今の版にあるものだけ"],
   ["worker/answers", ".bind(dataset.sourceId, dataset.confirmation.proposalId)", ".bind(dataset.sourceId, 1e9)", "前の版の回答: あとの版を出さない"],
+  ["plan", "record.result === \"enrolled\" && record.studentYear === student.studentYear;\n  const registered", "record.result === \"enrolled\";\n  const registered", "今期の登録: 今年度の履修中に限る"],
+  ["plan", "const target = { ...student, records: student.records.filter((record) => !current(record)) };", "const target = student;", "今期の登録: 案にした履修中を記録から外す"],
+  ["worker/index", "      check.status === \"passed\"\n        ? []", "      false\n        ? []", "今期の登録: 通った学生を返さない"],
 ];
 
 function runTests() {
