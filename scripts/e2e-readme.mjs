@@ -108,7 +108,25 @@ async function cleanup() {
       // すでに終わっている
     }
   }
-  if (work) rmSync(work, { recursive: true, force: true, maxRetries: 3 });
+  if (!work) return;
+  // 手元の node_modules へのリンクは先に外す（中を消さない）
+  const link = join(work, "clone", "node_modules");
+  if (existsSync(link)) rmSync(link, { recursive: false, force: true });
+  // Windows では止めたあとも workerd がしばらくファイルをつかむ（2026-11-03 に EPERM で落ちた）
+  const from = Date.now();
+  for (;;) {
+    try {
+      rmSync(work, { recursive: true, force: true, maxRetries: 3 });
+      if (Date.now() - from > 1000) console.log(`一時フォルダを ${Math.round((Date.now() - from) / 1000)} 秒待って消した`);
+      return;
+    } catch (error) {
+      if (Date.now() - from > 60000) {
+        console.log(`一時フォルダを消せなかった: ${work}（${error.code}）`);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
 }
 
 async function main() {
