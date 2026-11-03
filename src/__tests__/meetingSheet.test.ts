@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Impact, OverviewResponse } from "../../shared/api";
-import { buildMeetingSheet } from "../meetingSheet";
+import { buildMeetingSheet, countedCaption } from "../meetingSheet";
 
 const impact: Impact = {
   ambiguityId: "ambiguity-a",
@@ -14,6 +14,7 @@ const impact: Impact = {
     { id: "exclude", label: "数えない", counts: { short: 5, satisfied: 5 }, reflected: true },
   ],
   affectedStudentIds: ["S0007", "S0095"],
+  countedRuleNames: [],
   staffReviewStudentIds: ["S0042"],
   changes: [
     { studentId: "S0007", ruleId: "gate", name: "演習Ⅰ", clause: "第6条", statuses: { include: "satisfied", exclude: "short" } },
@@ -63,5 +64,20 @@ describe("buildMeetingSheet（確認事項の会議資料。B31）", () => {
     const sheet = buildMeetingSheet(overview);
     expect(sheet.summary).toEqual(overview.summary);
     expect(sheet.items.map((item) => item.ambiguityId)).toEqual(["ambiguity-a"]);
+  });
+});
+
+describe("countedCaption（読み方ごとの人数が何を数えたか）", () => {
+  it("数えた判定の名前を出す", () => {
+    expect(countedCaption(["演習Ⅰの履修条件"])).toBe("人数は「演習Ⅰの履修条件」の判定で、学生1人を1回ずつ数えたものです。");
+  });
+
+  it("名前がなければ、全判定のうち最も重いもので数えたと書く", () => {
+    expect(countedCaption([])).toContain("全判定のうち最も重いもの");
+  });
+
+  it("会議資料の項目に数えた判定の名前を渡す", () => {
+    const [item] = buildMeetingSheet({ ...overview, unanswered: [{ ...impact, countedRuleNames: ["演習Ⅰ"] }] }).items;
+    expect(item!.countedRuleNames).toEqual(["演習Ⅰ"]);
   });
 });

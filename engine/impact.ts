@@ -30,6 +30,8 @@ export type AmbiguityImpact = {
   // false は履修上限のように判定を持たないルールだけに関わり、影響は履修案の検査に出る。
   judged: boolean;
   options: ImpactOption[];
+  // 読み方ごとの人数を数えた判定の名前。空なら、学生の全判定のうち最も重いもので数えた
+  countedRuleNames: string[];
   affectedStudentIds: string[];
   staffReviewStudentIds: string[];
   changes: ImpactChange[];
@@ -98,6 +100,7 @@ export function computeImpact(
         counts: null,
         reflected: patches !== null,
       })),
+      countedRuleNames: [],
       affectedStudentIds: [],
       staffReviewStudentIds: needsStaff,
       changes: [],
@@ -111,6 +114,7 @@ export function computeImpact(
   }));
 
   const changes: ImpactChange[] = [];
+  const counted = new Set<string>();
   const affected = new Set<string>();
   const stuck = new Set<string>();
   for (const student of students) {
@@ -123,6 +127,7 @@ export function computeImpact(
       const { judgments } = evaluatePrepared(resolved, student);
       // 履修上限のように判定を持たないルールは、学生の全判定の中で数える。
       const related = judgments.filter((judgment) => linked.has(judgment.ruleId));
+      for (const judgment of related) counted.add(judgment.name);
       const worst = worstStatus(related.length > 0 ? related : judgments);
       if (worst) counts[worst] = (counts[worst] ?? 0) + 1;
 
@@ -171,6 +176,7 @@ export function computeImpact(
       counts,
       reflected: true,
     })),
+    countedRuleNames: [...counted],
     affectedStudentIds: students.map((s) => s.id).filter((id) => affected.has(id)),
     staffReviewStudentIds: students.map((s) => s.id).filter((id) => stuck.has(id) && !affected.has(id)),
     changes,

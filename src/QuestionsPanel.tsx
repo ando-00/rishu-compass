@@ -7,7 +7,7 @@ import type {
   OverviewResponse,
   PreviousAnswer,
 } from "../shared/api";
-import { buildMeetingSheet } from "./meetingSheet";
+import { buildMeetingSheet, countedCaption } from "./meetingSheet";
 import { MeetingSheetView } from "./MeetingSheetView";
 import { JudgmentBadge, judgmentLabel } from "./StatusBadge";
 
@@ -97,8 +97,8 @@ export function ImpactCounts({ impact, chosen, onAnswer }: ImpactProps) {
       </div>
       {impact.computable && (
         <p className="muted counts-note">
-          回答で判定が変わる学生 {impact.affectedStudentIds.length}人。ほかに職員確認の学生{" "}
-          {impact.staffReviewStudentIds.length}人。
+          {countedCaption(impact.countedRuleNames)}回答で判定が変わる学生は {impact.affectedStudentIds.length}
+          人、ほかに職員確認の学生が {impact.staffReviewStudentIds.length}人います。
         </p>
       )}
     </>
@@ -109,7 +109,10 @@ export function ChangeList({ impact }: { impact: Impact }) {
   if (impact.changes.length === 0) return null;
   return (
     <details>
-      <summary>判定が変わる学生を見る（{impact.changes.length}件）</summary>
+      <summary>
+        判定が変わる学生を見る（{new Set(impact.changes.map(({ studentId }) => studentId)).size}人、判定{" "}
+        {impact.changes.length}件）
+      </summary>
       <div className="table-scroll">
         <table>
           <thead>
@@ -230,7 +233,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, previo
       <details className="help">
         <summary>人数の見方</summary>
         <p>
-          読み方ごとの人数は、判定の件数の内訳です。上の人数（声かけ・職員確認・対応なし）との関係は、延期見込みと最終年次の不足が声かけ、未回答で止まった判定が職員確認、それ以外が対応なしです。
+          表の人数は、表の下に書いた判定で、学生1人を1回ずつ数えたものです。その判定から先の卒業要件などの変わり方は「判定が変わる学生を見る」に出ます。上の人数（声かけ・職員確認・対応なし）は、学生の全判定から決めています。延期見込みと最終年次の不足が声かけ、未回答で止まった判定が職員確認、それ以外が対応なしです。
         </p>
       </details>
       {unanswered.length === 0 && <p className="card muted">未回答の確認事項はありません。</p>}

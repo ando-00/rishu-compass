@@ -107,6 +107,7 @@ export const impactSchema = z.object({
       reflected: z.boolean(),
     }),
   ),
+  countedRuleNames: z.array(z.string()),
   affectedStudentIds: z.array(z.string()),
   staffReviewStudentIds: z.array(z.string()),
   changes: z.array(
@@ -340,6 +341,23 @@ export const latestProposalResponseSchema = z.object({
   proposal: proposalResponseSchema.nullable(),
 });
 
+// 要項の版の比較。同じ大学の一つ前の確定版と、この案のルールの差分（H25 の G）
+const ambiguitySummarySchema = z.object({ id: z.string(), clause: z.string(), question: z.string() });
+
+export const versionCompareResponseSchema = z.object({
+  // 比べた確定版。確定版がなければ null
+  base: z.object({ version: z.number(), respondent: respondentSchema, confirmedAt: z.string() }).nullable(),
+  diff: z
+    .object({
+      changed: z.array(z.object({ item: z.string(), field: z.string(), before: z.string(), after: z.string() })),
+      removed: z.array(z.string()),
+      added: z.array(z.string()),
+      ambiguitiesRemoved: z.array(ambiguitySummarySchema),
+      ambiguitiesAdded: z.array(ambiguitySummarySchema),
+    })
+    .nullable(),
+});
+
 export const confirmRequestSchema = z.object({
   respondent: respondentSchema,
   acceptedRuleIds: z.array(z.string()),
@@ -369,4 +387,5 @@ export type SourcesResponse = z.infer<typeof sourcesResponseSchema>;
 export type StoredProposal = z.infer<typeof storedProposalSchema>;
 export type ProposalResponse = z.infer<typeof proposalResponseSchema>;
 export type LatestProposalResponse = z.infer<typeof latestProposalResponseSchema>;
+export type VersionCompareResponse = z.infer<typeof versionCompareResponseSchema>;
 export type ConfirmResponse = z.infer<typeof confirmResponseSchema>;

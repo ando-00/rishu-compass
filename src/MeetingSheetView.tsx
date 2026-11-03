@@ -1,5 +1,5 @@
 import type { JudgmentStatus } from "../shared/api";
-import type { MeetingSheet } from "./meetingSheet";
+import { countedCaption, type MeetingSheet } from "./meetingSheet";
 import { JudgmentBadge } from "./StatusBadge";
 
 const STATUSES: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
@@ -43,6 +43,8 @@ export function MeetingSheetView({ sheet, datasetName, onClose }: Props) {
             <p>
               回答で判定が変わる学生 <strong>{item.affected}人</strong>
               <span className="muted">（別途、職員確認の学生 {item.staffReview}人）</span>
+              <br />
+              <span className="muted">{countedCaption(item.countedRuleNames)}</span>
             </p>
           ) : (
             <p className="notice">この確認事項の読み方はルールの差分で表せないため、人数は計算できません。</p>

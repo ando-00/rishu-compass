@@ -61,7 +61,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.6;
   font-variant-numeric: tabular-nums;
 }
@@ -455,7 +455,8 @@ button.summary-cell:hover:not(:disabled) {
 }
 
 .step-number {
-  color: var(--line-strong);
+  color: var(--muted);
+  font-weight: 400;
   font-size: 12px;
 }
 
@@ -464,7 +465,7 @@ button.summary-cell:hover:not(:disabled) {
 }
 
 .tab.active .step-number {
-  color: var(--muted);
+  color: var(--text);
 }
 
 .tab-count {
@@ -1341,21 +1342,47 @@ button.option:hover:not(:disabled) {
     min-width: 150px;
   }
 
+  /* 狭い画面ではタブを折り返し、学生別も隠さない */
   .tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
+  }
+
+  .tab-spacer {
+    display: none;
+  }
+
+  .tab {
+    padding: 8px 10px;
+  }
+
+  .student-detail td.nowrap {
+    white-space: normal;
+  }
+
+  .meeting-sheet td:first-child {
+    min-width: 10em;
   }
 
   .tab {
     flex: none;
   }
 
-  .summary-cell:nth-child(odd) {
-    border-left: 0;
+  /* 人数は狭い画面でも1段に収め、説明は隠す */
+  .summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .summary-cell:nth-child(n + 3) {
-    border-top: 1px solid var(--line);
+  .summary-cell {
+    padding: 8px 8px;
+  }
+
+  .summary-value {
+    font-size: 18px;
+  }
+
+  .summary-note,
+  .summary-delta {
+    display: none;
   }
 
   .card {

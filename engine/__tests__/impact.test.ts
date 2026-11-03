@@ -38,6 +38,14 @@ describe("computeImpact", () => {
     ]);
   });
 
+  it("読み方ごとの人数を数えた判定の名前を返す", () => {
+    const impact = computeImpact(exampleRules, exampleCourses, students, {}, ID);
+    expect(impact.countedRuleNames).toEqual([impact.changes[0]!.name]);
+    const counts = impact.options.map((option) => Object.values(option.counts ?? {}).reduce((a, b) => a + b, 0));
+    // 1人を1回だけ数える
+    expect(counts).toEqual([students.length, students.length]);
+  });
+
   it("質問と根拠を返す", () => {
     const impact = computeImpact(exampleRules, exampleCourses, students, {}, ID);
     expect(impact.clause).toBe("第3条");

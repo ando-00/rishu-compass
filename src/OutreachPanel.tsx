@@ -45,6 +45,14 @@ function reasonText(reason: Outreach["reasons"][number]) {
   );
 }
 
+// 一覧の行の「内容」。理由が具体的なら最初の1文を出し、量を添える。全文は行を開くと出る
+function summaryText(reason: Outreach["reasons"][number]) {
+  const amounts = describeAmounts(reason);
+  if (reason.detail === SHORT_DETAIL || !reason.detail) return amounts;
+  const first = reason.detail.split("。")[0];
+  return amounts ? `${first}（${amounts}）` : first;
+}
+
 // 重い判定から並べる。一覧の行には先頭の判定だけを出し、押すと全部を開く
 const REASON_ORDER = { delay_risk: 0, short: 1, needs_staff: 2, expected: 3, satisfied: 4 } as const;
 
@@ -77,7 +85,7 @@ function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
             </>
           )}
         </td>
-        <td className="outreach-summary">{top && (describeAmounts(top) || top.detail)}</td>
+        <td className="outreach-summary">{top && summaryText(top)}</td>
         <td className="nowrap outreach-more">
           <button
             type="button"
