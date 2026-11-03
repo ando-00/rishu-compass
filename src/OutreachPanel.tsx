@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { describeAmounts } from "../engine/outreach";
 import type { StateChange } from "../engine/stateChanges";
-import type { Outreach } from "../shared/api";
+import type { Outreach, OverviewResponse } from "../shared/api";
+import { FinalYearSummary } from "./FinalYearSummary";
 import { JudgmentBadge, NewlyListedBadge, StateBadge } from "./StatusBadge";
 
 type Props = {
   outreach: Outreach[];
+  finalYear: OverviewResponse["finalYear"];
   changes: StateChange[];
   onOpenStudent: (studentId: string) => void;
 };
@@ -117,7 +119,7 @@ function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
   );
 }
 
-export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
+export function OutreachPanel({ outreach, finalYear, changes, onOpenStudent }: Props) {
   // 絞り込みは画面の中だけで行う。人数の計算は engine の結果のまま
   const [year, setYear] = useState("all");
   const [ruleName, setRuleName] = useState("all");
@@ -180,6 +182,7 @@ export function OutreachPanel({ outreach, changes, onOpenStudent }: Props) {
           </button>
         )}
       </div>
+      <FinalYearSummary summary={finalYear} />
       <div className="section-head" id="outreach-contact">
         <h2>声をかける学生（{count(contact, shownContact)}）</h2>
       </div>

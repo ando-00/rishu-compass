@@ -346,6 +346,7 @@ export function App() {
             {tab === "outreach" && (
               <OutreachPanel
                 outreach={overview.outreach}
+                finalYear={overview.finalYear}
                 changes={changes ?? []}
                 onOpenStudent={openStudent}
               />

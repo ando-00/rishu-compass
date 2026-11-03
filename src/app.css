@@ -1251,3 +1251,12 @@ button.option:hover:not(:disabled) {
     justify-items: start;
   }
 }
+
+/* 最終年次の内訳（声かけの画面の上。閉じておく） */
+.final-year {
+  margin-top: 4px;
+}
+
+.final-year td {
+  white-space: nowrap;
+}
