@@ -11,6 +11,7 @@ import {
   listOutreach,
   prepareRules,
   settledStudentIds,
+  summarizeFinalYear,
   type StudentState,
 } from "../engine";
 import {
@@ -90,6 +91,7 @@ function buildOverview(dataset: Dataset, answers: Answers): OverviewResponse {
       ...(major ? { major } : {}),
       state: states.get(id) ?? "clear",
     })),
+    finalYear: summarizeFinalYear(prepared.rules, students, evaluations),
   };
 }
 

@@ -172,6 +172,22 @@ export const overviewResponseSchema = z.object({
       state: z.enum(["contact", "staff_review", "clear"]),
     }),
   ),
+  // 最終年次の卒業要件と区分ごとの判定の人数。学生 ID は含めない
+  finalYear: z.object({
+    minYears: z.number(),
+    studentCount: z.number(),
+    rows: z.array(
+      z.object({
+        ruleId: z.string(),
+        kind: z.enum(["graduation", "category"]),
+        name: z.string(),
+        clause: z.string(),
+        condition: z.string().optional(),
+        counts: z.record(judgmentStatusSchema, z.number()),
+        notApplicable: z.number(),
+      }),
+    ),
+  }),
 });
 
 export const studentResponseSchema = z.object({
