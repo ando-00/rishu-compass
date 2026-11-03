@@ -109,11 +109,18 @@ function checkNames() {
     record("N1", "未検証", "名前: 作業ツリーとコミットメッセージ", `${list} がない。人が作る（docs/AUDIT.md）`);
     return;
   }
-  expectEmpty("N1", "名前: 作業ツリー", git(["grep", "-n", "-i", "-F", "-f", list]).stdout);
+  const words = lines(readFileSync(list, "utf8")).map((w) => w.toLowerCase());
+  // 公開先の GitHub のアカウント名は、clone の URL と作成者欄に必ず出る。一覧の語と重なっても、アカウント名の中の一致だけは数えない
+  const owner = /github\.com[:/]([A-Za-z0-9-]+)\//.exec(git(["remote", "get-url", "origin"]).stdout)?.[1];
+  const account = owner ? new RegExp(owner, "gi") : null;
+  const named = (line) => {
+    const text = (account ? line.replace(account, "<account>") : line).toLowerCase();
+    return words.some((w) => text.includes(w));
+  };
+  expectEmpty("N1", "名前: 作業ツリー", lines(git(["grep", "-n", "-i", "-F", "-f", list]).stdout).filter(named).join("\n"));
   // 本文と、作成者・コミット者の名前とメール（トレーラーは本文に含まれる）
   const log = git(["log", "--all", "--format=%h %an %ae %cn %ce%n%h %B"]).stdout;
-  const words = lines(readFileSync(list, "utf8")).map((w) => w.toLowerCase());
-  const hits = lines(log).filter((line) => words.some((w) => line.toLowerCase().includes(w)));
+  const hits = lines(log).filter(named);
   expectEmpty("N2", "名前: コミットメッセージと作成者欄", hits.map((l) => l.slice(0, 12)).join("\n"));
 }
 

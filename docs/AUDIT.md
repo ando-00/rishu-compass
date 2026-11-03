@@ -97,6 +97,7 @@ grep -rlE 'sk-ant-[A-Za-z0-9_-]{20,}|ANTHROPIC_API_KEY' dist/client     # 空
 git grep -n -i -F -f ~/.claude/rishu-compass-denylist.txt               # 空
 git log --format=%B | grep -n -i -F -f ~/.claude/rishu-compass-denylist.txt  # 空
 git log --all --format='%an %ae %cn %ce' | grep -n -i -F -f ~/.claude/rishu-compass-denylist.txt  # 空。作成者欄
+# 上の3つで、origin の GitHub のアカウント名の中だけの一致は数えない（clone の URL と作成者欄に必ず出るため。scripts/audit.mjs の N1、N2）
 git log --all --format='%ae%n%ce' | sort -u                             # noreply@anthropic.com と <番号>+<名前>@users.noreply.github.com だけ（一覧がなくても回る。N3）
 
 # 依存の向き
