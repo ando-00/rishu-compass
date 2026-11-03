@@ -250,7 +250,7 @@ function checkEvals(clone) {
       record(`E-${name}`, "FAIL", `npm run ${script}（Claude を呼ばない）`, lines(r.out).slice(-20).join("\n"));
       continue;
     }
-    const normalize = (text) => text.replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z?/g, "<time>").replace(/\S*evals\/results\/score\/[^\s"]+/g, "<file>");
+    const normalize = (text) => text.replace(/\d{4}-\d{2}-\d{2}T[\d:.]+Z?/g, "<time>").replace(/\S*evals[\\/]results[\\/]score[\\/][^\s"]+/g, "<file>");
     const previous = existsSync(previousPath) ? readFileSync(previousPath, "utf8") : null;
     if (previous !== null && normalize(previous) !== normalize(r.out)) {
       record(`E-${name}`, "WARN", `npm run ${script} の出力が前回と変わった`, `前回: ${previousPath}\n今回: ${join(OUT_DIR, `${name}.latest.txt`)}\n数字が変わったなら docs/EVALUATION.md と README.md を確かめる`);
