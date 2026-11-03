@@ -132,7 +132,7 @@ npm run eval:score
 
 企画と仕様の検討は開始前にリポジトリの外で行いました。架空の要項と判断ルールの文章は、開始前に作った入力データです（一覧は [docs/DATA.md](docs/DATA.md)）。コードと、それ以外のデータ、プロンプトは、すべてイベント期間中に作成しています。
 
-作業の記録と Claude Code の使い方は [docs/PROGRESS.md](docs/PROGRESS.md) にあります。
+作業の記録と Claude Code の使い方は [docs/PROGRESS.md](docs/PROGRESS.md) にあります。作成者が `Claude <noreply@anthropic.com>` のコミットは、作り手が指示して動かしたクラウドの Claude Code のセッション（夜間ループを含む）によるものです。
 
 ## Claude Code の使い方
 
