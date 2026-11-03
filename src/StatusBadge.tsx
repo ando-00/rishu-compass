@@ -39,6 +39,10 @@ function Badge({ label, tone }: { label: string; tone: Tone }) {
   return <span className={`badge badge-${tone}`}>{label}</span>;
 }
 
+export function judgmentLabel(status: JudgmentStatus) {
+  return JUDGMENT_LABELS[status].label;
+}
+
 export function JudgmentBadge({ status }: { status: JudgmentStatus }) {
   return <Badge {...JUDGMENT_LABELS[status]} />;
 }

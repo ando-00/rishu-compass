@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { describeAmounts } from "../engine/outreach";
 import type { StateChange } from "../engine/stateChanges";
 import type { Outreach, OverviewResponse } from "../shared/api";
 import { FinalYearSummary } from "./FinalYearSummary";
-import { JudgmentBadge, NewlyListedBadge, StateBadge } from "./StatusBadge";
+import { JudgmentBadge, NewlyListedBadge } from "./StatusBadge";
 
 type Props = {
   outreach: Outreach[];
@@ -54,40 +54,47 @@ function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
   const top = sorted[0];
   const detailId = `outreach-${entry.studentId}`;
   return (
-    <li className={open ? "outreach-row open" : "outreach-row"}>
-      <div className="outreach-line">
-        <button type="button" className="link" onClick={() => onOpenStudent(entry.studentId)}>
-          {entry.studentId}
-        </button>
-        <span className="muted nowrap">{entry.studentYear}年次</span>
-        <span className="outreach-badges">
-          <StateBadge state={entry.kind} />
+    <>
+      <tr
+        className={open ? "outreach-row open" : "outreach-row"}
+        // 行のどこを押しても開く。ボタンはキーボードで開くためのもの
+        onClick={(event) => {
+          if (!(event.target as HTMLElement).closest("button")) setOpen(!open);
+        }}
+      >
+        <td className="nowrap">
+          <button type="button" className="link id" onClick={() => onOpenStudent(entry.studentId)}>
+            {entry.studentId}
+          </button>
           {newlyListed && <NewlyListedBadge />}
-        </span>
-        <button
-          type="button"
-          className="outreach-toggle"
-          aria-expanded={open}
-          aria-controls={detailId}
-          onClick={() => setOpen(!open)}
-        >
+        </td>
+        <td className="num">{entry.studentYear}</td>
+        <td className="nowrap">
           {top && (
             <>
-              <JudgmentBadge status={top.status} />
-              <span className="reason-name">
-                {top.name}（{top.clause}）
-              </span>
-              <span className="outreach-summary">{describeAmounts(top) || top.detail}</span>
+              <JudgmentBadge status={top.status} /> {top.name}
+              <span className="muted">（{top.clause}）</span>
             </>
           )}
-          <span className="outreach-more">
-            {sorted.length > 1 ? `ほか${sorted.length - 1}件` : ""}
-            <span aria-hidden="true">{open ? " ▲" : " ▼"}</span>
-          </span>
-        </button>
-      </div>
+        </td>
+        <td className="outreach-summary">{top && (describeAmounts(top) || top.detail)}</td>
+        <td className="nowrap outreach-more">
+          <button
+            type="button"
+            className="link"
+            aria-expanded={open}
+            aria-controls={detailId}
+            onClick={() => setOpen(!open)}
+          >
+            {sorted.length > 1 ? `ほか${sorted.length - 1}件` : "詳細"}
+            <span aria-hidden="true">{open ? " ▴" : " ▾"}</span>
+          </button>
+        </td>
+      </tr>
       {open && (
-        <div className="outreach-detail" id={detailId}>
+        <tr className="outreach-detail-row">
+          <td />
+          <td colSpan={4} className="outreach-detail" id={detailId}>
           <ul className="reasons">
             {sorted.map((reason) => (
               <li key={reason.ruleId}>
@@ -113,9 +120,29 @@ function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
               </details>
             )}
           </div>
-        </div>
+          </td>
+        </tr>
       )}
-    </li>
+    </>
+  );
+}
+
+function OutreachTable({ entries, row }: { entries: Outreach[]; row: (entry: Outreach) => ReactNode }) {
+  return (
+    <div className="table-scroll">
+      <table className="outreach-table">
+        <thead>
+          <tr>
+            <th>学生</th>
+            <th className="num">年次</th>
+            <th>主な理由</th>
+            <th>内容</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>{entries.map(row)}</tbody>
+      </table>
+    </div>
   );
 }
 
@@ -186,25 +213,21 @@ export function OutreachPanel({ outreach, finalYear, changes, onOpenStudent }: P
       <div className="section-head" id="outreach-contact">
         <h2>声をかける学生（{count(contact, shownContact)}）</h2>
       </div>
-      <p className="lead">
-        卒業の延期が見込まれる学生、最終年次で要件が足りない学生、履修条件を期限までに満たせない見込みの学生です。行を押すと理由と根拠を開き、学生 ID を押すと区分ごとの判定と履修案を開きます。
-      </p>
-      {contact.length === 0 && <p className="card muted">声をかける学生はいません。</p>}
+      <p className="lead">卒業の延期の見込み、最終年次の不足、期限までに満たせない履修条件がある学生です。</p>
+      {contact.length === 0 && <p className="empty-line">声をかける学生はいません。</p>}
       {contact.length > 0 && shownContact.length === 0 && (
-        <p className="card muted">絞り込みに当てはまる学生はいません。</p>
+        <p className="empty-line">絞り込みに当てはまる学生はいません。</p>
       )}
-      {shownContact.length > 0 && <ul className="outreach-list">{shownContact.map(row)}</ul>}
+      {shownContact.length > 0 && <OutreachTable entries={shownContact} row={row} />}
       <div className="section-head" id="outreach-review">
         <h2>職員が確認する学生（{count(review, shownReview)}）</h2>
       </div>
-      <p className="lead">
-        未回答の確認事項や、編入・休学などの特別な状態があり、コードでは判定を決められない学生です。未回答の確認事項だけが理由の学生は、回答すると判定が決まります。
-      </p>
-      {review.length === 0 && <p className="card muted">職員が確認する学生はいません。</p>}
+      <p className="lead">未回答の確認事項や、編入・休学などがあり、コードでは判定を決められない学生です。</p>
+      {review.length === 0 && <p className="empty-line">職員が確認する学生はいません。</p>}
       {review.length > 0 && shownReview.length === 0 && (
-        <p className="card muted">絞り込みに当てはまる学生はいません。</p>
+        <p className="empty-line">絞り込みに当てはまる学生はいません。</p>
       )}
-      {shownReview.length > 0 && <ul className="outreach-list">{shownReview.map(row)}</ul>}
+      {shownReview.length > 0 && <OutreachTable entries={shownReview} row={row} />}
     </section>
   );
 }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { AnswerHistoryEntry, AnswerRecord, Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
 import { buildMeetingSheet } from "./meetingSheet";
 import { MeetingSheetView } from "./MeetingSheetView";
-import { JudgmentBadge } from "./StatusBadge";
+import { JudgmentBadge, judgmentLabel } from "./StatusBadge";
 
 const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
 
@@ -22,8 +22,13 @@ type ImpactProps = {
   onAnswer?: (optionId: string) => void;
 };
 
-// 読み方ごとに、関わる判定の人数を並べる。回答できる画面では、読み方の行そのものが回答のボタンになる
+// 読み方を行、判定を列にした表で人数を見比べる。読み方によって人数が違う欄を太字にする
 export function ImpactCounts({ impact, chosen, onAnswer }: ImpactProps) {
+  const statuses = impact.computable
+    ? COUNT_ORDER.filter((status) => impact.options.some((option) => option.counts?.[status]))
+    : [];
+  const differs = (status: JudgmentStatus) =>
+    new Set(impact.options.map((option) => option.counts?.[status] ?? 0)).size > 1;
   return (
     <>
       {!impact.computable && (
@@ -32,46 +37,61 @@ export function ImpactCounts({ impact, chosen, onAnswer }: ImpactProps) {
       {impact.computable && !impact.judged && (
         <p className="notice">履修上限などに関わる確認事項です。人数のほか、履修案の検査の結果も変わります。</p>
       )}
-      <p className="options-label">
-        {onAnswer ? "読み方を選んで回答します" : "読み方"}
-        {impact.computable && (
-          <span className="muted counts-note">
-            （回答で判定が変わる学生 {impact.affectedStudentIds.length}人、別途、職員確認の学生{" "}
-            {impact.staffReviewStudentIds.length}人）
-          </span>
-        )}
-      </p>
-      <div className="options">
-        {impact.options.map((option) => {
-          const body = (
-            <>
-              <span className="option-label">{option.label}</span>
-              <span className="option-action">
-                {onAnswer ? "この読み方で回答 →" : chosen === option.id ? "回答済み" : ""}
-              </span>
-              {impact.computable && (
-                <span className="option-counts">
-                  {COUNT_ORDER.filter((status) => option.counts?.[status]).map((status) => (
-                    <span key={status}>
-                      <JudgmentBadge status={status} /> {option.counts?.[status]}人
-                    </span>
-                  ))}
-                </span>
-              )}
-            </>
-          );
-          const state = chosen === undefined ? "" : chosen === option.id ? " chosen" : " dimmed";
-          return onAnswer ? (
-            <button key={option.id} type="button" className="option" onClick={() => onAnswer(option.id)}>
-              {body}
-            </button>
-          ) : (
-            <div key={option.id} className={`option${state}`}>
-              {body}
-            </div>
-          );
-        })}
+      <div className="table-scroll">
+        <table className="options-table">
+          <thead>
+            <tr>
+              <th>読み方</th>
+              {statuses.map((status) => (
+                <th key={status} className="num">
+                  <JudgmentBadge status={status} />
+                </th>
+              ))}
+              {(onAnswer || chosen !== undefined) && <th />}
+            </tr>
+          </thead>
+          <tbody>
+            {impact.options.map((option) => (
+              <tr
+                key={option.id}
+                className={chosen === undefined ? undefined : chosen === option.id ? "chosen" : "dimmed"}
+              >
+                <td className="option-label">{option.label}</td>
+                {statuses.map((status) => (
+                  <td
+                    key={status}
+                    className={differs(status) ? "num differs" : "num"}
+                    data-label={judgmentLabel(status)}
+                  >
+                    {option.counts?.[status] ?? 0}人
+                  </td>
+                ))}
+                {onAnswer && (
+                  <td className="option-action">
+                    <button
+                      type="button"
+                      className="secondary"
+                      aria-label={`「${option.label}」で回答する`}
+                      onClick={() => onAnswer(option.id)}
+                    >
+                      この読み方で回答
+                    </button>
+                  </td>
+                )}
+                {!onAnswer && chosen !== undefined && (
+                  <td className="option-action">{chosen === option.id && <span className="badge badge-good">回答</span>}</td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      {impact.computable && (
+        <p className="muted counts-note">
+          回答で判定が変わる学生 {impact.affectedStudentIds.length}人。ほかに職員確認の学生{" "}
+          {impact.staffReviewStudentIds.length}人。
+        </p>
+      )}
     </>
   );
 }
@@ -144,10 +164,10 @@ function UnreflectedNote({ impact }: { impact: Impact }) {
 function QuestionHead({ impact, answered }: { impact: Impact; answered?: boolean }) {
   return (
     <>
-      <div className="card-head">
-        <p className="clause">{impact.clause}</p>
+      <p className="clause">
+        {impact.clause}
         {answered && <span className="badge badge-good">回答済み</span>}
-      </div>
+      </p>
       <h3>{impact.question}</h3>
       <blockquote>{impact.sourceQuote}</blockquote>
     </>
@@ -178,9 +198,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, onAnsw
           </button>
         )}
       </div>
-      <p className="lead">
-        要項の読み方が分かれる箇所です。読み方ごとの人数を見比べて、大学としての読み方を選んでください。回答はすぐに全学生の判定に反映され、あとから取り消せます。
-      </p>
+      <p className="lead">要項の読み方が分かれる箇所です。選んだ読み方は全学生の判定にすぐ反映され、あとから取り消せます。</p>
       <details className="help">
         <summary>人数の見方</summary>
         <p>

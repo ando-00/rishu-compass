@@ -352,7 +352,7 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
           className="secondary"
           onClick={() => document.getElementById("confirm-proposal")?.scrollIntoView({ behavior: "smooth" })}
         >
-          確定の欄へ移る ↓
+          確定の欄へ移る
         </button>
       </div>
       {problems.length > 0 && (
