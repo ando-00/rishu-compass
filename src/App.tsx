@@ -337,6 +337,9 @@ export function App() {
             {tab === "questions" && (
               <QuestionsPanel
                 overview={overview}
+                datasetName={
+                  (current?.name ?? "") + (confirmation ? `（確定ルール 第${confirmation.proposalId}版）` : "")
+                }
                 records={records ?? []}
                 history={history}
                 onAnswer={(id, optionId) => void submitAnswer(id, optionId)}

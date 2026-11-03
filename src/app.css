@@ -1260,3 +1260,53 @@ button.option:hover:not(:disabled) {
 .final-year td {
   white-space: nowrap;
 }
+
+/* 確認事項の会議資料。印刷するときは資料だけを出す */
+.meeting-sheet h2 {
+  margin-top: 8px;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.sheet-item {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.sheet-decision {
+  margin-top: 12px;
+  color: var(--muted);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .meeting-sheet,
+  .meeting-sheet * {
+    visibility: visible;
+  }
+
+  .meeting-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .meeting-sheet .sheet-actions {
+    display: none;
+  }
+
+  .sheet-item {
+    break-inside: avoid;
+  }
+}

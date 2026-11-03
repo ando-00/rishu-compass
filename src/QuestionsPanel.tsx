@@ -1,10 +1,14 @@
+import { useState } from "react";
 import type { AnswerHistoryEntry, AnswerRecord, Impact, JudgmentStatus, OverviewResponse } from "../shared/api";
+import { buildMeetingSheet } from "./meetingSheet";
+import { MeetingSheetView } from "./MeetingSheetView";
 import { JudgmentBadge } from "./StatusBadge";
 
 const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
 
 type Props = {
   overview: OverviewResponse;
+  datasetName: string;
   records: AnswerRecord[];
   history: AnswerHistoryEntry[];
   onAnswer: (ambiguityId: string, optionId: string) => void;
@@ -150,12 +154,29 @@ function QuestionHead({ impact, answered }: { impact: Impact; answered?: boolean
   );
 }
 
-export function QuestionsPanel({ overview, records, history, onAnswer, onClear }: Props) {
+export function QuestionsPanel({ overview, datasetName, records, history, onAnswer, onClear }: Props) {
   const { unanswered, answered } = overview;
+  const [sheetOpen, setSheetOpen] = useState(false);
+  if (sheetOpen) {
+    return (
+      <section>
+        <MeetingSheetView
+          sheet={buildMeetingSheet(overview)}
+          datasetName={datasetName}
+          onClose={() => setSheetOpen(false)}
+        />
+      </section>
+    );
+  }
   return (
     <section>
       <div className="section-head">
         <h2>未回答の確認事項（{unanswered.length}件）</h2>
+        {unanswered.length > 0 && (
+          <button type="button" className="secondary" onClick={() => setSheetOpen(true)}>
+            会議資料を開く
+          </button>
+        )}
       </div>
       <p className="lead">
         要項の読み方が分かれる箇所です。読み方ごとの人数を見比べて、大学としての読み方を選んでください。回答はすぐに全学生の判定に反映され、あとから取り消せます。
