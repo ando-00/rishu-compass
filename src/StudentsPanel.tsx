@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import type {
   Answers,
+  CoursesResponse,
   Judgment,
   OverviewResponse,
   PlanCheckResponse,
@@ -8,7 +9,7 @@ import type {
   StudentResponse,
 } from "../shared/api";
 import { AdvisorPanel } from "./AdvisorPanel";
-import { checkPlan, fetchStudent } from "./api";
+import { checkPlan, fetchCourses, fetchStudent } from "./api";
 import { JudgmentBadge, PlanBadge, StateBadge } from "./StatusBadge";
 
 const TERMS = ["前期", "後期", "通年"] as const;
@@ -38,10 +39,41 @@ function credits({ required, actual, enrolled }: Judgment) {
   return `${actual} / ${required}単位${inProgress}`;
 }
 
+type CourseOption = CoursesResponse["courses"][number];
+
+// 学期の欄に入れられる科目。開講学期の指定がない科目は、どの学期にも入れられる（engine の NOT_OFFERED と同じ扱い）
+function candidatesFor(courses: CourseOption[], term: (typeof TERMS)[number]) {
+  return courses
+    .filter(({ offeredIn }) => offeredIn === undefined || offeredIn === term)
+    .sort((a, b) => a.assignedYear - b.assignedYear || a.name.localeCompare(b.name, "ja"));
+}
+
 function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studentId: string; answers: Answers }) {
   const [lines, setLines] = useState<Record<string, string>>({});
   const [result, setResult] = useState<PlanCheckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+
+  // 候補は選びやすくするためだけに使う。検査は入力された科目名で engine が行う
+  useEffect(() => {
+    let active = true;
+    fetchCourses(datasetId)
+      .then((result) => active && setCourses(result.courses))
+      .catch(() => active && setCourses([]));
+    return () => {
+      active = false;
+    };
+  }, [datasetId]);
+
+  function addCourse(term: string, name: string) {
+    if (!name) return;
+    const current = (lines[term] ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (current.includes(name)) return;
+    setLines({ ...lines, [term]: [...current, name].join("\n") });
+  }
 
   useEffect(() => {
     setLines({});
@@ -74,18 +106,34 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
     <div>
       <h3>履修案の検査</h3>
       <p className="muted">
-        科目名を1行に1つ入力します。「履修案を作る」と同じ前提で検査します。後期の学生は翌年度の案として、履修中の科目を修得した前提で見ます。
+        科目名を1行に1つ入力するか、学期ごとの候補から選びます。「履修案を作る」と同じ前提で検査します。後期の学生は翌年度の案として、履修中の科目を修得した前提で見ます。
       </p>
       <div className="plan-grid">
         {TERMS.map((term) => (
-          <label key={term}>
-            {term}
-            <textarea
-              rows={5}
-              value={lines[term] ?? ""}
-              onChange={(event) => setLines({ ...lines, [term]: event.target.value })}
-            />
-          </label>
+          <div key={term} className="plan-term">
+            <label>
+              {term}
+              <textarea
+                rows={5}
+                value={lines[term] ?? ""}
+                onChange={(event) => setLines({ ...lines, [term]: event.target.value })}
+              />
+            </label>
+            {courses.length > 0 && (
+              <select
+                aria-label={`${term}に科目を足す`}
+                value=""
+                onChange={(event) => addCourse(term, event.target.value)}
+              >
+                <option value="">候補から足す（{candidatesFor(courses, term).length}科目）</option>
+                {candidatesFor(courses, term).map((course) => (
+                  <option key={course.name} value={course.name}>
+                    {course.name}（{course.assignedYear}年次・{course.credits}単位）
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
         ))}
       </div>
       <div className="actions">

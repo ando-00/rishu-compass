@@ -154,6 +154,18 @@ export const datasetsResponseSchema = z.object({
   ),
 });
 
+// 履修案の検査で、科目を候補から選ぶための科目データ。検査は科目名だけで行う
+export const coursesResponseSchema = z.object({
+  courses: z.array(
+    z.object({
+      name: z.string(),
+      credits: z.number(),
+      assignedYear: z.number(),
+      offeredIn: z.enum(["前期", "後期", "通年"]).optional(),
+    }),
+  ),
+});
+
 export const overviewResponseSchema = z.object({
   summary: z.object({
     total: z.number(),
@@ -335,6 +347,7 @@ export type Judgment = z.infer<typeof judgmentSchema>;
 export type Impact = z.infer<typeof impactSchema>;
 export type Outreach = z.infer<typeof outreachSchema>;
 export type DatasetsResponse = z.infer<typeof datasetsResponseSchema>;
+export type CoursesResponse = z.infer<typeof coursesResponseSchema>;
 export type OverviewResponse = z.infer<typeof overviewResponseSchema>;
 export type StudentResponse = z.infer<typeof studentResponseSchema>;
 export type PlanCheckResponse = z.infer<typeof planCheckResponseSchema>;

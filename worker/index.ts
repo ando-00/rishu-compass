@@ -19,6 +19,7 @@ import {
   extractRequestSchema,
   planCheckRequestSchema,
   type Answers,
+  type CoursesResponse,
   type DatasetsResponse,
   type OverviewResponse,
   type PlanCheckResponse,
@@ -186,6 +187,20 @@ app.post("/api/datasets/:id/students/:studentId", async (c) => {
     records: student.records,
   };
   return c.json(response);
+});
+
+app.get("/api/datasets/:id/courses", async (c) => {
+  const dataset = await findDataset(c);
+  if (!dataset) return c.json({ error: "データがありません" }, 404);
+  const body: CoursesResponse = {
+    courses: dataset.courses.map(({ name, credits, assignedYear, offeredIn }) => ({
+      name,
+      credits,
+      assignedYear,
+      ...(offeredIn ? { offeredIn } : {}),
+    })),
+  };
+  return c.json(body);
 });
 
 app.post("/api/datasets/:id/plan-check", async (c) => {

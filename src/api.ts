@@ -3,6 +3,7 @@ import { savedAdviceSchema } from "../shared/advise";
 import {
   answerRecordsResponseSchema,
   confirmResponseSchema,
+  coursesResponseSchema,
   datasetsResponseSchema,
   latestProposalResponseSchema,
   overviewResponseSchema,
@@ -34,6 +35,10 @@ function post(path: string, body: unknown) {
 
 export async function fetchDatasets() {
   return readJson(await fetch("/api/datasets"), datasetsResponseSchema);
+}
+
+export async function fetchCourses(datasetId: string) {
+  return readJson(await fetch(`/api/datasets/${datasetId}/courses`), coursesResponseSchema);
 }
 
 export async function fetchLatestProposal(sourceId: string) {

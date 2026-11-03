@@ -1310,3 +1310,14 @@ button.option:hover:not(:disabled) {
     break-inside: avoid;
   }
 }
+
+/* 履修案の検査の学期の欄。下に候補の選択を置く */
+.plan-term {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plan-term select {
+  width: 100%;
+}
