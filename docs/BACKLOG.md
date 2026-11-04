@@ -96,7 +96,7 @@
 | ID | 決めること | 補足 |
 |---|---|---|
 | H1 | 評価用の10名の正解を書く | `data/fictional/sakuradai/gold-eval.json`。書いたら `npm run eval:score` |
-| H7 | 名前の一覧 `~/.claude/rishu-compass-denylist.txt` を作る | ないと名前の検査は毎回「未検証」になる |
+| H7 | 名前の一覧 `~/.claude/rishu-compass-denylist.txt` を作る | 2026-11-04 に作った（勤務先の大学名の表記の違い、略称、キャンパス名、個人のメール。11語）。N1、N2 は PASS。個人名を足すかは作り手が決める |
 
 ### H14 の案（棚卸しの結果）
 
