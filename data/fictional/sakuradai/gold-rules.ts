@@ -2,8 +2,8 @@ import type { RuleSet } from "../../../engine/rules";
 
 // 値、根拠の文、曖昧箇所は作り手がセッションの質問に答えて決め、Claude が清書した。経緯は docs/DATA.md にある。
 const REQUIRED_CLAUSE = "第2条 必修の小区分は、指定された科目をすべて修得しなければならない。";
-const OVERFLOW_CLAUSE =
-  "第3条 必修以外の小区分で最低単位を超えて修得した単位は、自由の区分に算入する。";
+const GRADUATION_CLAUSE =
+  "第1条 卒業するには、4年以上在学し、次の表に定める区分ごとの最低単位を満たしたうえで、合計124単位以上を修得しなければならない。";
 const FREE_CLAUSE = [
   "第4条 自由の区分に算入できる単位は、合計20単位までとする。これを超えた単位は、卒業に必要な単位に算入しない。",
   "第5条 他学科および他学部の科目は、自由の区分に限り、合計10単位まで算入できる。この10単位は第4条の20単位に含む。",
@@ -29,8 +29,7 @@ export const goldRules: RuleSet = {
   graduation: {
     id: "graduation",
     clause: "第1条",
-    sourceQuote:
-      "第1条 卒業するには、4年以上在学し、次の表に定める区分ごとの最低単位を満たしたうえで、合計124単位以上を修得しなければならない。",
+    sourceQuote: GRADUATION_CLAUSE,
     minYears: 4,
     totalCredits: 124,
   },
@@ -47,8 +46,9 @@ export const goldRules: RuleSet = {
     },
     {
       id: "basic-selective",
-      clause: "第3条",
-      sourceQuote: OVERFLOW_CLAUSE,
+      // 根拠は第1条（H26。2026-11-05 作り手が選択。第3条の超過の扱いは overflowTo で持つ）
+      clause: "第1条",
+      sourceQuote: GRADUATION_CLAUSE,
       name: "基礎教育 選択必修",
       groups: ["基礎教育/選択必修"],
       minCredits: 6,
@@ -57,8 +57,9 @@ export const goldRules: RuleSet = {
     },
     {
       id: "basic-elective",
-      clause: "第3条",
-      sourceQuote: OVERFLOW_CLAUSE,
+      // 根拠は第1条（H26。2026-11-05 作り手が選択。第3条の超過の扱いは overflowTo で持つ）
+      clause: "第1条",
+      sourceQuote: GRADUATION_CLAUSE,
       name: "基礎教育 選択",
       groups: ["基礎教育/選択"],
       minCredits: 10,
@@ -77,8 +78,9 @@ export const goldRules: RuleSet = {
     },
     {
       id: "major-selective",
-      clause: "第3条",
-      sourceQuote: OVERFLOW_CLAUSE,
+      // 根拠は第1条（H26。2026-11-05 作り手が選択。第3条の超過の扱いは overflowTo で持つ）
+      clause: "第1条",
+      sourceQuote: GRADUATION_CLAUSE,
       name: "専門教育 選択必修",
       groups: ["専門教育/選択必修"],
       minCredits: 16,
@@ -87,8 +89,9 @@ export const goldRules: RuleSet = {
     },
     {
       id: "major-elective",
-      clause: "第3条",
-      sourceQuote: OVERFLOW_CLAUSE,
+      // 根拠は第1条（H26。2026-11-05 作り手が選択。第3条の超過の扱いは overflowTo で持つ）
+      clause: "第1条",
+      sourceQuote: GRADUATION_CLAUSE,
       name: "専門教育 選択",
       groups: ["専門教育/選択"],
       minCredits: 36,
