@@ -19,17 +19,28 @@ import {
   type Respondent,
 } from "../shared/api";
 
+// 通信の失敗を、英語の文のまま画面に出さない（追加の監査 R-14）
+async function send(path: string, init?: RequestInit) {
+  try {
+    return await fetch(path, init);
+  } catch {
+    throw new Error("サーバーに接続できません。起動しているか確かめてください。");
+  }
+}
+
 async function readJson<T extends z.ZodType>(res: Response, schema: T): Promise<z.infer<T>> {
   const body: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const { error, problems } = (body ?? {}) as { error?: string; problems?: string[] };
     throw new Error([error ?? `通信に失敗しました（${res.status}）`, ...(problems ?? [])].join("\n"));
   }
-  return schema.parse(body);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) throw new Error("サーバーの応答の形が想定と違います。");
+  return parsed.data;
 }
 
 function post(path: string, body: unknown) {
-  return fetch(path, {
+  return send(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -37,15 +48,15 @@ function post(path: string, body: unknown) {
 }
 
 export async function fetchDatasets() {
-  return readJson(await fetch("/api/datasets"), datasetsResponseSchema);
+  return readJson(await send("/api/datasets"), datasetsResponseSchema);
 }
 
 export async function fetchCourses(datasetId: string) {
-  return readJson(await fetch(`/api/datasets/${datasetId}/courses`), coursesResponseSchema);
+  return readJson(await send(`/api/datasets/${datasetId}/courses`), coursesResponseSchema);
 }
 
 export async function fetchLatestProposal(sourceId: string) {
-  const res = await fetch(`/api/sources/${sourceId}/proposals/latest`);
+  const res = await send(`/api/sources/${sourceId}/proposals/latest`);
   return readJson(res, latestProposalResponseSchema);
 }
 
@@ -63,11 +74,11 @@ export async function withdrawProposal(proposalId: number, respondent: Responden
 }
 
 export async function fetchVersionCompare(proposalId: number) {
-  return readJson(await fetch(`/api/proposals/${proposalId}/compare`), versionCompareResponseSchema);
+  return readJson(await send(`/api/proposals/${proposalId}/compare`), versionCompareResponseSchema);
 }
 
 export async function fetchSources() {
-  return readJson(await fetch("/api/sources"), sourcesResponseSchema);
+  return readJson(await send("/api/sources"), sourcesResponseSchema);
 }
 
 export async function extractProposal(sourceId: string, handbook: string) {
@@ -81,7 +92,7 @@ export async function loadRecordedProposal(sourceId: string) {
 }
 
 export async function fetchAnswerRecords(datasetId: string) {
-  return readJson(await fetch(`/api/datasets/${datasetId}/answers`), answerRecordsResponseSchema);
+  return readJson(await send(`/api/datasets/${datasetId}/answers`), answerRecordsResponseSchema);
 }
 
 export async function saveAnswer(

@@ -20,6 +20,8 @@ type Props = {
   previousAnswers: PreviousAnswer[];
   onAnswer: (ambiguityId: string, optionId: string) => void;
   onClear: (ambiguityId: string) => void;
+  // 回答の記録を待っている間は、次の回答と取り消しを押せない（追加の監査 R-12）
+  saving: boolean;
 };
 
 type ImpactProps = {
@@ -27,10 +29,11 @@ type ImpactProps = {
   // 回答済みの読み方。回答できる画面では onAnswer を渡す
   chosen?: string | null;
   onAnswer?: (optionId: string) => void;
+  saving?: boolean;
 };
 
 // 読み方を行、判定を列にした表で人数を見比べる。読み方によって人数が違う欄を太字にする
-export function ImpactCounts({ impact, chosen, onAnswer }: ImpactProps) {
+export function ImpactCounts({ impact, chosen, onAnswer, saving = false }: ImpactProps) {
   const statuses = impact.computable ? countedStatuses(impact.options) : [];
   const differs = (status: JudgmentStatus) =>
     new Set(impact.options.map((option) => option.counts?.[status] ?? 0)).size > 1;
@@ -77,6 +80,7 @@ export function ImpactCounts({ impact, chosen, onAnswer }: ImpactProps) {
                       type="button"
                       className="secondary"
                       aria-label={`「${option.label}」で回答する`}
+                      disabled={saving}
                       onClick={() => onAnswer(option.id)}
                     >
                       この読み方で回答
@@ -188,12 +192,14 @@ function UnreflectedNote({ impact }: { impact: Impact }) {
   );
 }
 
-function QuestionHead({ impact, answered }: { impact: Impact; answered?: boolean }) {
+function QuestionHead({ impact, answered, unreflected }: { impact: Impact; answered?: boolean; unreflected?: boolean }) {
   return (
     <>
       <p className="clause">
         {impact.clause}
-        {answered && <span className="badge badge-good">回答済み</span>}
+        {answered && !unreflected && <span className="badge badge-good">回答済み</span>}
+        {/* 判定は職員確認のままなので、緑にしない（追加の監査 R-14） */}
+        {answered && unreflected && <span className="badge badge-warn">回答済み（判定に未反映）</span>}
       </p>
       <h3>{impact.question}</h3>
       <blockquote>{impact.sourceQuote}</blockquote>
@@ -201,7 +207,7 @@ function QuestionHead({ impact, answered }: { impact: Impact; answered?: boolean
   );
 }
 
-export function QuestionsPanel({ overview, datasetName, records, history, previousAnswers, onAnswer, onClear }: Props) {
+export function QuestionsPanel({ overview, datasetName, records, history, previousAnswers, onAnswer, onClear, saving }: Props) {
   const { unanswered, answered } = overview;
   const [sheetOpen, setSheetOpen] = useState(false);
   if (sheetOpen) {
@@ -237,7 +243,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, previo
         <article className="card" key={impact.ambiguityId}>
           <QuestionHead impact={impact} />
           <PreviousAnswers impact={impact} previousAnswers={previousAnswers} />
-          <ImpactCounts impact={impact} onAnswer={(optionId) => onAnswer(impact.ambiguityId, optionId)} />
+          <ImpactCounts impact={impact} saving={saving} onAnswer={(optionId) => onAnswer(impact.ambiguityId, optionId)} />
           <UnreflectedNote impact={impact} />
           <div className="links-row">
             <ChangeList impact={impact} />
@@ -256,7 +262,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, previo
         const option = impact.options.find((o) => o.id === impact.optionId);
         return (
           <article className="card" key={impact.ambiguityId}>
-            <QuestionHead impact={impact} answered />
+            <QuestionHead impact={impact} answered unreflected={option?.reflected === false} />
             <div className="actions">
               <span>
                 回答: <strong>{option?.label}</strong>
@@ -266,7 +272,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, previo
                   </span>
                 )}
               </span>
-              <button type="button" className="secondary" onClick={() => onClear(impact.ambiguityId)}>
+              <button type="button" className="secondary" disabled={saving} onClick={() => onClear(impact.ambiguityId)}>
                 回答を取り消す
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   respondentSchema,
   type AnswerHistoryEntry,
@@ -67,6 +67,12 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [answerError, setAnswerError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
+  // 応答が届いたときに、対象が変わっていないかを見る（追加の監査 R-12）
+  const latestDataset = useRef(datasetId);
+  latestDataset.current = datasetId;
   const answers = useMemo(
     () => Object.fromEntries((records ?? []).map((r) => [r.ambiguityId, r.optionId])),
     [records],
@@ -126,28 +132,39 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [datasetId, records, answers]);
+  }, [datasetId, records, answers, reloadCount]);
 
   // 記録できた回答だけを判定に使う。
   async function submitAnswer(ambiguityId: string, optionId: string | null) {
-    if (!datasetId) return;
+    if (!datasetId || saving) return;
+    const requested = datasetId;
+    setSaving(true);
     try {
-      const result = await saveAnswer(datasetId, { ambiguityId, optionId, respondent });
+      const result = await saveAnswer(requested, { ambiguityId, optionId, respondent });
+      // 記録は前の対象に入った。今の対象の画面には反映しない
+      if (latestDataset.current !== requested) return;
       setPrevious(overview);
       setRecords(result.records);
       setHistory(result.history);
       setPreviousAnswers(result.previous);
       setAnswerError(null);
     } catch (cause) {
-      setAnswerError(cause instanceof Error ? cause.message : "回答を記録できませんでした。");
+      if (latestDataset.current === requested) {
+        setAnswerError(cause instanceof Error ? cause.message : "回答を記録できませんでした。");
+      }
+    } finally {
+      setSaving(false);
     }
   }
 
   function changeDataset(id: string) {
     // 同じ対象では取り直しが走らないので、読み込み済みの内容を消さない。
     if (id === datasetId) return;
+    latestDataset.current = id;
     setDatasetId(id);
     setRecords(null);
+    setHistory([]);
+    setPreviousAnswers([]);
     setAnswerError(null);
     setOverview(null);
     setPrevious(null);
@@ -171,12 +188,18 @@ export function App() {
   }
 
   async function withdraw(proposalId: number) {
+    if (withdrawing) return;
+    setWithdrawing(true);
     try {
       await withdrawProposal(proposalId, respondent);
-      const [first] = await reloadDatasets();
-      if (first) changeDataset(first.id);
+      const list = await reloadDatasets();
+      // 取り消したあとも同じ大学を開く（一覧の先頭の別の大学へ移らない）
+      const next = list.find(({ sourceId }) => sourceId === current?.sourceId) ?? list[0];
+      if (next) changeDataset(next.id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "確定を取り消せませんでした。");
+    } finally {
+      setWithdrawing(false);
     }
   }
 
@@ -259,7 +282,7 @@ export function App() {
                 `${confirmation.respondent}が${new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定しました。`}
             </span>
             {confirmation && (
-              <button type="button" className="secondary" onClick={() => void withdraw(confirmation.proposalId)}>
+              <button type="button" className="secondary" disabled={withdrawing} onClick={() => void withdraw(confirmation.proposalId)}>
                 確定を取り消す
               </button>
             )}
@@ -267,6 +290,17 @@ export function App() {
         )}
   
         {error && <pre role="alert" className="error">{error}</pre>}
+        {/* 判定を読めないときも、取り直しと要項の取り込みへ進める（追加の監査 R-13） */}
+        {error && !overview && datasetId && (
+          <div className="actions">
+            <button type="button" className="secondary" onClick={() => setReloadCount((count) => count + 1)}>
+              もう一度読み込む
+            </button>
+            <button type="button" className="secondary" onClick={() => setTab("import")}>
+              要項の取り込みを開く
+            </button>
+          </div>
+        )}
         {answerError && <pre role="alert" className="error">{answerError}</pre>}
   
         {overview && (
@@ -345,6 +379,7 @@ export function App() {
                 previousAnswers={previousAnswers}
                 onAnswer={(id, optionId) => void submitAnswer(id, optionId)}
                 onClear={(id) => void submitAnswer(id, null)}
+                saving={saving}
               />
             )}
             {tab === "outreach" && (

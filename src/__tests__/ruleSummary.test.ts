@@ -110,6 +110,47 @@ describe("summarizeRules", () => {
     expect(summary).not.toContain("6単位");
   });
 
+  // 第3回の監査 A3-9。値が偽や空でも、確認中であることを黙って省かない
+  it.each([
+    ["gate", "retryAfterMet", "後からの再判定は確認中", "後から満たせば認める"],
+    ["gate", "requiredMayBeEnrolled", "履修中でも可は確認中", "（履修中でも可、"],
+    ["gate", "checkAtEndOfYear", "判定の年次は確認中", "2年次の終わりに"],
+    ["common", "requireAll", "すべて修得は確認中", "指定の科目をすべて修得"],
+    ["common", "maxCredits", "算入の上限は確認中", "算入は"],
+    ["common", "overflowTo", "超過分の算入先は確認中", "超過分は"],
+    ["load", "maxPerYear", "年間の上限は確認中", "年間"  + "0"],
+  ])("%s の %s を確認中と示す", (ruleId, field, shown, hidden) => {
+    const summary = summaryOf(withPatch(ruleId, field), ruleId);
+    expect(summary).toContain(shown);
+    expect(summary).not.toContain(hidden);
+  });
+
+  it("履修の基本の確認中は、どの項目かを示す", () => {
+    const enrollment = { ...base, id: "enroll", forbidBeforeAssignedYear: true, forbidRetakeOfPassed: true };
+    const rules = {
+      ...RULES,
+      enrollment,
+      ambiguities: [
+        {
+          ...base,
+          id: "amb",
+          question: "どれですか。",
+          options: [
+            {
+              id: "a",
+              label: "甲",
+              patches: [
+                { ruleId: "enroll", field: "forbidBeforeAssignedYear", value: true },
+                { ruleId: "enroll", field: "forbidRetakeOfPassed", value: true },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(summaryOf(rules, "enroll")).toBe("配当年次より前の履修は確認中、修得済みの再履修は確認中");
+  });
+
   it("差分が書き換えるルールを曖昧箇所ありにする", () => {
     const row = summarizeRules(withPatch("gate", "creditBasis")).find(({ id }) => id === "gate");
     expect(row?.review).toBe("ambiguous");

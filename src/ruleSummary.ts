@@ -64,6 +64,9 @@ export function summarizeRules(rules: RuleSet): RuleRow[] {
   // 読み方が決まっていない項目の値は仮のものなので、表示しない。
   const shown = (rule: { id: string }, field: string, text: string) =>
     patched.has(`${rule.id}.${field}`) ? PENDING : text;
+  // 値が偽や空の項目も、確認中なら黙って省かない（第3回の監査 A3-9）
+  const pending = (rule: { id: string }, field: string) =>
+    patched.has(`${rule.id}.${field}`) ? `${fieldLabel(field)}は${PENDING}` : null;
   const linked = (rule: RuleHead) =>
     Boolean(rule.ambiguityIds?.length) || [...patched].some((key) => key.startsWith(`${rule.id}.`));
 
@@ -79,9 +82,9 @@ export function summarizeRules(rules: RuleSet): RuleRow[] {
     const target = rules.categories.find(({ id }) => id === category.overflowTo);
     const parts = [
       `${shown(category, "minCredits", `${category.minCredits}単位`)}以上`,
-      category.requireAll && "指定の科目をすべて修得",
-      category.maxCredits != null && `算入は${shown(category, "maxCredits", `${category.maxCredits}単位`)}まで`,
-      target && `超過分は${shown(category, "overflowTo", target.name)}へ`,
+      pending(category, "requireAll") ?? (category.requireAll && "指定の科目をすべて修得"),
+      pending(category, "maxCredits") ?? (category.maxCredits != null && `算入は${category.maxCredits}単位まで`),
+      pending(category, "overflowTo") ?? (target && `超過分は${target.name}へ`),
       ...(category.subLimits ?? []).map(({ groups, maxCredits }) => `${groups.join("、")}は${maxCredits}単位まで`),
     ].filter(Boolean);
     return `区分 ${category.name}: ${parts.join("、")}`;
@@ -98,15 +101,16 @@ export function summarizeRules(rules: RuleSet): RuleRow[] {
           ? `${credits}（単位の数え方は${PENDING}）`
           : `${basis}で${credits}`),
       gate.requiredCourses.length > 0 && `${gate.requiredCourses.join("、")}を修得`,
-      gate.requiredMayBeEnrolled && "履修中でも可",
-      gate.retryAfterMet && "後から満たせば認める",
+      pending(gate, "requiredMayBeEnrolled") ?? (gate.requiredMayBeEnrolled && "履修中でも可"),
+      pending(gate, "retryAfterMet") ?? (gate.retryAfterMet && "後から満たせば認める"),
     ].filter(Boolean);
-    return `${target}: ${gate.checkAtEndOfYear}年次の終わりに ${parts.join("、")}`;
+    const when = pending(gate, "checkAtEndOfYear") ?? `${gate.checkAtEndOfYear}年次の終わりに`;
+    return `${target}: ${when} ${parts.join("、")}`;
   };
 
   const loadText = (limit: RuleSet["loadLimits"][number]) => {
     const parts = [
-      limit.maxPerYear !== undefined && `年間${shown(limit, "maxPerYear", `${limit.maxPerYear}単位`)}`,
+      pending(limit, "maxPerYear") ?? (limit.maxPerYear !== undefined && `年間${limit.maxPerYear}単位`),
       `学期${shown(limit, "maxPerTerm", `${limit.maxPerTerm}単位`)}`,
       shown(limit, "retakeExclusion", RETAKE_LABELS[limit.retakeExclusion]),
     ].filter(Boolean);
@@ -139,8 +143,8 @@ export function summarizeRules(rules: RuleSet): RuleRow[] {
           row(
             enrollment,
             [
-              shown(enrollment, "forbidBeforeAssignedYear", enrollment.forbidBeforeAssignedYear ? "配当年次より前の履修を禁止" : ""),
-              shown(enrollment, "forbidRetakeOfPassed", enrollment.forbidRetakeOfPassed ? "修得済みの科目の再履修を禁止" : ""),
+              pending(enrollment, "forbidBeforeAssignedYear") ?? (enrollment.forbidBeforeAssignedYear ? "配当年次より前の履修を禁止" : ""),
+              pending(enrollment, "forbidRetakeOfPassed") ?? (enrollment.forbidRetakeOfPassed ? "修得済みの科目の再履修を禁止" : ""),
             ]
               .filter(Boolean)
               .join("、") || "履修の基本: 禁止事項なし",

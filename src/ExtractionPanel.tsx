@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Ambiguity } from "../engine/rules";
 import {
   MAX_HANDBOOK_LENGTH,
@@ -136,6 +136,9 @@ function VersionDiff({ proposalId }: { proposalId: number | null }) {
   const [compare, setCompare] = useState<VersionCompareResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    // 別の案に替わったら、前の案の比較を残さない（追加の監査 R-14）
+    setCompare(null);
+    setError(null);
     if (proposalId === null) return;
     let active = true;
     fetchVersionCompare(proposalId)
@@ -294,13 +297,18 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
     setError(null);
     try {
       const { datasetId } = await confirmProposal(proposalId, { respondent, acceptedRuleIds: accepted });
+      // 確定の一覧を読み直すまで押せないままにする。二重に確定しない（追加の監査 R-14）
       onConfirmed(datasetId);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "確定できませんでした。");
-    } finally {
       setSaving(false);
     }
   }
+
+  // 確定や取り消しが一覧に反映されたら、また押せるようにする
+  useEffect(() => {
+    setSaving(false);
+  }, [confirmedDatasetId]);
 
   if (confirmedDatasetId) {
     return (
@@ -391,7 +399,7 @@ function ProposalStats({ proposal, rows }: { proposal: ProposalResponse; rows: R
       <Stat
         label="検査用ケースの通過"
         value={`${passed}/${caseResults.length}件`}
-        tone={failed > 0 ? "bad" : passed === caseResults.length ? "good" : "warn"}
+        tone={failed > 0 ? "bad" : caseResults.length === 0 ? "neutral" : passed === caseResults.length ? "good" : "warn"}
       />
       <Stat
         label="職員に確認する箇所"
@@ -496,6 +504,9 @@ export function ExtractionPanel({ datasets, sourceId, respondent, onConfirmed }:
   const [running, setRunning] = useState(false);
   const [proposal, setProposal] = useState<ProposalResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingRecord, setLoadingRecord] = useState(false);
+  // 大学を変えたあとに届いた案を、今の大学の案として見せない。保存はされているので、戻れば開ける（追加の監査 R-12）
+  const latestRequest = useRef(0);
 
   useEffect(() => {
     fetchSources()
@@ -507,6 +518,10 @@ export function ExtractionPanel({ datasets, sourceId, respondent, onConfirmed }:
 
   // 費用をかけて作った案を、画面を開き直しても確認できるようにする。
   useEffect(() => {
+    latestRequest.current += 1;
+    setRunning(false);
+    setLoadingRecord(false);
+    setError(null);
     setProposal(null);
     setHandbook("");
     if (!sourceId) return;
@@ -525,25 +540,32 @@ export function ExtractionPanel({ datasets, sourceId, respondent, onConfirmed }:
 
   async function run() {
     if (!sourceId) return;
+    const request = ++latestRequest.current;
     setRunning(true);
     setError(null);
     setProposal(null);
     try {
-      setProposal(await extractProposal(sourceId, handbook));
+      const created = await extractProposal(sourceId, handbook);
+      if (request === latestRequest.current) setProposal(created);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "変換に失敗しました。");
+      if (request === latestRequest.current) setError(cause instanceof Error ? cause.message : "変換に失敗しました。");
     } finally {
-      setRunning(false);
+      if (request === latestRequest.current) setRunning(false);
     }
   }
 
   async function loadRecorded() {
     if (!sourceId) return;
+    const request = ++latestRequest.current;
+    setLoadingRecord(true);
     setError(null);
     try {
-      setProposal(await loadRecordedProposal(sourceId));
+      const loaded = await loadRecordedProposal(sourceId);
+      if (request === latestRequest.current) setProposal(loaded);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "記録を読み込めませんでした。");
+      if (request === latestRequest.current) setError(cause instanceof Error ? cause.message : "記録を読み込めませんでした。");
+    } finally {
+      if (request === latestRequest.current) setLoadingRecord(false);
     }
   }
 
@@ -594,7 +616,7 @@ export function ExtractionPanel({ datasets, sourceId, respondent, onConfirmed }:
             ルール案を作る
           </button>
           {selected?.recorded && (
-            <button type="button" className="secondary" disabled={running} onClick={() => void loadRecorded()}>
+            <button type="button" className="secondary" disabled={running || loadingRecord} onClick={() => void loadRecorded()}>
               記録を読み込む
             </button>
           )}
