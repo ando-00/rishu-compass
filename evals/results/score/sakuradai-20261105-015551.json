@@ -1,0 +1,63 @@
+{
+  "commit": "2463122",
+  "advice": {
+    "file": "sakuradai-20261102-101326.json",
+    "commit": "4ee8780",
+    "model": "claude-opus-5-5",
+    "option": "countable"
+  },
+  "checks": {
+    "attempted": 8,
+    "firstPassed": 8,
+    "finalPassed": 8
+  },
+  "rechecked": {
+    "plans": 8,
+    "passed": 8
+  },
+  "gold": "あり",
+  "credits": {
+    "matched": 61,
+    "total": 63,
+    "differences": [
+      {
+        "studentId": "E0005",
+        "category": "専門教育 必修",
+        "gold": 14,
+        "actual": 18
+      },
+      {
+        "studentId": "E0009",
+        "category": "自由",
+        "gold": 20,
+        "actual": 10
+      }
+    ]
+  },
+  "dangerous": [
+    {
+      "studentId": "E0003",
+      "kind": "false_delay",
+      "detail": "卒業要件の判定は delay_risk"
+    },
+    {
+      "studentId": "E0005",
+      "kind": "false_delay",
+      "detail": "卒業要件の判定は delay_risk"
+    },
+    {
+      "studentId": "E0008",
+      "kind": "not_escalated",
+      "detail": "職員に回すべき学生に案を出した"
+    },
+    {
+      "studentId": "E0009",
+      "kind": "false_delay",
+      "detail": "卒業要件の判定は delay_risk"
+    }
+  ],
+  "overEscalated": [
+    "E0001"
+  ],
+  "adviceMissing": []
+}

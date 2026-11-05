@@ -1,0 +1,111 @@
+{
+  "answers": {
+    "seminar-credit-basis": "countable"
+  },
+  "students": {
+    "E0001": {
+      "shortages": {
+        "専門教育 必修": 4,
+        "自由": 6
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0002": {
+      "shortages": {
+        "専門教育 必修": 16,
+        "専門教育 選択必修": 6,
+        "専門教育 選択": 26,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0003": {
+      "shortages": {
+        "専門教育 必修": 4,
+        "専門教育 選択必修": 2,
+        "自由": 2
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0004": {
+      "shortages": {
+        "専門教育 必修": 12,
+        "専門教育 選択": 6,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0005": {
+      "shortages": {
+        "専門教育 必修": 14,
+        "専門教育 選択必修": 6,
+        "専門教育 選択": 26,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0006": {
+      "shortages": {
+        "専門教育 必修": 10,
+        "専門教育 選択": 28,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0007": {
+      "shortages": {
+        "専門教育 必修": 16,
+        "専門教育 選択必修": 6,
+        "専門教育 選択": 36,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0008": {
+      "shortages": {
+        "専門教育 必修": 8,
+        "専門教育 選択必修": 2,
+        "専門教育 選択": 24,
+        "自由": 20
+      },
+      "delay": true,
+      "escalate": true,
+      "points": []
+    },
+    "E0009": {
+      "shortages": {
+        "専門教育 必修": 10,
+        "専門教育 選択必修": 6,
+        "専門教育 選択": 36,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": false,
+      "points": []
+    },
+    "E0010": {
+      "shortages": {
+        "専門教育 必修": 10,
+        "専門教育 選択": 6,
+        "自由": 20
+      },
+      "delay": false,
+      "escalate": true,
+      "points": []
+    }
+  }
+}
