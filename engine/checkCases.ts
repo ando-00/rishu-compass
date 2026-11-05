@@ -22,6 +22,7 @@ export type CaseResult = {
 const STATUS_LABELS: Record<JudgmentStatus, string> = {
   satisfied: "充足",
   expected: "見込み",
+  delayed: "遅れ",
   short: "不足",
   delay_risk: "延期見込み",
   needs_staff: "職員確認",

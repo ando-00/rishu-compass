@@ -151,7 +151,8 @@ describe("履修条件と進級条件の判定", () => {
       studentYear: 3,
       records: [...passed(BASIC, 2), ...passed(numberedNames("専門", 13), 3)],
     });
-    expect(judgment(student, "gate-seminar").status).toBe("expected");
+    // 判定の時点に満たさず次の年度から認めるので「遅れ」（H29）
+    expect(judgment(student, "gate-seminar").status).toBe("delayed");
   });
 
   it("後から条件を満たせば次の年度から認める", () => {
@@ -166,13 +167,14 @@ describe("履修条件と進級条件の判定", () => {
     });
   });
 
-  it("判定時点を過ぎて履修中を含めて満たすなら、見込みで次の年度から認める", () => {
+  // H29（2026-11-05 作り手の決定）: 判定の時点に満たさず次の年度から認めるものは「見込み」と分けて「遅れ」にする
+  it("判定時点を過ぎて履修中を含めて満たすなら、遅れで次の年度から認める", () => {
     const student = makeStudent({
       studentYear: 3,
       records: [...passed(BASIC, 2), ...enrolled(numberedNames("専門", 13), 3)],
     });
     expect(judgment(student, "gate-seminar")).toMatchObject({
-      status: "expected",
+      status: "delayed",
       eligibleFromYear: 4,
       needsContact: false,
     });
@@ -281,6 +283,16 @@ describe("未確定のルール", () => {
     const rules = structuredClone(exampleRules);
     rules.graduation.ambiguityIds = [ID];
     expect(judgment(graduate, "graduation", rules, {}).status).toBe("needs_staff");
+  });
+
+  // H30（2026-11-05 作り手の決定）: 区分の不足は総単位や年数の読み方に関わらず確かなので、卒業要件自身が未確定でも「不足」
+  it("卒業要件そのものが未確定でも、確定の区分に不足があれば不足を返す", () => {
+    const rules = structuredClone(exampleRules);
+    rules.graduation.ambiguityIds = [ID];
+    const short = makeStudent({ records: passed(MAJOR, 2) });
+    const result = judgment(short, "graduation", rules, {});
+    expect(result.status).toBe("short");
+    expect(result.ambiguityIds).toContain(ID);
   });
 
   it("未確定の区分から超過分を受ける区分も職員確認を返す", () => {

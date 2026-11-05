@@ -11,7 +11,7 @@ import { buildMeetingSheet, countedCaption } from "./meetingSheet";
 import { MeetingSheetView } from "./MeetingSheetView";
 import { JudgmentBadge, judgmentLabel } from "./StatusBadge";
 
-const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
+const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "delayed", "expected", "satisfied"];
 
 type Props = {
   overview: OverviewResponse;
@@ -233,7 +233,7 @@ export function QuestionsPanel({ overview, datasetName, records, history, previo
       <details className="help">
         <summary>人数の見方</summary>
         <p>
-          表の人数は、表の下に書いた判定で、学生1人を1回ずつ数えたものです。その判定から先の卒業要件などの変わり方は「判定が変わる学生を見る」に出ます。上の人数（声かけ・職員確認・対応なし）は、学生の全判定から決めています。延期見込みと最終年次の不足が声かけ、未回答で止まった判定が職員確認、それ以外が対応なしです。
+          表の人数は、表の下に書いた判定で、学生1人を1回ずつ数えたものです。その判定から先の卒業要件などの変わり方は「判定が変わる学生を見る」に出ます。上の人数（声かけ・職員確認・対応なし）は、学生の全判定から決めています。延期見込みと最終年次の不足が声かけ、未回答で止まった判定が職員確認、それ以外が対応なしです。「見込み」は履修中の科目を修得すれば満たす判定、「遅れ」は判定の時点に満たさず、次の年度以降に認める判定です（認める年次は理由に出ます）。
         </p>
       </details>
       {unanswered.length === 0 && <p className="card muted">未回答の確認事項はありません。</p>}

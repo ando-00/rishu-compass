@@ -388,8 +388,8 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 | G-2 | S2 | 確定の経路（`acceptRules`、`needsReviewIds`）が7種のルールだけを扱い、retake と timetable の要確認を外せない。要確認の印は `listRules` の9種すべてに付きうる。今の変換の出力形式には retake と timetable がないので、今は起きない | worker/ruleSets.ts:72 | 解決 | `listRules` に揃えた |
 | G-3 | S3 | 下書きの学生番号の検査が、今の2校の頭文字（S、K、E）に決め打ち | worker/advisor/tools.ts:102 | 解決 | 英字1〜3字と4桁以上の数字で止める |
 | G-4 | S3 | 保存した案の行が壊れていると、`/api/datasets` が HTML の 500 になり、画面が理由を出せない | worker/index.ts | 解決 | `onError` で JSON の理由を返す。壊れた行を読み飛ばすと判定の根拠が黙って変わるので、読み飛ばさない |
-| G-5 | 未定 | 「見込み」（`expected`）が2つの意味を持つ。履修中を修得すれば満たす（対応なし）と、判定の年次に満たさず翌年から認められる（1年遅れ）。README の表は前者だけを書く | engine/evaluate.ts:237、:267 | 人の判断 | 言葉の意味を決めるのは作り手 |
-| G-6 | 未定 | 卒業要件で、自分の曖昧箇所（totalCredits、minYears）の判定が、確定の区分の不足より先に来る。確定の区分に不足があっても職員確認になる | engine/evaluate.ts:585 | 人の判断 | AGENTS.md の不足の規則をこの場合に当てはめるかは作り手が決める |
+| G-5 | 未定 | 「見込み」（`expected`）が2つの意味を持つ。履修中を修得すれば満たす（対応なし）と、判定の年次に満たさず翌年から認められる（1年遅れ）。README の表は前者だけを書く | engine/evaluate.ts:237、:267 | 解決 | H29 で作り手が分けると決めた。後者を新しい状態 `delayed`（表示「遅れ」、認める年次は理由に出す）にした。人数の合計と声かけは変わらない。第6条の表は「見込み 20／20、遅れ 8／14」 |
+| G-6 | 未定 | 卒業要件で、自分の曖昧箇所（totalCredits、minYears）の判定が、確定の区分の不足より先に来る。確定の区分に不足があっても職員確認になる | engine/evaluate.ts:585 | 解決 | H30 で作り手が「不足」に変えると決めた。区分に入らない科目があるときは職員確認のまま。今の2校では影響0人 |
 | G-7 | S3 | 3校目を足すとき、データの登録を直す場所が worker/datasets.ts、evals の4ファイル、scripts/audit.mjs に散らばる | worker/datasets.ts:38 | 記録 | |
 | G-8 | S3 | 履修上限は条件に合う最後のものを使うが、ルールの検査は並び順を見ない | engine/evaluate.ts:544 | 記録 | |
 | G-9 | S3 | 同じ処理の重複（`display`、`linkedRuleIds`、今年度の履修中の判定、下書きの見出し、`findDataset`、最新の回答の SQL、evals の鍵の読み込み） | engine/versionDiff.ts:14 ほか | 記録 | |

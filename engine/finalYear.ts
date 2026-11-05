@@ -31,6 +31,7 @@ function describeCondition(when: StudentCondition | undefined) {
 const emptyCounts =(): Record<JudgmentStatus, number> => ({
   satisfied: 0,
   expected: 0,
+  delayed: 0,
   short: 0,
   delay_risk: 0,
   needs_staff: 0,

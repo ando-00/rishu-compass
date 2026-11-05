@@ -5,6 +5,7 @@ type Tone = "good" | "bad" | "warn" | "neutral";
 const JUDGMENT_LABELS: Record<JudgmentStatus, { label: string; tone: Tone }> = {
   satisfied: { label: "充足", tone: "good" },
   expected: { label: "見込み", tone: "warn" },
+  delayed: { label: "遅れ", tone: "bad" },
   short: { label: "不足", tone: "bad" },
   delay_risk: { label: "延期見込み（職員と確認）", tone: "bad" },
   needs_staff: { label: "職員確認", tone: "warn" },

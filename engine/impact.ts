@@ -37,7 +37,7 @@ export type AmbiguityImpact = {
   changes: ImpactChange[];
 };
 
-const SEVERITY: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
+const SEVERITY: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "delayed", "expected", "satisfied"];
 
 function linkedRuleIds(rules: RuleSet, ambiguityId: string) {
   const ambiguity = rules.ambiguities.find((a) => a.id === ambiguityId);

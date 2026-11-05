@@ -54,7 +54,7 @@ function summaryText(reason: Outreach["reasons"][number]) {
 }
 
 // 重い判定から並べる。一覧の行には先頭の判定だけを出し、押すと全部を開く
-const REASON_ORDER = { delay_risk: 0, short: 1, needs_staff: 2, expected: 3, satisfied: 4 } as const;
+const REASON_ORDER = { delay_risk: 0, short: 1, needs_staff: 2, delayed: 3, expected: 4, satisfied: 5 } as const;
 
 function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
   const [open, setOpen] = useState(false);

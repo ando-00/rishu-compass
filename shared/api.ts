@@ -63,6 +63,7 @@ export const planCheckRequestSchema = z.object({
 export const judgmentStatusSchema = z.enum([
   "satisfied",
   "expected",
+  "delayed",
   "short",
   "delay_risk",
   "needs_staff",

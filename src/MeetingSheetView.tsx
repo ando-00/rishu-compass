@@ -2,7 +2,7 @@ import type { JudgmentStatus } from "../shared/api";
 import { countedCaption, type MeetingSheet } from "./meetingSheet";
 import { JudgmentBadge } from "./StatusBadge";
 
-const STATUSES: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "expected", "satisfied"];
+const STATUSES: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "delayed", "expected", "satisfied"];
 
 type Props = {
   sheet: MeetingSheet;

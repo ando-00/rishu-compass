@@ -41,7 +41,7 @@ describe("第6条の単位数の時点（A25-5）", () => {
 
   it("判定の時点で満たさずあとから満たした学生は、判定の時点の単位数を理由に示す", () => {
     const later = gate("countable");
-    expect(later.status).toBe("expected");
+    expect(later.status).toBe("delayed");
     // 判定の時点（2年次の終わり）の算入単位は60に届かない
     expect(later.reason).toMatch(/2年次の終わりの時点では \d+ 単位/);
     const atCheck = Number(/時点では (\d+) 単位/.exec(later.reason)![1]);
@@ -49,7 +49,22 @@ describe("第6条の単位数の時点（A25-5）", () => {
   });
 
   it("判定は変えない", () => {
-    expect(gate("countable")).toMatchObject({ status: "expected", eligibleFromYear: 4 });
+    // H29 で状態の名前だけが「遅れ」（delayed）に変わった。認める年次は変わらない
+    expect(gate("countable")).toMatchObject({ status: "delayed", eligibleFromYear: 4 });
     expect(gate("earned")).toMatchObject({ status: "satisfied", actual: 60 });
+  });
+});
+
+// H29（2026-11-05 作り手の決定）: 第6条の表の「見込み」には、順調な学生と、判定の時点に満たさず次の年度から認める学生が
+// 混ざっていた（28人＝20人＋8人、34人＝20人＋14人）。後者を「遅れ」に分け、回答で変わる6人がそこに出る
+describe("第6条の読み方ごとの人数で、見込みと遅れを分ける（H29）", () => {
+  it("見込みは読み方によらず20人、遅れは8人と14人", async () => {
+    const { computeImpacts } = await import("../../engine");
+    const card = computeImpacts(sakuradaiRules, sakuradaiCourses, sakuradaiStudents, {}).find(
+      ({ ambiguityId }) => ambiguityId === "seminar-credit-basis",
+    )!;
+    const counts = Object.fromEntries(card.options.map(({ id, counts }) => [id, counts]));
+    expect(counts.earned).toMatchObject({ expected: 20, delayed: 8 });
+    expect(counts.countable).toMatchObject({ expected: 20, delayed: 14 });
   });
 });

@@ -1,7 +1,7 @@
 import type { JudgmentStatus, OverviewResponse } from "../shared/api";
 import { JudgmentBadge } from "./StatusBadge";
 
-const STATUSES: JudgmentStatus[] = ["satisfied", "expected", "short", "delay_risk", "needs_staff"];
+const STATUSES: JudgmentStatus[] = ["satisfied", "expected", "delayed", "short", "delay_risk", "needs_staff"];
 
 // 最終年次の卒業要件と区分ごとの判定の人数。engine が数えた値をそのまま出す。学生 ID は出さない
 export function FinalYearSummary({ summary }: { summary: OverviewResponse["finalYear"] }) {

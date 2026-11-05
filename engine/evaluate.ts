@@ -19,7 +19,8 @@ import {
 } from "./model";
 import type { Category, Gate, LoadLimit, Prerequisite, RuleSet } from "./rules";
 
-export type JudgmentStatus = "satisfied" | "expected" | "short" | "delay_risk" | "needs_staff";
+// expected は履修中の科目を修得すれば満たす。delayed は判定の時点に満たさず、次の年度以降に認める（H29）
+export type JudgmentStatus = "satisfied" | "expected" | "delayed" | "short" | "delay_risk" | "needs_staff";
 
 export type Judgment = {
   ruleId: string;
@@ -264,7 +265,7 @@ function gateOutcome(gate: Gate, context: EvaluationContext): GateOutcome {
     const missed = atCheck.missingCourses.length > 0 ? `、未修得: ${atCheck.missingCourses.join("、")}` : "";
     const reason = `${check}年次の終わりの時点では ${atCheck.actual} 単位${missed}で条件を満たしていませんでした。条件を満たせば、${student.studentYear + 1}年次から認められます。`;
     const eligibleFromYear = student.studentYear + 1;
-    return { ...progress(present), status: "expected", reason, eligibleFromYear };
+    return { ...progress(present), status: "delayed", reason, eligibleFromYear };
   }
   const reason = `${check}年次の終わりの時点で条件を満たしておらず、その後も満たしていません。`;
   return { ...progress(present), status: "short", reason };
@@ -582,6 +583,14 @@ function judgeGraduation(
     needsContact: false,
   };
 
+  // 未確定の区分や卒業要件自身の曖昧箇所があっても、確定の区分の不足は読み方に関わらず確か（AGENTS.md、H30）。
+  // ただし区分に入らない科目があると、算入先しだいで不足が消えうるので職員確認のまま。
+  // 卒業要件そのものが要確認（review:）のときは、ルール全体が未確定なので職員確認のまま（H30 は未回答の曖昧箇所の決定）
+  const ownReview = ownIds.some((id) => id.startsWith("review:"));
+  if ((ownIds.length > 0 || uncertainIds.length > 0) && !ownReview && stray.length === 0 && shortCategories.length > 0) {
+    const reason = `${shortCategories.join("、")}に不足があります。`;
+    return { ...base, status: "short", reason, needsContact: finalYear };
+  }
   if (ownIds.length > 0) {
     return { ...base, status: "needs_staff", reason: unresolvedReason(context, base.ambiguityIds) };
   }
@@ -591,11 +600,7 @@ function judgeGraduation(
     return { ...base, status: "needs_staff", reason };
   }
   if (uncertainIds.length > 0) {
-    if (shortCategories.length === 0) {
-      return { ...base, status: "needs_staff", reason: unresolvedReason(context, base.ambiguityIds) };
-    }
-    const reason = `${shortCategories.join("、")}に不足があります。`;
-    return { ...base, status: "short", reason, needsContact: finalYear };
+    return { ...base, status: "needs_staff", reason: unresolvedReason(context, base.ambiguityIds) };
   }
 
   const yearsMet = student.yearsEnrolled >= graduation.minYears;
