@@ -1,0 +1,29 @@
+{
+  "commit": "e5a534f",
+  "advice": {
+    "file": "sakuradai-20261105-223630.json",
+    "commit": "e5a534f",
+    "model": "claude-opus-5-5",
+    "option": "countable"
+  },
+  "checks": {
+    "attempted": 8,
+    "firstPassed": 7,
+    "finalPassed": 8
+  },
+  "rechecked": {
+    "plans": 8,
+    "passed": 8
+  },
+  "gold": "あり",
+  "credits": {
+    "matched": 63,
+    "total": 63,
+    "differences": []
+  },
+  "dangerous": [],
+  "overEscalated": [
+    "E0001"
+  ],
+  "adviceMissing": []
+}
