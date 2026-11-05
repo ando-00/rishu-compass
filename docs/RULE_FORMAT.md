@@ -5,12 +5,11 @@
 ## 始め方
 
 1. `data/fictional/example/rules.ts` を `data/fictional/sakuradai/gold-rules.ts` にコピーする
-2. 1行目を `import type { RuleSet } from "../../../engine/rules";` に変える
-3. `exampleRules` を `goldRules` に変え、要項を見ながら中身を書き換える
+2. `exampleRules` を `goldRules` に変え、要項を見ながら中身を書き換える
 
 書き間違えると VS Code に赤線が出ます。`npm run build` でも確認できます。
 
-`gold-rules.ts` を置くと、`npm run dev` の画面の「対象」に大学が増えます。コードの変更はいりません。`id` の参照先が存在しないなどの問題があると、判定を止めて、問題の一覧を画面に出します。
+`gold-rules.ts` を置き、`worker/datasets.ts` の `SOURCES` に大学（名前、要項、科目、学生、検査用ケース）を足すと、`npm run dev` の画面の「対象」に大学が増えます。真偽値の項目のうち省略できるのは `requiredMayBeEnrolled` と `enrolledThroughCheckOnly` だけで、ほかは `false` も書きます。`id` の参照先が存在しないなどの問題があると、判定を止めて、問題の一覧を画面に出します。
 
 `gold-rules.ts` の内容は人が決めます。Claude に清書させるときは、質問と清書だけを任せ、解釈の案は出させません。Claude の共著の表示を残してコミットし、経緯を `docs/DATA.md` に書きます。
 
@@ -28,7 +27,7 @@
 | `prerequisites` | 先修条件 |
 | `enrollment` | 履修の基本ルール（なければ項目ごと消す） |
 | `retake` | 失格の再履修（なければ項目ごと消す） |
-| `timetable` | 時限の重なりの根拠に示す時間割の条文（なければ項目ごと消す）。`id`、`clause`、`sourceQuote` だけを持つ |
+| `timetable` | 時限の重なりの根拠に示す時間割の条文（なければ項目ごと消す）。`id`、`clause`、`sourceQuote` を書く。値は持たない |
 | `ambiguities` | 曖昧な箇所 |
 
 卒業要件の判定は、学生データの次の2つも使います（型は `engine/model.ts`）。
@@ -137,7 +136,7 @@
 | `clause` | 根拠の条文 |
 | `sourceQuote` | 根拠の文。要項の原文をそのまま書く |
 | `question` | 職員に尋ねる質問 |
-| `options` | 回答の選択肢 |
+| `options` | 回答の選択肢。`id`、`label`、`patches` を書く |
 
 選択肢の `patches` には、その回答を選んだときに変わる値を書きます。`ruleId` のルールの `field` を `value` に変えます。今のルールと同じ値でも、選択肢ごとに必ず書いてください。
 
