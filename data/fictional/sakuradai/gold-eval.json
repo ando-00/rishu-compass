@@ -29,7 +29,7 @@
         "専門教育 選択必修": 2,
         "自由": 2
       },
-      "delay": false,
+      "delay": true,
       "escalate": false,
       "points": []
     },
@@ -45,12 +45,12 @@
     },
     "E0005": {
       "shortages": {
-        "専門教育 必修": 14,
+        "専門教育 必修": 18,
         "専門教育 選択必修": 6,
         "専門教育 選択": 26,
         "自由": 20
       },
-      "delay": false,
+      "delay": true,
       "escalate": false,
       "points": []
     },
@@ -91,9 +91,9 @@
         "専門教育 必修": 10,
         "専門教育 選択必修": 6,
         "専門教育 選択": 36,
-        "自由": 20
+        "自由": 10
       },
-      "delay": false,
+      "delay": true,
       "escalate": false,
       "points": []
     },
