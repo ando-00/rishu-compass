@@ -363,7 +363,10 @@ function gateStartTerm(gate: Gate, context: EvaluationContext, pessimistic: bool
     }
     if (outcome.status === "satisfied") return 0;
     if (!variant.retryAfterMet) return Number.POSITIVE_INFINITY;
-    return yearStart(student.studentYear + (missed ? 2 : 1));
+    // ここに来るのは、履修中を足しても条件を満たせない学生。後期の学生は今年度中にはもう満たせないので、
+    // 翌年次に満たして、認められるのはその次の年次。判定の年次を過ぎた学生も同じ（追加の監査 R-2）。
+    // 前期の学生は、後期の登録で満たせる余地があるので翌年次
+    return yearStart(student.studentYear + (student.currentTerm === "後期" ? 2 : 1));
   });
   // 要確認の条件や、差分で表せない候補がある条件は、中身が決まっていない。今の値を読み方の端として使わず、
   // 楽観側は「条件がない」、悲観側は「履修できない」で計算する（第3回の監査 A3-1）
