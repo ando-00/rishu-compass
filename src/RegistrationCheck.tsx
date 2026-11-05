@@ -47,6 +47,11 @@ export function RegistrationCheck({ datasetId, answers, onSelect }: Props) {
       <p className="muted">
         今年度の履修中の登録に、履修案と同じ検査を掛けました。今期はもう始まっているので、職員が確かめる候補です。上の声かけと職員確認の人数には入りません。
       </p>
+      {result.results.some(({ issues }) => issues.some(({ code }) => code === "TIME_CONFLICT")) && (
+        <p className="muted">
+          架空の学生の登録は、時限を見ずに作ったデータです。科目の時限も規則で割り当てた架空の値なので、時限の重なりが多く出ます。
+        </p>
+      )}
       {result.results.length === 0 ? (
         <p className="muted">検査に通らなかった学生はいません。</p>
       ) : (

@@ -6,7 +6,7 @@ import { evaluateStudent, type Student } from "../../engine";
 import { reviewPlan } from "../advisor/advise";
 import { findRecordedAdvice } from "../advisor/records";
 
-// H28: 今年度の卒業が難しい見込みの学生の案には、職員面談に回す印をコードで必ず付ける
+// H28: 卒業要件が延期見込みの学生の案には、職員面談に回す印をコードで必ず付ける
 const answers = { "seminar-credit-basis": "countable" };
 const graduationStatus = (student: Student) =>
   evaluateStudent(goldRules, sakuradaiCourses, student, answers).judgments.find(({ kind }) => kind === "graduation")
@@ -20,6 +20,15 @@ describe("職員面談に回す印（H28）", () => {
     expect(advice?.status).toBe("passed");
     if (advice?.status !== "passed") return;
     expect(advice.staffReview).toMatch(/職員面談に回して/);
+  });
+
+  it("印の文は「今年度」と言わない。延期見込みは卒業予定までに足りない見込みで、3年次の S0095 にも付くため", () => {
+    const s0095 = sakuradaiStudents.find(({ id }) => id === "S0095")!;
+    expect(s0095.studentYear).toBe(3);
+    const advice = findRecordedAdvice("sakuradai", { rules: goldRules, courses: sakuradaiCourses, student: s0095, answers });
+    if (advice?.status !== "passed") throw new Error("記録の案が検査を通らない");
+    expect(advice.staffReview).not.toMatch(/今年度/);
+    expect(advice.staffReview).toMatch(/卒業予定/);
   });
 
   it("延期見込みでない学生の案には付けない", () => {

@@ -19,7 +19,7 @@ export const adviseResponseSchema = z.discriminatedUnion("status", [
     iterations: z.number(),
     // 経過を残す前に作った記録には、この項目がない
     corrections: z.array(correctionSchema).default([]),
-    // 今年度の卒業が難しい見込みの学生の案にだけ付く。職員面談に回す印で、Claude ではなくコードが付ける（H28）
+    // 卒業要件が延期見込み（卒業予定までに足りない見込み）の学生の案にだけ付く。職員面談に回す印で、Claude ではなくコードが付ける（H28）
     staffReview: z.string().optional(),
     // 同梱の記録を読み込んだ案にだけ付く。この案では Claude を呼んでいない
     recording: z.object({ model: z.string(), recordedAt: z.string() }).optional(),

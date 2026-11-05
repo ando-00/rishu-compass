@@ -28,10 +28,9 @@
 | `data/fictional/sakuradai/eval-students.ts` | 評価用の架空の学生 10 人 | 仕様メモの型ごとに Claude が履修記録を組んだ。正解は持たず、作り手が書く。ルール変換の修正に使わず、画面の対象にも入れない |
 | `data/fictional/example/` | 書式と動作確認のための見本 | どの要項の内容でもない値で手作りした |
 | `data/fictional/*/check-cases.ts` | ルール案の検査用ケース | 判定エンジン仕様 v2 のテスト表の型を、各大学の科目で組んだ。期待値はテスト表のもの。読み方が分かれる箇所に関わるものは入れない。評価用の10名とは別物で、ルール変換の修正に使う |
-
 | `data/fictional/sakuradai/gold-rules.ts` | さくら台大学の正解ルール | 下の「正解ルールの作り方」のとおり |
 | `data/fictional/kamome/gold-rules.ts` | かもめ大学の正解ルール | 下の「かもめ大学の正解ルール」のとおり |
-| `data/fictional/sakuradai/gold-eval.json` | 評価用の10名の正解（まだない） | 作り手が書く。区分別の不足単位、今年度の卒業が難しいか、職員に回すか、伝える要点の番号を学生ごとに持つ。形は `evals/scoring.ts` にある。Claude の出力や `engine/` の結果から作らない |
+| `data/fictional/sakuradai/gold-eval.json` | 評価用の10名の正解 | 作り手が 2026-11-05 に、学生別の Excel（要項の全科目と各学生の記録。アプリの判定は見せない）で書き、Claude が清書した。区分別の不足単位、今年度の卒業が難しいか、職員に回すか、伝える要点の番号を学生ごとに持つ。形は `evals/scoring.ts` にある。Claude の出力や `engine/` の結果から作っていない。経過は `docs/EVALUATION.md` |
 | `data/fictional/*/recorded-proposal.json` | API キーなしで試すための、実際の変換の記録 | `evals/results/extract/` の最新の記録から `npm run record:proposal` で作る。Claude の出力で、正解ではない |
 | `data/fictional/sakuradai/recorded-advice.json` | API キーなしで試すための、表示用の学生2人の履修案の記録 | `npm run record:advice` で実際の Claude を呼んで作る。学生は第6条の回答で判定が変わる型から選んだ。読み込むときに今のルールで検査し直す |
 
@@ -74,7 +73,7 @@
 
 ## 評価の結果
 
-`evals/results/extract/` は、架空の要項を実際の Claude で変換した結果です。うまくいかなかった回も残します。ファイルの `commit` は実行したときのコミットです。プロンプトを正解ルールとの比較を見て直した回があるので、一致率は未知の要項での精度を示しません。
+`evals/results/extract/` は架空の要項を実際の Claude で変換した結果、`evals/results/advise/` は評価用の10名の履修案を実際の Claude で作った結果、`evals/results/score/` はその採点です。うまくいかなかった回も残します。ファイルの `commit` は実行したときのコミットです。プロンプトを正解ルールとの比較を見て直した回があるので、一致率は未知の要項での精度を示しません。
 
 ## 取り込まないもの
 

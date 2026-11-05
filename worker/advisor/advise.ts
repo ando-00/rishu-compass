@@ -28,7 +28,7 @@ export type AdvisorLoop = (request: LoopRequest) => Promise<LoopResult>;
 
 const NO_PLAN_REASON = "周回の上限までに検査を通る案を作れなかったので、職員の確認に回します。";
 export const STAFF_REVIEW_REASON =
-  "今年度の卒業が難しい見込みの学生です。職員面談に回してください。この案は面談の材料で、このまま学生に示すものではありません。";
+  "卒業予定の時期までに卒業するのが難しい見込みの学生です。職員面談に回してください。この案は面談の材料で、このまま学生に示すものではありません。";
 
 // 卒業要件が延期見込みなら、案を出しても職員面談に回す（H28）。判断ルールの10番を Claude に任せずコードで守る
 function staffReviewFor({ rules, courses, student, answers }: PlanInput) {

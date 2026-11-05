@@ -8,6 +8,7 @@ import {
   verifyQuotes,
   type RuleSet,
 } from "../engine";
+import { listRules } from "../engine/answers";
 import { runCheckCases } from "../engine/checkCases";
 import {
   confirmRequestSchema,
@@ -68,38 +69,20 @@ async function loadConfirmation(db: D1Database, ruleSetId: number) {
   return latest?.action === "confirm" ? latest : undefined;
 }
 
-// 職員が認めたルールだけ、要確認を外す。
+// 職員が認めたルールだけ、要確認を外す。種類は listRules の全種類（要確認の印もそこから付く）。
 export function acceptRules(rules: RuleSet, acceptedRuleIds: string[]): RuleSet {
   const accepted = new Set(acceptedRuleIds);
-  const clear = <T extends { id: string; status?: "confirmed" | "needs_review" }>(rule: T): T => {
-    if (!accepted.has(rule.id)) return rule;
-    const { status: _status, ...rest } = rule;
-    return rest as T;
-  };
-  return {
-    ...rules,
-    graduation: clear(rules.graduation),
-    categories: rules.categories.map(clear),
-    gates: rules.gates.map(clear),
-    loadLimits: rules.loadLimits.map(clear),
-    courseCountLimits: rules.courseCountLimits.map(clear),
-    prerequisites: rules.prerequisites.map(clear),
-    ...(rules.enrollment ? { enrollment: clear(rules.enrollment) } : {}),
-  };
+  const copy = structuredClone(rules);
+  for (const { rule } of listRules(copy)) {
+    if (accepted.has(rule.id)) delete rule.status;
+  }
+  return copy;
 }
 
 export function needsReviewIds(rules: RuleSet) {
-  return [
-    rules.graduation,
-    ...rules.categories,
-    ...rules.gates,
-    ...rules.loadLimits,
-    ...rules.courseCountLimits,
-    ...rules.prerequisites,
-    ...(rules.enrollment ? [rules.enrollment] : []),
-  ]
-    .filter(({ status }) => status === "needs_review")
-    .map(({ id }) => id);
+  return listRules(rules)
+    .filter(({ rule }) => rule.status === "needs_review")
+    .map(({ rule }) => rule.id);
 }
 
 function buildDataset(row: RuleSetRow, source: Source, confirmation: ConfirmationRow): Dataset {

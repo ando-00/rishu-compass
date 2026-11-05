@@ -330,3 +330,34 @@ describe("確定ルールの扱い", () => {
     }
   });
 });
+
+// 監査（2026-11-05）: 要確認の印は listRules の全種類に付きうる。確定で外せる種類が一部だけだと、残りの種類は永久に職員確認になる
+describe("要確認を認める範囲は、ルールの全種類", () => {
+  it("retake と timetable の要確認も、一覧に出て、認めると外れる", async () => {
+    const { acceptRules, needsReviewIds } = await import("../ruleSets");
+    const rules = structuredClone(goldRules);
+    rules.retake = { ...rules.retake!, status: "needs_review" };
+    rules.timetable = { id: "timetable", clause: "第7条", sourceQuote: "時間割", status: "needs_review" };
+    expect(needsReviewIds(rules)).toEqual(expect.arrayContaining([rules.retake.id, "timetable"]));
+    const accepted = acceptRules(rules, [rules.retake.id, "timetable"]);
+    expect(accepted.retake?.status).toBeUndefined();
+    expect(accepted.timetable?.status).toBeUndefined();
+    expect(needsReviewIds(accepted)).toEqual([]);
+  });
+});
+
+// 監査（2026-11-05）: 保存した案の行が壊れていると、/api/datasets が HTML の 500 になり、画面は理由を出せなかった
+describe("保存した案が読めないとき", () => {
+  it("JSON で理由を返す", async () => {
+    sqlite.prepare("INSERT INTO rule_sets (source_id, handbook, proposal, created_at) VALUES ('sakuradai', '', '{壊れた', '2026-11-05')").run();
+    sqlite
+      .prepare(
+        "INSERT INTO rule_set_confirmations (rule_set_id, action, accepted_rule_ids, respondent, confirmed_at) VALUES (1, 'confirm', '[]', '教務職員A', '2026-11-05')",
+      )
+      .run();
+    const res = await app.request("/api/datasets", undefined, env);
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toContain("サーバーの処理に失敗しました");
+  });
+});

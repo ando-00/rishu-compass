@@ -294,4 +294,10 @@ app.route("/api/datasets", answerRoutes);
 app.route("/api/datasets", advisorRoutes);
 app.route("/api", ruleSetRoutes);
 
+// 想定外の失敗も、画面が理由を出せるよう JSON で返す。中身の詳細は返さず、手元のログにだけ残す
+app.onError((cause, c) => {
+  console.error("サーバーの処理に失敗しました", cause instanceof Error ? cause.message : "");
+  return c.json({ error: "サーバーの処理に失敗しました。保存した記録が壊れている可能性があります。" }, 500);
+});
+
 export default app;

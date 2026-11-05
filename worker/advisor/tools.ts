@@ -99,7 +99,8 @@ const COUNTS = new RegExp(
 // 「卒業できるよう」「留年しないように」は相談の文なので止めない。
 const OUTCOMES = "(?:(?:でき|出来)(?!るよう)[ぁ-ん]*|可能(?!性)|不可|無理|難し|確定|間に合|延期|見込み)";
 const VERDICTS = new RegExp(`(?:卒業|進級)[^。\\n]{0,12}?${OUTCOMES}|要件を満たして|留年(?!しない)`);
-const STUDENT_ID = /\b[SKE]\d{4}\b/;
+// 頭文字の英字と4桁以上の数字。大学ごとの頭文字に決め打ちしない（3校目の番号でも止める）
+const STUDENT_ID = /\b[A-Z]{1,3}\d{4,}\b/;
 
 // 単位数と判定の値は Claude の計算になるので書かせない。判定の数値は画面の engine の結果を見せる。
 export function draftProblem(text: string, limit = MAX_DRAFT_LENGTH) {
