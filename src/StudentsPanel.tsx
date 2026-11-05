@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type {
   Answers,
   Judgment,
@@ -42,6 +42,9 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
   const [lines, setLines] = useState<Record<string, string>>({});
   const [result, setResult] = useState<PlanCheckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  // 入力や学生が変わったあとに届いた結果を、今の入力の結果として見せない（追加の監査 R-3）
+  const latestRequest = useRef(0);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [unavailable, setUnavailable] = useState<ReadonlySet<string>>(new Set());
 
@@ -68,6 +71,19 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
     };
   }, [datasetId, studentId, answers]);
 
+  // 検査の結果は、検査したときの入力のもの。入力を直したら結果を消し、検査していない案の横に「検査に通過」を残さない
+  function clearResult() {
+    latestRequest.current += 1;
+    setResult(null);
+    setError(null);
+    setChecking(false);
+  }
+
+  function changeLines(next: Record<string, string>) {
+    clearResult();
+    setLines(next);
+  }
+
   function addCourse(term: string, name: string) {
     if (!name) return;
     const current = (lines[term] ?? "")
@@ -75,14 +91,18 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
       .map((line) => line.trim())
       .filter(Boolean);
     if (current.includes(name)) return;
-    setLines({ ...lines, [term]: [...current, name].join("\n") });
+    changeLines({ ...lines, [term]: [...current, name].join("\n") });
   }
 
   useEffect(() => {
+    clearResult();
     setLines({});
-    setResult(null);
-    setError(null);
   }, [studentId]);
+
+  // 対象や回答が変わると検査の前提が変わるので、前の結果を残さない
+  useEffect(() => {
+    clearResult();
+  }, [datasetId, answers]);
 
   async function submit() {
     const plan: PlanEntry[] = TERMS.flatMap((term) =>
@@ -96,12 +116,18 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
       setError("科目を1つ以上入力してください。");
       return;
     }
+    const request = ++latestRequest.current;
+    setChecking(true);
+    setError(null);
     try {
-      setError(null);
-      setResult(await checkPlan(datasetId, studentId, plan, answers));
+      const checked = await checkPlan(datasetId, studentId, plan, answers);
+      if (request === latestRequest.current) setResult(checked);
     } catch (cause) {
+      if (request !== latestRequest.current) return;
       setResult(null);
       setError(cause instanceof Error ? cause.message : "検査に失敗しました。");
+    } finally {
+      if (request === latestRequest.current) setChecking(false);
     }
   }
 
@@ -122,7 +148,7 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
               <textarea
                 rows={5}
                 value={lines[term] ?? ""}
-                onChange={(event) => setLines({ ...lines, [term]: event.target.value })}
+                onChange={(event) => changeLines({ ...lines, [term]: event.target.value })}
               />
             </label>
             {courses.length > 0 && (
@@ -143,7 +169,7 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
         ))}
       </div>
       <div className="actions">
-        <button type="button" onClick={submit}>
+        <button type="button" disabled={checking} onClick={() => void submit()}>
           検査する
         </button>
       </div>

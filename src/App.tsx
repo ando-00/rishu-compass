@@ -338,9 +338,8 @@ export function App() {
             {tab === "questions" && (
               <QuestionsPanel
                 overview={overview}
-                datasetName={
-                  (current?.name ?? "") + (confirmation ? `（確定ルール 第${confirmation.proposalId}版）` : "")
-                }
+                // 確定した対象の名前には、版（「確定ルール 第N版」）がすでに入っている（追加の監査 R-5）
+                datasetName={current?.name ?? ""}
                 records={records ?? []}
                 history={history}
                 previousAnswers={previousAnswers}
