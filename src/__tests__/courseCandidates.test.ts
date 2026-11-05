@@ -15,3 +15,14 @@ describe("candidatesFor（履修案の検査の候補。B32）", () => {
     expect(candidatesFor(courses, "通年").map((course) => course.name)).toEqual(["基礎英語", "卒業研究"]);
   });
 });
+
+describe("candidatesFor の除外（修得済みなどを候補から外す。B41）", () => {
+  it("外す科目の名前を渡すと、その科目を出さない", () => {
+    const unavailable = new Set(["基礎英語"]);
+    expect(candidatesFor(courses, "前期", unavailable).map((course) => course.name)).toEqual(["演習Ⅰ"]);
+  });
+
+  it("渡さなければ今までどおり", () => {
+    expect(candidatesFor(courses, "前期", new Set()).map((course) => course.name)).toEqual(["基礎英語", "演習Ⅰ"]);
+  });
+});

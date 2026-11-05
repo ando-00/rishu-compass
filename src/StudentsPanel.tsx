@@ -8,7 +8,7 @@ import type {
   StudentResponse,
 } from "../shared/api";
 import { AdvisorPanel } from "./AdvisorPanel";
-import { checkPlan, fetchCourses, fetchStudent } from "./api";
+import { checkPlan, fetchCourses, fetchPlanCandidates, fetchStudent } from "./api";
 import { type CourseOption, candidatesFor, TERMS } from "./courseCandidates";
 import { RegistrationCheck } from "./RegistrationCheck";
 import { JudgmentBadge, PlanBadge, StateBadge } from "./StatusBadge";
@@ -43,6 +43,7 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
   const [result, setResult] = useState<PlanCheckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [unavailable, setUnavailable] = useState<ReadonlySet<string>>(new Set());
 
   // 候補は選びやすくするためだけに使う。検査は入力された科目名で engine が行う
   useEffect(() => {
@@ -54,6 +55,18 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
       active = false;
     };
   }, [datasetId]);
+
+  // 修得済み、履修中、失格の再履修で検査に必ず落ちる科目は候補に出さない（B41）。外せなくても入力はできる
+  useEffect(() => {
+    let active = true;
+    setUnavailable(new Set());
+    fetchPlanCandidates(datasetId, studentId, answers)
+      .then((result) => active && setUnavailable(new Set(result.unavailable.map(({ course }) => course))))
+      .catch(() => active && setUnavailable(new Set()));
+    return () => {
+      active = false;
+    };
+  }, [datasetId, studentId, answers]);
 
   function addCourse(term: string, name: string) {
     if (!name) return;
@@ -96,8 +109,11 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
     <div>
       <h3>履修案の検査</h3>
       <p className="muted">
-        科目名を1行に1つ入力するか、学期ごとの候補から選びます。「履修案を作る」と同じ前提で検査します。後期の学生は翌年度の案として、履修中の科目を修得した前提で見ます。
+        科目名を1行に1つ入力するか、学期ごとの候補から選びます。後期の学生の案は、翌年度に履修する科目として検査します。今年度に履修中の科目は、すべて修得したものとして数えます。
       </p>
+      {unavailable.size > 0 && (
+        <p className="muted">修得済み・履修中などで案に入れられない {unavailable.size}科目は、候補に出していません。</p>
+      )}
       <div className="plan-grid">
         {TERMS.map((term) => (
           <div key={term} className="plan-term">
@@ -115,8 +131,8 @@ function PlanForm({ datasetId, studentId, answers }: { datasetId: string; studen
                 value=""
                 onChange={(event) => addCourse(term, event.target.value)}
               >
-                <option value="">候補から足す（{candidatesFor(courses, term).length}科目）</option>
-                {candidatesFor(courses, term).map((course) => (
+                <option value="">候補から足す（{candidatesFor(courses, term, unavailable).length}科目）</option>
+                {candidatesFor(courses, term, unavailable).map((course) => (
                   <option key={course.name} value={course.name}>
                     {course.name}（{course.assignedYear}年次・{course.credits}単位）
                   </option>

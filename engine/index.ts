@@ -24,6 +24,7 @@ export {
   lockedEnrollments,
   pendingPromotions,
   planningStudent,
+  unavailableCourses,
   unresolvedEnrollments,
 } from "./plan";
 export type { PlanCheck, PlanEntry, PlanIssue, PlanIssueCode } from "./plan";

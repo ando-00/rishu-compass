@@ -519,6 +519,25 @@ export function checkPlan(
   }
 }
 
+const UNAVAILABLE_CODES: PlanIssueCode[] = ["ALREADY_EARNED", "DISQUALIFIED_RETAKE"];
+
+// 履修案の検査の候補から外す科目（B41）。検査そのものに1科目ずつ掛け、修得済み、履修中、失格の再履修で
+// 必ず落ちる科目だけを返す。未回答で決まらない科目は外さない（職員確認は検査が出す）。
+export function unavailableCourses(
+  rules: RuleSet,
+  courses: Course[],
+  student: Student,
+  answers: Answers,
+  assumptions: PlanAssumptions = {},
+): { course: string; message: string }[] {
+  return courses.flatMap(({ name, offeredIn }) => {
+    const plan: PlanEntry[] = [{ course: name, term: offeredIn ?? "前期" }];
+    const { issues } = checkPlan(rules, courses, student, plan, answers, assumptions);
+    const issue = issues.find(({ code, course }) => course === name && UNAVAILABLE_CODES.includes(code));
+    return issue ? [{ course: name, message: issue.message }] : [];
+  });
+}
+
 // 今期の登録をまとめて検査する（H25 の J）。今年度の履修中の記録を案とみなし、それを除いた記録の学生に、
 // 履修案の検査をそのまま掛ける。翌年度に読み替えない。今期はもう始まっているので、結果は職員確認の候補として使う
 export function checkCurrentRegistrations(

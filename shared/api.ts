@@ -180,6 +180,16 @@ export const coursesResponseSchema = z.object({
   ),
 });
 
+// 履修案の検査の候補から外す科目（B41）。検査で必ず落ちる科目だけで、理由は検査と同じ文
+export const planCandidatesRequestSchema = z.object({
+  studentId: z.string().min(1),
+  answers: answersSchema,
+});
+
+export const planCandidatesResponseSchema = z.object({
+  unavailable: z.array(z.object({ course: z.string(), message: z.string() })),
+});
+
 export const overviewResponseSchema = z.object({
   summary: z.object({
     total: z.number(),
@@ -396,6 +406,7 @@ export type Impact = z.infer<typeof impactSchema>;
 export type Outreach = z.infer<typeof outreachSchema>;
 export type DatasetsResponse = z.infer<typeof datasetsResponseSchema>;
 export type CoursesResponse = z.infer<typeof coursesResponseSchema>;
+export type PlanCandidatesResponse = z.infer<typeof planCandidatesResponseSchema>;
 export type OverviewResponse = z.infer<typeof overviewResponseSchema>;
 export type StudentResponse = z.infer<typeof studentResponseSchema>;
 export type PlanCheckResponse = z.infer<typeof planCheckResponseSchema>;

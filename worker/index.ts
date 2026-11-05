@@ -13,16 +13,19 @@ import {
   prepareRules,
   settledStudentIds,
   summarizeFinalYear,
+  unavailableCourses,
   type StudentState,
 } from "../engine";
 import {
   answersRequestSchema,
   extractRequestSchema,
+  planCandidatesRequestSchema,
   planCheckRequestSchema,
   type Answers,
   type CoursesResponse,
   type DatasetsResponse,
   type OverviewResponse,
+  type PlanCandidatesResponse,
   type PlanCheckResponse,
   type ProposalResponse,
   type RegistrationCheckResponse,
@@ -203,6 +206,27 @@ app.get("/api/datasets/:id/courses", async (c) => {
     })),
   };
   return c.json(body);
+});
+
+// 履修案の検査の候補から外す科目（B41）。検査と同じ前提の学生に、検査を1科目ずつ掛けて決める
+app.post("/api/datasets/:id/plan-candidates", async (c) => {
+  const dataset = await findDataset(c);
+  if (!dataset) return c.json({ error: "データがありません" }, 404);
+  const body = await parseBody(c, planCandidatesRequestSchema);
+  if (!body || !isValidAnswers(dataset, body.answers)) {
+    return c.json({ error: "形式が正しくありません" }, 400);
+  }
+  const student = dataset.students.find(({ id }) => id === body.studentId);
+  if (!student) return c.json({ error: "学生がいません" }, 404);
+  // ルールに問題がある対象は検査が 422 を返すので、候補は絞らない
+  if (dataset.problems.length > 0) return c.json({ unavailable: [] } satisfies PlanCandidatesResponse);
+
+  const { rules, courses } = dataset;
+  const { target, assumptions } = planningTarget({ rules, courses, student, answers: body.answers });
+  const response: PlanCandidatesResponse = {
+    unavailable: unavailableCourses(rules, courses, target, body.answers, assumptions),
+  };
+  return c.json(response);
 });
 
 app.post("/api/datasets/:id/plan-check", async (c) => {
