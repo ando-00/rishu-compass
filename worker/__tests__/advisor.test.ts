@@ -281,6 +281,26 @@ describe("道具", () => {
     expect(names).toContain("専門01");
   });
 
+  it("search_courses は、前期の学生でも今年度に履修中の科目を返さない（追加の監査 R-6）", () => {
+    // 前期の学生の案は同じ年度の登録で、履修中の応用Bは記録に履修中のまま残る
+    const spring = { ...second, currentTerm: "前期" as const };
+    const { courses } = runTool("search_courses", { keyword: "応用", group: null, term: null }, { student: spring });
+    const names = courses.map((course: { name: string }) => course.name);
+    expect(names).not.toContain("応用B");
+    expect(names).toContain("応用C");
+  });
+
+  it("search_courses は、前期の学生で履修条件を満たさず記録から外した履修中の科目も返さない（追加の監査 R-6）", () => {
+    // 3年次前期にゼミを履修中だが、2年次の終わりの単位が足りない。登録は残っているので候補に出さない
+    const spring = makeStudent({
+      studentYear: 3,
+      currentTerm: "前期",
+      records: [...passed(BASIC), ...enrolled(["ゼミ"], 3, "通年")],
+    });
+    const { courses } = runTool("search_courses", { keyword: "ゼミ", group: null, term: null }, { student: spring });
+    expect(courses.map((course: { name: string }) => course.name)).not.toContain("ゼミ");
+  });
+
   it("search_courses は案を組む年次より後の配当の科目を返さない", () => {
     const first = makeStudent({ studentYear: 1, currentTerm: "前期" });
     const { courses } = runTool(

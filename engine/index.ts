@@ -20,6 +20,7 @@ export type { OutreachEntry, OutreachReason } from "./outreach";
 export {
   checkCurrentRegistrations,
   checkPlan,
+  heldRegistrations,
   isDisplayablePlan,
   lockedEnrollments,
   pendingPromotions,

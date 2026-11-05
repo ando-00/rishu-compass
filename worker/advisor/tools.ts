@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   checkPlan,
   evaluateStudent,
+  heldRegistrations,
   isDisplayablePlan,
   lockedEnrollments,
   pendingPromotions,
@@ -140,7 +141,12 @@ export function planningTarget({ rules, courses, student, answers }: PlanInput) 
   const pendingCourses = unresolvedEnrollments(rules, courses, student, answers);
   return {
     target: planningStudent(student, locked),
-    assumptions: { pendingCourses, promotions: pendingPromotions(rules, courses, student, answers) },
+    assumptions: {
+      pendingCourses,
+      promotions: pendingPromotions(rules, courses, student, answers),
+      // 前期の学生では、記録から外した科目も今年度の登録として残る。上限と時間割に数える（追加の監査 R-1）
+      heldRegistrations: heldRegistrations(student, locked),
+    },
     lockedNotes: locked.map((name) =>
       pendingCourses.includes(name)
         ? `${name} は履修条件が未確定なので、修得した前提にしていません。`
@@ -212,9 +218,17 @@ export function createAdvisorTools(input: AdvisorInput) {
         term: z.enum(["前期", "後期", "通年"]).nullable(),
       }),
       ({ keyword, group, term }) => {
-        const taken = new Set(
-          target.records.filter((record) => record.result === "passed").map((record) => record.course),
-        );
+        // 修得済みに加えて、今年度に履修中の科目も返さない。前期の学生では記録に履修中のまま残る（追加の監査 R-6）
+        const taken = new Set([
+          ...target.records
+            .filter(
+              (record) =>
+                record.result === "passed" ||
+                (record.result === "enrolled" && record.studentYear === target.studentYear),
+            )
+            .map((record) => record.course),
+          ...assumptions.heldRegistrations.map((entry) => entry.course),
+        ]);
         const found = courses
           .filter((course) => course.assignedYear <= target.studentYear && !taken.has(course.name))
           .filter((course) => !term || course.offeredIn === term)

@@ -67,6 +67,9 @@ export type PlanAssumptions = {
   pendingCourses?: string[];
   // 翌年度の案が前提にするのに、決まっていない進級
   promotions?: Gate[];
+  // 前期の学生で、履修条件が未確定か未達のために記録から外した今年度の登録（heldRegistrations）。
+  // 先修の前提にはしないが、登録は残っているので、上限、時間割、科目数、重複の検査では数える
+  heldRegistrations?: PlanEntry[];
 };
 
 export function isDisplayablePlan(check: PlanCheck) {
@@ -151,6 +154,19 @@ export function planningStudent(student: Student, locked: string[] = []): Studen
   };
 }
 
+// 前期の学生の案は同じ年度の登録なので、planningStudent が記録から外した履修中の科目も、今年度の登録としては残る。
+// 外したままにすると、その単位と時限が検査から抜け、未回答で通った案が回答のあとに上限を超える（追加の監査 R-1）。
+// 後期の学生の案は翌年度の登録なので、今年度の登録は掛からない
+export function heldRegistrations(student: Student, locked: string[]): PlanEntry[] {
+  if (student.currentTerm !== "前期") return [];
+  return student.records
+    .filter(
+      (record) =>
+        record.result === "enrolled" && record.studentYear === student.studentYear && locked.includes(record.course),
+    )
+    .map(({ course, term }) => ({ course, term }));
+}
+
 function overlaps(a: OfferedTerm, b: OfferedTerm) {
   return a === b || a === "通年" || b === "通年";
 }
@@ -169,7 +185,12 @@ class PlanChecker {
   readonly warnings: string[] = [];
   private readonly context: EvaluationContext;
   private readonly plan: PlanEntry[];
+  // 先修の前提に使える科目: 案と、今年度の履修中
   private readonly scheduled: PlanEntry[];
+  // 記録から外したが、今年度の登録として残っている科目
+  private readonly held: PlanEntry[];
+  // 時間割と科目数に数える科目: scheduled と held
+  private readonly registered: PlanEntry[];
 
   constructor(
     context: EvaluationContext,
@@ -183,6 +204,8 @@ class PlanChecker {
       .filter((record) => record.result === "enrolled" && record.studentYear === student.studentYear)
       .map(({ course, term }) => ({ course, term }));
     this.scheduled = [...this.plan, ...enrolled];
+    this.held = (assumptions.heldRegistrations ?? []).filter((entry) => context.catalog.has(entry.course));
+    this.registered = [...this.scheduled, ...this.held];
 
     for (const entry of plan) {
       if (!context.catalog.has(entry.course)) {
@@ -241,9 +264,9 @@ class PlanChecker {
         this.add("ALREADY_EARNED", DATA_RULE, `${course} が重複しています。`, "1つにしてください。", course);
       }
       seen.add(course);
-      const inProgress = student.records.some(
-        (record) => record.course === course && record.result === "enrolled",
-      );
+      const inProgress =
+        student.records.some((record) => record.course === course && record.result === "enrolled") ||
+        this.held.some((entry) => entry.course === course);
       if (inProgress) {
         this.add("ALREADY_EARNED", DATA_RULE, `${course} は履修中です。`, "案から外してください。", course);
       }
@@ -385,6 +408,7 @@ class PlanChecker {
       ...registered
         .filter((record) => !this.isExcludedRetake(limit, record.course, record.studentYear))
         .map(({ course, term }) => ({ course, term })),
+      ...this.held.filter((entry) => !this.isExcludedRetake(limit, entry.course, student.studentYear)),
     ];
   }
 
@@ -435,7 +459,7 @@ class PlanChecker {
     const { rules, student } = this.context;
     for (const rule of rules.courseCountLimits) {
       if (!matchesCondition(rule.when, student)) continue;
-      const inGroup = this.scheduled.filter(({ course }) =>
+      const inGroup = this.registered.filter(({ course }) =>
         this.course(course).groups.includes(rule.group),
       );
       if (inGroup.length === 0 || this.deferIfUnresolved(rule)) continue;
@@ -454,7 +478,7 @@ class PlanChecker {
       const course = this.course(entry.course);
       if (course.intensive) return;
       const slots = course.slots ?? [];
-      for (const other of this.scheduled.slice(index + 1)) {
+      for (const other of this.registered.slice(index + 1)) {
         const otherCourse = this.course(other.course);
         if (other.course === entry.course || otherCourse.intensive) continue;
         if (!overlaps(entry.term, other.term)) continue;

@@ -96,7 +96,7 @@ const M = [
   ["plan", "inGroup.length === 0 || this.deferIfUnresolved(rule)", "inGroup.length === 0", "科目数: 未確定"],
   ["plan", "if (count > rule.maxPerTerm) {", "if (count >= rule.maxPerTerm) {", "科目数の境界"],
   ["plan", "inGroup.filter((entry) => overlaps(entry.term, term)).length", "inGroup.filter((entry) => entry.term === term).length", "科目数: 通年を両学期に数える"],
-  ["plan", "of this.scheduled.slice(index + 1)", "of this.plan.slice(index + 1)", "時間割: 履修中の科目と比べる"],
+  ["plan", "of this.registered.slice(index + 1)", "of this.plan.slice(index + 1)", "時間割: 履修中の科目と比べる"],
   ["plan", "!overlaps(entry.term, other.term)", "false", "時間割: 別学期を除く"],
   ["plan", "if (issues.some((issue) => issue.code !== \"PENDING_RULE\")) {\n      return { status: \"failed\", issues, warnings };\n    }", "", "違反を不可にする"],
   ["plan", "if (issues.length > 0) return { status: \"needs_staff\", issues, warnings };", "", "職員確認を返す"],
@@ -217,6 +217,16 @@ const M = [
   ["plan", "record.result === \"enrolled\" && record.studentYear === student.studentYear;\n  const registered", "record.result === \"enrolled\";\n  const registered", "今期の登録: 今年度の履修中に限る"],
   ["plan", "const target = { ...student, records: student.records.filter((record) => !current(record)) };", "const target = student;", "今期の登録: 案にした履修中を記録から外す"],
   ["worker/index", "      check.status === \"passed\"\n        ? []", "      false\n        ? []", "今期の登録: 通った学生を返さない"],
+  // 追加の監査（2026-11-05）の R-1 と R-6。前期の学生で記録から外した今年度の登録
+  ["plan", "if (student.currentTerm !== \"前期\") return [];", "", "外した登録: 後期の学生は翌年度に持ち越さない"],
+  ["plan", "record.result === \"enrolled\" && record.studentYear === student.studentYear && locked.includes(record.course),", "record.result === \"enrolled\" && locked.includes(record.course),", "外した登録: 今年度の登録だけ"],
+  ["plan", "this.registered = [...this.scheduled, ...this.held];", "this.registered = this.scheduled;", "外した登録: 時間割と科目数に数える"],
+  ["plan", "      ...this.held.filter((entry) => !this.isExcludedRetake(limit, entry.course, student.studentYear)),\n", "", "外した登録: 上限に数える"],
+  ["plan", "        this.held.some((entry) => entry.course === course);", "        false;", "外した登録: 案に入れたら履修中として止める"],
+  ["plan", "this.scheduled = [...this.plan, ...enrolled];\n    this.held", "this.scheduled = [...this.plan, ...enrolled, ...(assumptions.heldRegistrations ?? [])];\n    this.held", "外した登録: 先修の前提にしない"],
+  ["worker/advisor/tools", "heldRegistrations: heldRegistrations(student, locked),", "heldRegistrations: [],", "案の前提: 前期の外した登録を渡す"],
+  ["worker/advisor/tools", "(record.result === \"enrolled\" && record.studentYear === target.studentYear),", "false,", "科目の検索: 今年度に履修中の科目を返さない"],
+  ["worker/advisor/tools", "          ...assumptions.heldRegistrations.map((entry) => entry.course),\n", "", "科目の検索: 外した登録の科目を返さない"],
 ];
 
 function runTests() {
