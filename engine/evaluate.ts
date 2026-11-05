@@ -352,7 +352,9 @@ function gateStartTerm(gate: Gate, context: EvaluationContext, pessimistic: bool
     if (!variant.retryAfterMet) return Number.POSITIVE_INFINITY;
     return yearStart(student.studentYear + (missed ? 2 : 1));
   });
-  if (!pessimistic) return Math.min(...starts);
+  // 要確認の条件や、差分で表せない候補がある条件は、中身が決まっていない。今の値を読み方の端として使わず、
+  // 楽観側は「条件がない」、悲観側は「履修できない」で計算する（第3回の監査 A3-1）
+  if (!pessimistic) return complete ? Math.min(...starts) : 0;
   return complete ? Math.max(...starts) : Number.POSITIVE_INFINITY;
 }
 

@@ -1,8 +1,5 @@
-import type { JudgmentStatus } from "../shared/api";
 import { countedCaption, type MeetingSheet } from "./meetingSheet";
 import { JudgmentBadge } from "./StatusBadge";
-
-const STATUSES: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "delayed", "expected", "satisfied"];
 
 type Props = {
   sheet: MeetingSheet;
@@ -54,12 +51,11 @@ export function MeetingSheetView({ sheet, datasetName, onClose }: Props) {
               <thead>
                 <tr>
                   <th>読み方</th>
-                  {item.computable &&
-                    STATUSES.map((status) => (
-                      <th key={status}>
-                        <JudgmentBadge status={status} />
-                      </th>
-                    ))}
+                  {item.statuses.map((status) => (
+                    <th key={status}>
+                      <JudgmentBadge status={status} />
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -69,12 +65,11 @@ export function MeetingSheetView({ sheet, datasetName, onClose }: Props) {
                       {option.label}
                       {!option.reflected && <span className="muted">（判定には反映しない）</span>}
                     </td>
-                    {item.computable &&
-                      STATUSES.map((status) => (
-                        <td key={status} className="nowrap">
-                          {option.counts?.[status] ?? 0}人
-                        </td>
-                      ))}
+                    {item.statuses.map((status) => (
+                      <td key={status} className="nowrap">
+                        {option.counts?.[status] ?? 0}人
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

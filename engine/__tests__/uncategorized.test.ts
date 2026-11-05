@@ -26,6 +26,15 @@ describe("どの区分にも入らない科目（A1-26）", () => {
     expect(graduation(passed(["基礎必修1"])).status).toBe("short");
   });
 
+  it("卒業要件自身の曖昧箇所が未回答で、確定の区分に不足があっても、区分に入らない科目を修得していれば職員確認のまま（H30。第3回の監査 A3-6）", () => {
+    const rules = structuredClone(specRules);
+    rules.graduation.ambiguityIds = ["credit-basis"];
+    const of = (names: string[]) =>
+      evaluateStudent(rules, courses, makeStudent({ records: passed(names) }), {}).judgments.find((j) => j.kind === "graduation")!;
+    expect(of(["基礎必修1"]).status).toBe("short");
+    expect(of(["基礎必修1", "区分外の科目"]).status).toBe("needs_staff");
+  });
+
   it("区分に入らない科目を警告として返し、ルールの検査の問題にはしない（確定を止めない）", () => {
     expect(strayCourses(specRules, courses)).toEqual(["区分外の科目"]);
     expect(validateRuleSet(specRules, courses)).toEqual(validateRuleSet(specRules, specCourses));

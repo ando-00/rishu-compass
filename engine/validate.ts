@@ -71,6 +71,10 @@ export function validateRuleSet(rules: RuleSet, courses: Course[]) {
     if (gate.target.kind === "course") {
       gate.target.courses.forEach((name) => checkCourse(gate.id, name));
     }
+    // 進級先は2年次以降。0 や 1 だと、全員が「進級済み」で充足になる（第3回の監査 A3-7）
+    if (gate.target.kind === "promotion" && !(Number.isInteger(gate.target.toYear) && gate.target.toYear >= 2)) {
+      problems.push(`${gate.id}: 進級先の年次が正しくありません: ${gate.target.toYear}`);
+    }
   }
 
   for (const prerequisite of rules.prerequisites) {

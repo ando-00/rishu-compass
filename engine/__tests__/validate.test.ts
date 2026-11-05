@@ -124,6 +124,24 @@ describe("validateRuleSet", () => {
   });
 });
 
+describe("値の範囲（第3回の監査 A3-7）", () => {
+  it("進級先の年次が2年次より前の進級条件を見つける。0 だと全員が進級済みになる", () => {
+    const promotion = exampleRules.gates.findIndex((gate) => gate.target.kind === "promotion");
+    for (const toYear of [0, 1, 2.5]) {
+      const problems = problemsAfter((rules) => (rules.gates[promotion]!.target = { kind: "promotion", toYear }));
+      expect(problems).toEqual([expect.stringContaining("進級先の年次")]);
+    }
+    expect(problemsAfter((rules) => (rules.gates[promotion]!.target = { kind: "promotion", toYear: 3 }))).toEqual([]);
+  });
+
+  it("差分の値に負の数を入れた選択肢を見つける", () => {
+    const problems = problemsAfter(
+      (rules) => (rules.ambiguities[0]!.options[0]!.patches = [{ ruleId: "load-normal", field: "maxPerTerm", value: -1 }]),
+    );
+    expect(problems).toEqual([expect.stringContaining("load-normal")]);
+  });
+});
+
 describe("resolveRules の項目の検査", () => {
   it("field の書き間違いはエラーにする", () => {
     const rules = structuredClone(exampleRules);
@@ -139,5 +157,15 @@ describe("resolveRules の項目の検査", () => {
       { ruleId: "load-normal", field: "maxPerTerm", value: "24" },
     ];
     expect(() => resolveRules(rules, { "ambiguity-seminar-credits": "include" })).toThrow("型");
+  });
+
+  it("負の数はエラーにする。0 は通す", () => {
+    const withValue = (value: number) => {
+      const rules = structuredClone(exampleRules);
+      rules.ambiguities[0]!.options[0]!.patches = [{ ruleId: "load-normal", field: "maxPerYear", value }];
+      return () => resolveRules(rules, { "ambiguity-seminar-credits": "include" });
+    };
+    expect(withValue(-10)).toThrow("負");
+    expect(withValue(0)).not.toThrow();
   });
 });

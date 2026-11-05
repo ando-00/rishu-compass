@@ -66,6 +66,10 @@ export function patchProblem(rules: RuleSet, patch: RulePatch) {
   if (!matchesType(type, patch.value)) {
     return `値の型が違います: ${patch.ruleId} の ${patch.field}`;
   }
+  // 単位数、年次、上限はどれも0以上。負の値は、判定を黙って変える（第3回の監査 A3-7）
+  if (typeof patch.value === "number" && patch.value < 0) {
+    return `負の値は使えません: ${patch.ruleId} の ${patch.field}`;
+  }
   return null;
 }
 

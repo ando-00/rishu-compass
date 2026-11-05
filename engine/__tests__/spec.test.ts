@@ -191,6 +191,15 @@ describe("演習Ⅰの履修条件", () => {
     expect(codes(entries(["演習Ⅰ"], "通年"), { ...third, studentYear: 4, yearsEnrolled: 4 })).toEqual([]);
   });
 
+  it("判定の年次に58単位で、履修中の2単位を修得すれば満たす学生は「見込み」。修得が決まるまで、演習Ⅰを入れた案は検査に通さない（第3回の監査 A3-6）", () => {
+    const second = makeStudent({
+      studentYear: 2,
+      records: [...passed(SIXTY.slice(0, -1), 1), ...enrolled(SIXTY.slice(-1), 2, "後期")],
+    });
+    expect(judgment(second, "gate-seminar")).toMatchObject({ status: "expected", actual: 58 });
+    expect(codes(entries(["演習Ⅰ"], "通年"), second)).toContain("SEMINAR_LOCKED");
+  });
+
   it("T27 修得60単位のうち他学科12単位で、卒業に数える単位なら58単位でゼミ履修不可", () => {
     const student = seminarReady(SWING);
     expect(SWING.length * 2).toBe(60);

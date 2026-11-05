@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Impact, OverviewResponse } from "../../shared/api";
-import { buildMeetingSheet, countedCaption } from "../meetingSheet";
+import { buildMeetingSheet, countedCaption, countedStatuses } from "../meetingSheet";
 
 const impact: Impact = {
   ambiguityId: "ambiguity-a",
@@ -64,6 +64,22 @@ describe("buildMeetingSheet（確認事項の会議資料。B31）", () => {
     const sheet = buildMeetingSheet(overview);
     expect(sheet.summary).toEqual(overview.summary);
     expect(sheet.items.map((item) => item.ambiguityId)).toEqual(["ambiguity-a"]);
+  });
+});
+
+describe("countedStatuses（人数の表に出す判定の列。第3回の監査 A3-3）", () => {
+  it("どの読み方でも0人の判定は列にしない。数えていない判定を0人と読ませないため", () => {
+    expect(countedStatuses(impact.options)).toEqual(["short", "satisfied"]);
+    expect(buildMeetingSheet(overview).items[0]?.statuses).toEqual(["short", "satisfied"]);
+  });
+
+  it("どれか1つの読み方で人数があれば列にし、重い判定から並べる", () => {
+    const options = [
+      { counts: { satisfied: 4, delayed: 1 } },
+      { counts: { satisfied: 3, delay_risk: 2 } },
+      { counts: null },
+    ];
+    expect(countedStatuses(options)).toEqual(["delay_risk", "delayed", "satisfied"]);
   });
 });
 

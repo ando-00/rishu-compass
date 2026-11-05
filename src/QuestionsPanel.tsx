@@ -7,11 +7,9 @@ import type {
   OverviewResponse,
   PreviousAnswer,
 } from "../shared/api";
-import { buildMeetingSheet, countedCaption } from "./meetingSheet";
+import { buildMeetingSheet, countedCaption, countedStatuses } from "./meetingSheet";
 import { MeetingSheetView } from "./MeetingSheetView";
 import { JudgmentBadge, judgmentLabel } from "./StatusBadge";
-
-const COUNT_ORDER: JudgmentStatus[] = ["delay_risk", "short", "needs_staff", "delayed", "expected", "satisfied"];
 
 type Props = {
   overview: OverviewResponse;
@@ -33,9 +31,7 @@ type ImpactProps = {
 
 // 読み方を行、判定を列にした表で人数を見比べる。読み方によって人数が違う欄を太字にする
 export function ImpactCounts({ impact, chosen, onAnswer }: ImpactProps) {
-  const statuses = impact.computable
-    ? COUNT_ORDER.filter((status) => impact.options.some((option) => option.counts?.[status]))
-    : [];
+  const statuses = impact.computable ? countedStatuses(impact.options) : [];
   const differs = (status: JudgmentStatus) =>
     new Set(impact.options.map((option) => option.counts?.[status] ?? 0)).size > 1;
   return (

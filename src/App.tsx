@@ -8,7 +8,7 @@ import {
   type PreviousAnswer,
   type Respondent,
 } from "../shared/api";
-import { diffStudentStates } from "../engine/stateChanges";
+import { changesAfterAnswer } from "./answerChanges";
 import { fetchAnswerRecords, fetchDatasets, fetchOverview, saveAnswer, withdrawProposal } from "./api";
 import { ChangesPanel } from "./ChangesPanel";
 import { ExtractionPanel } from "./ExtractionPanel";
@@ -71,10 +71,7 @@ export function App() {
     () => Object.fromEntries((records ?? []).map((r) => [r.ambiguityId, r.optionId])),
     [records],
   );
-  const changes = useMemo(
-    () => (previous && overview ? diffStudentStates(previous.students, overview.students) : null),
-    [previous, overview],
-  );
+  const changes = useMemo(() => changesAfterAnswer(previous, overview), [previous, overview]);
 
   useEffect(() => {
     fetchDatasets()

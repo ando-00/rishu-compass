@@ -30,7 +30,7 @@
 | `data/fictional/*/check-cases.ts` | ルール案の検査用ケース | 判定エンジン仕様 v2 のテスト表の型を、各大学の科目で組んだ。期待値はテスト表のもの。読み方が分かれる箇所に関わるものは入れない。評価用の10名とは別物で、ルール変換の修正に使う |
 | `data/fictional/sakuradai/gold-rules.ts` | さくら台大学の正解ルール | 下の「正解ルールの作り方」のとおり |
 | `data/fictional/kamome/gold-rules.ts` | かもめ大学の正解ルール | 下の「かもめ大学の正解ルール」のとおり |
-| `data/fictional/sakuradai/gold-eval.json` | 評価用の10名の正解 | 作り手が 2026-11-05 に、学生別の Excel（要項の全科目と各学生の記録。アプリの判定は見せない）で書き、Claude が清書した。区分別の不足単位、今年度の卒業が難しいか、職員に回すか、伝える要点の番号を学生ごとに持つ。形は `evals/scoring.ts` にある。Claude の出力や `engine/` の結果から作っていない。経過は `docs/EVALUATION.md` |
+| `data/fictional/sakuradai/gold-eval.json` | 評価用の10名の正解 | 作り手が 2026-11-05 に、学生別の Excel（要項の全科目と各学生の記録。アプリの判定は見せない）で書き、Claude が清書した。区分別の不足単位、今年度の卒業が難しいか、職員に回すか、伝える要点の番号を学生ごとに持つ。形は `evals/scoring.ts` にある。最初の版（729603d）は、Claude の出力や `engine/` の結果から作っていない。そのあと作り手が、アプリの理由を見て4点を直し（6def5af）、コードが付ける職員面談の印に合わせて3人の「職員に回す」を直した（ee04b6b）。経過は `docs/EVALUATION.md` |
 | `data/fictional/*/recorded-proposal.json` | API キーなしで試すための、実際の変換の記録 | `evals/results/extract/` の最新の記録から `npm run record:proposal` で作る。Claude の出力で、正解ではない |
 | `data/fictional/sakuradai/recorded-advice.json` | API キーなしで試すための、表示用の学生2人の履修案の記録 | `npm run record:advice` で実際の Claude を呼んで作る。学生は第6条の回答で判定が変わる型から選んだ。読み込むときに今のルールで検査し直す |
 
