@@ -136,6 +136,8 @@ export function violation({ configs, sub, args }) {
       if (hasShort(args, "f") || hasLong(args, "--force") || hasLong(args, "--force-with-lease") || hasLong(args, "--force-if-includes") || positional.some((p) => p.startsWith("+"))) {
         return "force push は使わない。拒まれたら原因を確認する";
       }
+      // push の -n は --dry-run なので、長い形だけを見る（追加の監査 R-4）
+      if (hasLong(args, "--no-verify", 6)) return "--no-verify は使わない。push の前の鍵の検査を飛ばさない";
       return null;
     case "commit":
       if (hasLong(args, "--amend")) return "--amend は使わない（履歴を書き換えない）";

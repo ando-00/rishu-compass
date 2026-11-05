@@ -41,6 +41,10 @@ const BLOCK = [
   "git push --force-with-lease origin main",
   "git push origin +main",
   "git -C /repo push --force origin main",
+  // push の前の鍵の検査（pre-push）を飛ばさせない（追加の監査 R-4）
+  "git push --no-verify origin main",
+  "git push origin main --no-verify",
+  "git push --no-verif origin main",
   "git commit --amend",
   "git commit --amen -m x",
   "git commit -n -m x",
@@ -69,6 +73,8 @@ const ALLOW = [
   "git commit -m x",
   "git commit -am x",
   "git push -u origin main",
+  // push の -n は --dry-run で、フックを飛ばすものではない
+  "git push -n origin main",
   "git pull origin main",
   "git fetch origin main && git merge --ff-only origin/main",
   "git checkout main",

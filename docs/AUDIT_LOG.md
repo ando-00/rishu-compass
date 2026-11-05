@@ -500,7 +500,7 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
-| R-4 | S2 | フックが `git push --no-verify` を止めない。`AGENTS.md` は `--no-verify` を止めると書くが、見ていたのは `commit` だけ。push の前の鍵の検査（pre-push）を飛ばせる。読んだ | .claude/hooks/git-command.mjs | 未解決 | 次のコミットで直す |
+| R-4 | S2 | フックが `git push --no-verify` を止めない。`AGENTS.md` は `--no-verify` を止めると書くが、見ていたのは `commit` だけ。push の前の鍵の検査（pre-push）を飛ばせる。読んだ | .claude/hooks/git-command.mjs | 解決 | push の `--no-verify` を止める（push の `-n` は `--dry-run` なので通す）。`scripts/__tests__/hooks.test.mjs` に止める3件と通す1件 |
 | R-15 | S3 | フックをすり抜ける書き方。ヒアドキュメントの開始行の後ろに続けたコマンド（`<<'EOF' && git push --force`）、`bash -lc "…"`、`--config-env=core.hooksPath=…`、`checkout -t`、`worktree add -b`（以上、読んだ）。短い省略形の `commit --am`、`add --al`（未確認。git が受け付けるかを試していない） | .claude/hooks/git-command.mjs | 記録 | |
 | R-16 | S3 | コミット前の build と test（`staged-check.mjs`）は、`data/` だけ、`.claude/hooks/` だけ、`.githooks/` だけのコミットでは回らない。正解ルールと科目データは型チェックとテストの対象。CI では回る。読んだ | .githooks/staged-check.mjs | 記録 | |
 | R-17 | S3 | 機械検査 H1 は reflog の行全体に rebase、reset、amend の語を当てるので、コミットの件名にこの語があると FAIL になり、reflog の期限まで Stop フックが止め続ける。今の履歴の件名にはない。読んだ | scripts/audit.mjs | 記録 | 直すまで、コミットの件名にこの3語を書かない |
