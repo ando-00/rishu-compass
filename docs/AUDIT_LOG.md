@@ -501,10 +501,10 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
 | R-4 | S2 | フックが `git push --no-verify` を止めない。`AGENTS.md` は `--no-verify` を止めると書くが、見ていたのは `commit` だけ。push の前の鍵の検査（pre-push）を飛ばせる。読んだ | .claude/hooks/git-command.mjs | 解決 | push の `--no-verify` を止める（push の `-n` は `--dry-run` なので通す）。`scripts/__tests__/hooks.test.mjs` に止める3件と通す1件 |
-| R-15 | S3 | フックをすり抜ける書き方。ヒアドキュメントの開始行の後ろに続けたコマンド（`<<'EOF' && git push --force`）、`bash -lc "…"`、`--config-env=core.hooksPath=…`、`checkout -t`、`worktree add -b`（以上、読んだ）。短い省略形の `commit --am`、`add --al`（未確認。git が受け付けるかを試していない） | .claude/hooks/git-command.mjs | 記録 | |
-| R-16 | S3 | コミット前の build と test（`staged-check.mjs`）は、`data/` だけ、`.claude/hooks/` だけ、`.githooks/` だけのコミットでは回らない。正解ルールと科目データは型チェックとテストの対象。CI では回る。読んだ | .githooks/staged-check.mjs | 記録 | |
-| R-17 | S3 | 機械検査 H1 は reflog の行全体に rebase、reset、amend の語を当てるので、コミットの件名にこの語があると FAIL になり、reflog の期限まで Stop フックが止め続ける。今の履歴の件名にはない。読んだ | scripts/audit.mjs | 記録 | 直すまで、コミットの件名にこの3語を書かない |
-| R-18 | S3 | Windows では、壊す検査の作業用コピーで `evals/tmp` の除外が効かない（パスの区切りが違う）。README の手順の e2e は、声かけが増えることだけを見て「28人から34人」を確かめていない。読んだ | scripts/audit.mjs、scripts/e2e-readme.mjs | 記録 | |
+| R-15 | S3 | フックをすり抜ける書き方。ヒアドキュメントの開始行の後ろに続けたコマンド（`<<'EOF' && git push --force`）、`bash -lc "…"`、`--config-env=core.hooksPath=…`、`checkout -t`、`worktree add -b`（以上、読んだ）。短い省略形の `commit --am`、`add --al`（未確認。git が受け付けるかを試していない） | .claude/hooks/git-command.mjs | 解決 | 止める事例を21件、通す事例を7件足した（`scripts/__tests__/hooks.test.mjs`）。手元の git 2.54 で、`branch -v 名前`、`--format`、`--sort`、`commit --am`、`add --al` が実際に効くことを確かめた。`git commit -a` は H35 で別に決める |
+| R-16 | S3 | コミット前の build と test（`staged-check.mjs`）は、`data/` だけ、`.claude/hooks/` だけ、`.githooks/` だけのコミットでは回らない。正解ルールと科目データは型チェックとテストの対象。CI では回る。読んだ | .githooks/staged-check.mjs | 解決 | `data/`、`.claude/`、`.githooks/` と日本語のファイル名でも回す。同上 |
+| R-17 | S3 | 機械検査 H1 は reflog の行全体に rebase、reset、amend の語を当てるので、コミットの件名にこの語があると FAIL になり、reflog の期限まで Stop フックが止め続ける。今の履歴の件名にはない。読んだ | scripts/audit.mjs | 解決 | reflog の操作の名前だけを見る |
+| R-18 | S3 | Windows では、壊す検査の作業用コピーで `evals/tmp` の除外が効かない（パスの区切りが違う）。README の手順の e2e は、声かけが増えることだけを見て「28人から34人」を確かめていない。読んだ | scripts/audit.mjs、scripts/e2e-readme.mjs | 解決 | パスの区切りをそろえた。e2e は 28人から34人の数と職員面談の印まで確かめる |
 | R-19 | 未定 | フックは `git commit -a` を通す（通す事例としてテストにある）。同じ作業ツリーに別のセッションの未コミットの変更があると、それも一緒にコミットされる。`AGENTS.md` は「自分が変えたファイルだけをパスで指定して `git add`」と定める。読んだ | scripts/__tests__/hooks.test.mjs | 人の判断 | `docs/BACKLOG.md` の H35 |
 
 ### 文書
@@ -524,8 +524,8 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 |---|---|---|---|---|---|
 | R-8 | S3 | 特別な学生のテスト（8条件の掛け合わせ）に、あとから足した公開の関数が入っていない（`settledStudentIds` は A25-18）。動作は正しい。実行 | engine/__tests__/excluded.test.ts | 解決 | `settledStudentIds`、`checkCurrentRegistrations`、`unavailableCourses`、履修案の前提の3関数、`summarizeFinalYear` を、8条件の掛け合わせに足した |
 | R-25 | S3 | さくら台大学の検査用ケースは、合計単位を0にしても T03（合計が122単位で足りない）が通過のまま、基礎教育の選択必修の最低単位を0にしても T02（選択必修が2単位足りない）が通過のまま。区分の最低単位の合計が124ちょうどなので、どれかが欠けると別の不足も起きる。ルール案の値の誤りを、題名どおりのケースが見つけない。実行 | data/fictional/sakuradai/check-cases.ts | 記録 | 検査用ケースの中身は人が決める |
-| R-26 | S3 | 弱いテスト。`staff-review.test.ts` の「延期見込みでない学生の案には付けない」は、条件の中にだけ `expect` があり、案が検査に落ちると何も確かめない（読んだ）。T07 と T15 が題名の原因を切り分けていない、`enrolled-after-check.test.ts` が2つの呼び出しの一致だけを比べる（未確認） | worker/__tests__/staff-review.test.ts:42 ほか | 記録 | |
-| R-27 | S3 | 採点（`eval:score`）は10名そろった最新の回だけを選び、1人でも失敗した回を知らせずに飛ばす。正解の区分名が判定の名前と合わないと、照合せずに捨てる。今の正解の区分名は全て一致している（読んだ）。結果ファイル名の時刻が、変換は手元の時刻、ほかは UTC（2026-11-06 の実行のファイル名で確かめた） | evals/score.ts の `latestFullRecord`、evals/scoring.ts | 記録 | |
+| R-26 | S3 | 弱いテスト。`staff-review.test.ts` の「延期見込みでない学生の案には付けない」は、条件の中にだけ `expect` があり、案が検査に落ちると何も確かめない（読んだ）。T07 と T15 が題名の原因を切り分けていない、`enrolled-after-check.test.ts` が2つの呼び出しの一致だけを比べる（未確認） | worker/__tests__/staff-review.test.ts:42 ほか | 解決 | `staff-review.test.ts` は条件の外で確かめる。T07、T15、`enrolled-after-check.test.ts` は未確認のまま |
+| R-27 | S3 | 採点（`eval:score`）は10名そろった最新の回だけを選び、1人でも失敗した回を知らせずに飛ばす。正解の区分名が判定の名前と合わないと、照合せずに捨てる。今の正解の区分名は全て一致している（読んだ）。結果ファイル名の時刻が、変換は手元の時刻、ほかは UTC（2026-11-06 の実行のファイル名で確かめた） | evals/score.ts の `latestFullRecord`、evals/scoring.ts | 解決 | 正解の区分名が判定にないと止まり、10名そろわない回を飛ばしたことを示す。結果ファイル名の時刻は、並びの向きが同じディレクトリの中では変わらないので変えていない |
 | R-28 | 未定 | 架空の学生データの偏り。かもめ大学は専攻と年次が同じ通し番号から決まり、心理学専攻は1・3年次、社会学専攻は2・4年次だけになる（4年次の心理学専攻は0人）。さくら台大学の2〜4年次は225人のうち220人が前年度 GPA 3.0 以上で、緩和の上限がほぼ全員に掛かる。同梱の学生は全員後期で、前期の学生の経路はテストだけが通る。実行 | data/fictional/students.ts の `generateStudent` | 人の判断 | 同 H37 |
 | R-29 | 未定 | 学生別の画面は、職員確認の判定にも仮の値の単位数と未修得科目を出す（A1-23。対応しない）。声かけの一覧は同じ量を消している（B23）。2つの画面で扱いが違う。読んだ | src/StudentsPanel.tsx の `credits` | 人の判断 | 同 H36 |
 | R-30 | 未定 | 正解ルールの疑問点（書き換えていない）。かもめ大学の「修得済みの科目の再履修」の根拠の文が、履修上限についての文（「再履修科目は上限に含めません」）。さくら台大学の演習Ⅰの履修条件は、条文が「第6条、第7条」で、根拠の文は第6条の1文目だけ。かもめ大学の手引きの「他学部の科目は自由科目に上限なく算入できます」がルールにない。未確認（サブエージェントが手引きと照らした） | data/fictional/*/gold-rules.ts | 人の判断 | 同 H38 |

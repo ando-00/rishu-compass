@@ -242,7 +242,8 @@ async function main() {
     await page.getByRole("button", { name: /卒業に必要な単位に算入される単位だけを数える/ }).click();
     await page.getByText(/直前 \d+人/).first().waitFor();
     const after = await summary("声かけ");
-    if (!(after > before)) throw new Error(`声かけが ${before}人 から ${after}人`);
+    // README の「28人から34人」と同じ数であること（追加の監査 R-18）
+    if (before !== 28 || after !== 34) throw new Error(`声かけが ${before}人 から ${after}人（README は 28人から34人）`);
     await page.getByText(/回答の経過（\d+件）/).first().waitFor();
     return `声かけ ${before}人 → ${after}人`;
   });
@@ -276,6 +277,7 @@ async function main() {
     await result.getByRole("heading", { name: "声かけ文の下書き" }).waitFor();
     const text = await result.innerText();
     if (!/通過/.test(text)) throw new Error("検査に通過の表示が見当たらない");
+    if (!text.includes("職員面談に回してください")) throw new Error("職員面談に回す印が見当たらない");
   });
 
   const errors = consoleErrors.filter((text) => !/favicon/.test(text));

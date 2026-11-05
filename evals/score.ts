@@ -23,6 +23,7 @@ type AdviseRecord = {
   model: string;
   option: string;
   results: { studentId: string; calls?: { tool: string; output: string }[]; result: AdviseResponse }[];
+  failures?: { studentId: string; message: string }[];
 };
 
 function latestFullRecord() {
@@ -30,6 +31,8 @@ function latestFullRecord() {
   for (const name of names) {
     const record = JSON.parse(readFileSync(join(ADVISE_DIR, name), "utf8")) as AdviseRecord;
     if (record.results.length === sakuradaiEvalStudents.length) return { name, record };
+    // 10名そろわない回を飛ばしたときは、失敗の回を黙って飛ばさないよう示す（追加の監査 R-27）
+    console.log(`10名そろっていないので採点に使わない: ${name}（${record.results.length}名、失敗 ${record.failures?.length ?? 0}名）`);
   }
   throw new Error("10名そろった履修案の記録がありません。npm run eval:advise を実行してください");
 }

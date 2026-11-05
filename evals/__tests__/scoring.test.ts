@@ -51,6 +51,11 @@ describe("evalGoldSchema", () => {
 });
 
 describe("scoreStudent", () => {
+  it("正解の区分名が判定にないと、黙って捨てずに止める（R-27）", () => {
+    const gold = { ...GOLD, shortages: { ...GOLD.shortages, 書き間違い: 2 } };
+    expect(() => scoreStudent("E1", gold, JUDGMENTS, PASSED)).toThrow("書き間違い");
+  });
+
   it("正解と一致すれば危険な誤りはない", () => {
     const { credits, dangerous, overEscalated } = scoreStudent("E1", GOLD, JUDGMENTS, PASSED);
     expect(credits).toEqual({ matched: 2, total: 2, differences: [] });

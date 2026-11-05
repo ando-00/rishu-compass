@@ -12,10 +12,11 @@ const WIN = process.platform === "win32";
 const git = (args) => spawnSync("git", args, { encoding: "utf8" });
 
 const CODE = (file) =>
-  (/^(engine|shared|worker|src|evals|scripts|migrations)\//.test(file) && !file.startsWith("evals/results/") && !file.startsWith("evals/tmp/")) ||
+  (/^(engine|shared|worker|src|evals|scripts|migrations|data|\.claude|\.githooks)\//.test(file) && !file.startsWith("evals/results/") && !file.startsWith("evals/tmp/")) ||
   /^(package(-lock)?\.json|tsconfig[^/]*\.json|vite\.config\.ts|vitest\.config\.ts|wrangler\.jsonc|index\.html)$/.test(file);
 
-const files = git(["diff", "--cached", "--name-only"]).stdout.split("\n").filter(Boolean);
+// 日本語のファイル名が引用符つきで出ないようにする
+const files = git(["-c", "core.quotePath=false", "diff", "--cached", "--name-only"]).stdout.split("\n").filter(Boolean);
 if (!files.some(CODE)) process.exit(0);
 
 const root = git(["rev-parse", "--show-toplevel"]).stdout.trim();

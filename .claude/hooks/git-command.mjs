@@ -5,7 +5,8 @@
 
 // ヒアドキュメントの本文を外す（コミットメッセージの中の語で止めないため）
 function stripHeredocs(text) {
-  return text.replace(/<<-?\s*(["']?)([A-Za-z_][\w]*)\1[^\n]*\n[\s\S]*?\n\s*\2(?=\s|$)/g, " ");
+  // 開始行の後ろに続くコマンドは残す（`<<'EOF' && git push -f`。追加の監査 R-15）
+  return text.replace(/<<-?\s*(["']?)([A-Za-z_][\w]*)\1([^\n]*)\n[\s\S]*?\n\s*\2(?=\s|$)/g, (_, _quote, _tag, rest) => ` ${rest} `);
 }
 
 // 1つのコマンド行を、区切り（; && || | 改行）ごとの語の並びにする。引用符の中は1語として残す。
@@ -47,7 +48,7 @@ export function tokenize(text) {
     } else if (ch === "\\" && i + 1 < text.length) {
       word += text[i + 1];
       i += 1;
-    } else if (ch === "\n" || ch === ";" || ch === "|" || ch === "&" || ch === "(" || ch === ")") {
+    } else if (ch === "\n" || ch === ";" || ch === "|" || ch === "&" || ch === "(" || ch === ")" || ch === "`") {
       pushSegment();
     } else if (ch === " " || ch === "\t") {
       pushWord();
@@ -60,15 +61,22 @@ export function tokenize(text) {
 }
 
 const SHELLS = new Set(["bash", "sh", "zsh", "dash"]);
+// 別のシェルの「続きを実行する」オプション
+const OTHER_SHELLS = { cmd: /^\/c$/i, powershell: /^-c(ommand)?$/i, pwsh: /^-c(ommand)?$/i };
 
 // git の呼び出しを { globals, configs, sub, args } の並びで返す。`bash -c "…"` と `eval "…"` の中も見る。
 export function gitCalls(text, depth = 0) {
   const calls = [];
   for (const words of tokenize(stripHeredocs(text))) {
     for (let i = 0; i < words.length; i += 1) {
-      const name = words[i].split("/").pop();
-      if (depth < 3 && SHELLS.has(name) && words[i + 1] === "-c" && words[i + 2] !== undefined) {
+      const name = words[i].split(/[\\/]/).pop().replace(/\.exe$/i, "");
+      // -lc、-ic のようにまとめた形も見る
+      if (depth < 3 && SHELLS.has(name) && /^-[A-Za-z]*c[A-Za-z]*$/.test(words[i + 1] ?? "") && words[i + 2] !== undefined) {
         calls.push(...gitCalls(words[i + 2], depth + 1));
+        break;
+      }
+      if (depth < 3 && OTHER_SHELLS[name?.toLowerCase()]?.test(words[i + 1] ?? "")) {
+        calls.push(...gitCalls(words.slice(i + 2).join(" "), depth + 1));
         break;
       }
       if (depth < 3 && name === "eval" && words[i + 1] !== undefined) {
@@ -76,7 +84,11 @@ export function gitCalls(text, depth = 0) {
         break;
       }
       if (name !== "git") continue;
-      const configs = [];
+      // 環境変数で渡す設定（GIT_CONFIG_KEY_0=core.hooksPath）。値は別の変数なので、書いてあれば止める
+      const configs = words
+        .slice(0, i)
+        .filter((word) => /^GIT_CONFIG_(KEY_\d+|PARAMETERS)=.*hookspath/i.test(word))
+        .map(() => "core.hookspath=環境変数");
       let j = i + 1;
       while (j < words.length && words[j].startsWith("-")) {
         const option = words[j];
@@ -86,7 +98,7 @@ export function gitCalls(text, depth = 0) {
           configs.push(words[j + 1] ?? "");
           j += 2;
         } else if (option.startsWith("--config-env")) {
-          configs.push(option);
+          configs.push(option.includes("=") ? option.slice(option.indexOf("=") + 1) : (words[j + 1] ?? ""));
           j += option.includes("=") ? 1 : 2;
         } else {
           j += 1;
@@ -103,14 +115,15 @@ export function gitCalls(text, depth = 0) {
 function hasShort(args, letter) {
   return args.some((arg) => /^-[A-Za-z]+$/.test(arg) && arg.slice(1).includes(letter));
 }
-function hasLong(args, full, minLength = 5) {
+function hasLong(args, full, minLength = 4) {
   return args.some((arg) => {
     const name = arg.split("=")[0];
     return name.startsWith("--") && name.length >= Math.min(minLength, full.length) && full.startsWith(name);
   });
 }
 
-const BRANCH_QUERY = ["-d", "-D", "--delete", "-l", "--list", "-a", "--all", "-r", "--remotes", "-v", "-vv", "--show-current", "--contains", "--merged", "--no-merged", "--points-at", "--format", "--sort", "-u", "--set-upstream-to", "--unset-upstream", "--edit-description"];
+// -v、--format、--sort は一覧の形を変えるだけで、名前を渡すとブランチを作る（git 2.54 で確かめた）
+const BRANCH_QUERY = ["-d", "-D", "--delete", "-l", "--list", "-a", "--all", "-r", "--remotes", "--show-current", "--contains", "--merged", "--no-merged", "--points-at", "-u", "--set-upstream-to", "--unset-upstream", "--edit-description"];
 
 // 決まりに反する理由を返す。反しなければ null。
 export function violation({ configs, sub, args }) {
@@ -150,7 +163,14 @@ export function violation({ configs, sub, args }) {
     case "filter-repo":
       return "履歴を書き換えない";
     case "checkout":
-      if (hasShort(args, "b") || hasShort(args, "B") || hasLong(args, "--orphan")) return "ブランチを切らない。main に直接コミットする";
+      if (hasShort(args, "b") || hasShort(args, "B") || hasShort(args, "t") || hasLong(args, "--track") || hasLong(args, "--orphan")) return "ブランチを切らない。main に直接コミットする";
+      return null;
+    case "worktree":
+      // 名前を渡さなくても、worktree add は新しいブランチを作る
+      if (args[0] === "add" && !args.includes("--detach") && !args.includes("-d")) return "ブランチを切らない。main に直接コミットする";
+      return null;
+    case "merge":
+      if (hasLong(args, "--squash")) return "squash は使わない";
       return null;
     case "switch":
       if (hasShort(args, "c") || hasShort(args, "C") || hasLong(args, "--create") || hasLong(args, "--force-create") || hasLong(args, "--orphan")) {
@@ -166,7 +186,7 @@ export function violation({ configs, sub, args }) {
     case "config": {
       const at = args.findIndex((arg) => arg.toLowerCase() === "core.hookspath");
       if (at === -1) return null;
-      if (args.some((arg) => arg.startsWith("--unset"))) return "core.hooksPath は .githooks のままにする";
+      if (args.some((arg) => arg.startsWith("--unset") || arg === "unset")) return "core.hooksPath は .githooks のままにする";
       const value = args[at + 1];
       if (value !== undefined && value !== ".githooks") return "core.hooksPath は .githooks のままにする";
       return null;

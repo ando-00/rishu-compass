@@ -37,6 +37,11 @@ function compareCredits(studentId: string, gold: GoldStudent, judgments: Judgmen
   const dangerous: Danger[] = [];
   let total = 0;
 
+  // 正解に書いた区分名が判定の名前と合わなければ、黙って捨てずに止める（追加の監査 R-27）
+  const known = new Set(judgments.filter(({ kind }) => kind === "category").map(({ name }) => name));
+  const unknown = Object.keys(gold.shortages).filter((name) => !known.has(name));
+  if (unknown.length > 0) throw new Error(`${studentId} の正解の区分が判定にありません: ${unknown.join("、")}`);
+
   for (const { name, kind, status, required, actual } of judgments) {
     if (kind !== "category" || required === undefined || actual === undefined) continue;
     total += 1;

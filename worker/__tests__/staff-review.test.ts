@@ -39,7 +39,8 @@ describe("職員面談に回す印（H28）", () => {
     const plan = [{ course: "大学基礎論", term: "前期" as const }];
     const passed = student.records.some(({ course }) => course === "大学基礎論");
     const reviewed = reviewPlan(input, passed ? [] : plan, "下書き", 1, []);
-    if (reviewed) expect(reviewed.staffReview).toBeUndefined();
+    expect(reviewed).not.toBeNull();
+    expect(reviewed?.staffReview).toBeUndefined();
   });
 
   it("延期見込みの学生には、案の検査を通っても必ず印が付く（Claude の判断に任せない）", () => {

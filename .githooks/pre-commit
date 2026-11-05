@@ -6,7 +6,7 @@ if git diff --cached --name-only | grep -E '(^|/)\.dev\.vars$' >/dev/null; then
   exit 1
 fi
 
-if git diff --cached | grep -E '^\+.*sk-ant-[A-Za-z0-9_-]{20,}' >/dev/null; then
+if git diff --cached --no-color --no-ext-diff | grep -E '^\+.*sk-ant-[A-Za-z0-9_-]{20,}' >/dev/null; then
   echo "pre-commit: API キーらしい文字列があるため、コミットを止めました" >&2
   exit 1
 fi

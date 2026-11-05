@@ -62,6 +62,27 @@ const BLOCK = [
   "git config core.hooksPath /dev/null",
   "git config --unset core.hooksPath",
   'bash -c "git rebase main"',
+  // 追加の監査 R-15。手元の git 2.54 で、branch の3つと commit --am、add --al が実際に効くことを確かめた
+  "git commit -F - <<'EOF' && git push --force origin main\nmessage\nEOF",
+  'bash -lc "git push --force origin main"',
+  'cmd /c "git rebase main"',
+  'powershell -Command "git push -f origin main"',
+  "git.exe push -f origin main",
+  "echo `git push -f origin main`",
+  "H=/dev/null git --config-env=core.hooksPath=H commit -m x",
+  "git --config-env core.hooksPath=H commit -m x",
+  "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null git commit -m x",
+  "git config unset core.hooksPath",
+  "git commit --am -m x",
+  "git add --al",
+  "git branch -v topic",
+  "git branch --format=x topic",
+  "git branch --sort=refname topic",
+  "git checkout -t origin/topic",
+  "git checkout --track origin/topic",
+  "git worktree add ../x",
+  "git worktree add ../x -b topic",
+  "git merge --squash topic",
   "git commit -m \"don't\" && git push -f origin main && echo 'x'",
 ];
 
@@ -83,6 +104,13 @@ const ALLOW = [
   "git branch -a",
   "git branch",
   "git branch -D old-topic",
+  "git branch -v",
+  "git branch --sort=refname",
+  "git worktree list",
+  "git worktree add --detach ../x",
+  "git config --get core.hooksPath",
+  "git checkout -- engine/a.ts",
+  "git merge origin/main",
   "git config core.hooksPath",
   "git config core.hooksPath .githooks",
   "git reset HEAD engine/a.ts",
@@ -120,6 +148,17 @@ describe("pre-commit のコミットされる中身での build と test（A25-7
   }
   const BROKEN = "export const a = 'BROKEN';\n";
   const FIXED = "export const a = 2;\n";
+
+  // 追加の監査 R-16。正解ルールと科目データ、フックも型チェックとテストの対象。日本語のファイル名も見逃さない
+  it.each(["data/fictional/x.ts", ".claude/hooks/x.mjs", ".githooks/x.mjs", "engine/日本語.ts"])("%s だけのコミットでも test を回す", (file) => {
+    const { dir, git, head } = repo({ test: "exit 1" });
+    const before = head();
+    mkdirSync(join(dir, file, ".."), { recursive: true });
+    writeFileSync(join(dir, file), "export {};\n");
+    git("add", file);
+    expect(git("commit", "-q", "-m", "x").status).toBe(1);
+    expect(head()).toBe(before);
+  }, 60000);
 
   it("索引が壊れていれば、作業ツリーが直っていても止める（2a3628f の形）", () => {
     const { dir, git, head } = repo();

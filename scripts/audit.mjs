@@ -163,7 +163,8 @@ function checkHistory() {
   else record("G4", "FAIL", "持ち込みデータ: 46e408f のあとに変更がある", handbook.join("\n"));
   // git stash は reflog に「reset: moving to HEAD」を残すが、履歴は書き換えない（監査の第2.5回の A25-9）
   const reflog = lines(git(["reflog"]).stdout).filter(
-    (l) => /rebase|reset|amend/.test(l) && !/reset: moving to HEAD$/.test(l),
+    // 見るのは操作の名前だけ。コミットの件名にこの語があっても数えない（追加の監査 R-17）
+    (l) => /rebase|reset|amend/.test(/^\S+ \S+: ([^:]*):/.exec(l)?.[1] ?? l) && !/reset: moving to HEAD$/.test(l),
   );
   expectEmpty("H1", "履歴: reflog に rebase、reset、amend がない", reflog.join("\n"));
   const ancestor = git(["merge-base", "--is-ancestor", "origin/main", "HEAD"]);
@@ -315,7 +316,7 @@ function checkMutation(work) {
   const copy = join(work, "mutate");
   mkdirSync(copy);
   for (const entry of ["engine", "data", "worker", "shared", "evals", "src", "migrations", "vitest.config.ts", "package.json"]) {
-    cpSync(join(ROOT, entry), join(copy, entry), { recursive: true, filter: (p) => !p.includes(`${"evals"}/tmp`) });
+    cpSync(join(ROOT, entry), join(copy, entry), { recursive: true, filter: (p) => !p.replaceAll("\\", "/").includes(`${"evals"}/tmp`) });
   }
   linkModules(copy);
   const r = run(process.execPath, [join(ROOT, "scripts/mutate.mjs"), copy], { timeout: 3 * 60 * 60 * 1000 });
