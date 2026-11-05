@@ -110,7 +110,7 @@ const M = [
   ["impact", ".filter((id) => stuck.has(id) && !affected.has(id))", ".filter((id) => stuck.has(id))", "影響と職員確認の重複を除く"],
   ["impact", "(shown.get(change.ruleId)?.size ?? 0) > 1", "(shown.get(change.ruleId)?.size ?? 0) > 0", "変化なしを除く"],
   ["impact", ".sort((a, b) => b.affectedStudentIds.length - a.affectedStudentIds.length)", "", "影響人数の順"],
-  ["impact", ".filter((ambiguity) => !(ambiguity.id in answers))", "", "回答済みを除く"],
+  ["impact", ".filter((ambiguity) => !Object.hasOwn(answers, ambiguity.id))", "", "回答済みを除く"],
   ["evaluate", "needsContact: outcome.atRisk === true || (outcome.status === \"short\" && passedCheck),", "needsContact: outcome.status === \"short\" && passedCheck,", "危険の印を声かけに"],
   ["evaluate", "needsContact: outcome.atRisk === true || (outcome.status === \"short\" && passedCheck),", "needsContact: outcome.status === \"short\", ","判定待ち全員を声かけにする"],
   ["outreach", "kind: contact.length > 0 ? \"contact\" : \"staff_review\"", "kind: \"contact\"", "職員確認の区別"],
@@ -198,7 +198,7 @@ const M = [
   ["validate", "if (rule.sourceQuote.trim() === \"\") problems.push(`${rule.id}: 根拠の文がありません`);", "", "検証: 根拠の文"],
   ["validate", 'if (patch.field === "overflowTo" && patch.value !== null && !categoryIds.has(String(patch.value))) {', "if (false) {", "検証: 差分の算入先"],
   ["verifyQuotes", 'return quote === "" || !body.includes(quote);', "return !body.includes(quote);", "根拠: 空の文"],
-  ["compareRules", "byKey.delete(spec.key(rule));", "", "比較: 突き合わせ済みを除く"],
+  ["compareRules", "byKey.get(spec.key(rule))?.shift();", "byKey.get(spec.key(rule))?.[0];", "比較: 突き合わせ済みを除く"],
   ["checkCases", 'status === "needs_staff" ? "pending" : "failed"', '"failed"', "ケース: 職員確認は保留"],
   ["finalYear", "student.studentYear >= minYears", "student.studentYear > minYears", "最終年次: 境界"],
   ["finalYear", "else if (row.kind === \"graduation\") row.counts.needs_staff += 1;", "else if (false) row.counts.needs_staff += 1;", "最終年次: 判定のない卒業要件を職員確認に"],
@@ -229,6 +229,8 @@ const M = [
   ["worker/advisor/tools", "heldRegistrations: heldRegistrations(student, locked),", "heldRegistrations: [],", "案の前提: 前期の外した登録を渡す"],
   ["worker/advisor/tools", "(record.result === \"enrolled\" && record.studentYear === target.studentYear),", "false,", "科目の検索: 今年度に履修中の科目を返さない"],
   ["worker/advisor/tools", "          ...assumptions.heldRegistrations.map((entry) => entry.course),\n", "", "科目の検索: 外した登録の科目を返さない"],
+  // 追加の監査の R-11
+  ["plan", "if (reason) return { courses: registered.map(({ course }) => course), check: needsStaffCheck(reason) };", "", "今期の登録: 対象外は記録を外す前に見る"],
 ];
 
 function runTests() {

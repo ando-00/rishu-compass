@@ -192,7 +192,7 @@ export function settledStudentIds(
   answers: Answers,
 ) {
   const readings = rules.ambiguities
-    .filter((ambiguity) => !(ambiguity.id in answers) && ambiguity.options.length > 0)
+    .filter((ambiguity) => !Object.hasOwn(answers, ambiguity.id) && ambiguity.options.length > 0)
     .map((ambiguity) =>
       ambiguity.options.map((option) =>
         prepareRules(rules, courses, { ...answers, [ambiguity.id]: option.id }),
@@ -216,7 +216,7 @@ export function computeImpacts(
   beforeStates?: Map<string, StudentState>,
 ) {
   return rules.ambiguities
-    .filter((ambiguity) => !(ambiguity.id in answers))
+    .filter((ambiguity) => !Object.hasOwn(answers, ambiguity.id))
     .map((ambiguity) => computeImpact(rules, courses, students, answers, ambiguity.id, beforeStates))
     .sort((a, b) => b.affectedStudentIds.length - a.affectedStudentIds.length);
 }

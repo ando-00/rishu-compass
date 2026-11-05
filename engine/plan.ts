@@ -76,10 +76,21 @@ export function isDisplayablePlan(check: PlanCheck) {
   return check.status === "passed";
 }
 
+// ルールがこの学生に組み立てられない（算入先の区分が当てはまらないなど）ときは前提を計算しない。
+// 検査そのものが同じ例外を受けて職員確認を返す（第3回の監査 A3-11）
+function tryContext(prepared: ReturnType<typeof prepareRules>, student: Student) {
+  try {
+    return createContext(prepared, student);
+  } catch {
+    return null;
+  }
+}
+
 function enrolledGates(rules: RuleSet, courses: Course[], student: Student, answers: Answers) {
   const prepared = prepareRules(rules, courses, answers);
   if (exclusionReason(prepared, student)) return [];
-  const context = createContext(prepared, student);
+  const context = tryContext(prepared, student);
+  if (!context) return [];
   const enrolled = student.records
     .filter((record) => record.result === "enrolled" && record.studentYear === student.studentYear)
     .map((record) => record.course);
@@ -120,7 +131,8 @@ export function pendingPromotions(rules: RuleSet, courses: Course[], student: St
   if (student.currentTerm === "前期") return [];
   const prepared = prepareRules(rules, courses, answers);
   if (exclusionReason(prepared, student)) return [];
-  const context = createContext(prepared, student);
+  const context = tryContext(prepared, student);
+  if (!context) return [];
   return prepared.rules.gates.filter((gate) => {
     if (gate.target.kind !== "promotion" || gate.target.toYear !== student.studentYear + 1) return false;
     if (!matchesCondition(gate.when, student)) return false;
@@ -574,6 +586,9 @@ export function checkCurrentRegistrations(
     record.result === "enrolled" && record.studentYear === student.studentYear;
   const registered = student.records.filter(current);
   if (registered.length === 0) return null;
+  // 今期の記録を外す前の学生で、対象外かを見る。外したあとだと、今期の科目データにない科目を見落とす（追加の監査 R-11）
+  const reason = exclusionReason(prepareRules(rules, courses, answers), student);
+  if (reason) return { courses: registered.map(({ course }) => course), check: needsStaffCheck(reason) };
   const target = { ...student, records: student.records.filter((record) => !current(record)) };
   const plan = registered.map(({ course, term }) => ({ course, term }));
   return {

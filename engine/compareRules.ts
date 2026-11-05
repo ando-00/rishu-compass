@@ -196,14 +196,15 @@ export function compareRules(base: RuleSet, other: RuleSet, { includeProvisional
   let total = 0;
 
   const compare = <T extends { id: string }>(spec: Spec<T>, bases: T[], others: T[]) => {
-    const byKey = new Map(others.map((rule) => [spec.key(rule), rule]));
+    // 同じ名前になるルール（条件のない履修上限が2件など）は、並びの順に1件ずつ突き合わせる
+    const byKey = new Map<string, T[]>();
+    for (const rule of others) byKey.set(spec.key(rule), [...(byKey.get(spec.key(rule)) ?? []), rule]);
     for (const rule of bases) {
       const counted = Object.entries(spec.fields(rule, base)).filter(
         ([field]) => !skip.has(`${rule.id}.${field}`),
       );
       total += counted.length;
-      const found = byKey.get(spec.key(rule));
-      byKey.delete(spec.key(rule));
+      const found = byKey.get(spec.key(rule))?.shift();
       if (!found) {
         missing.push(itemName(spec, rule));
         continue;
@@ -214,7 +215,7 @@ export function compareRules(base: RuleSet, other: RuleSet, { includeProvisional
         else mismatches.push({ item: itemName(spec, rule), field, base: value, other: compared[field] });
       }
     }
-    extra.push(...[...byKey.values()].map((rule) => itemName(spec, rule)));
+    extra.push(...[...byKey.values()].flat().map((rule) => itemName(spec, rule)));
   };
 
   compare(SPECS.graduation, [base.graduation], [other.graduation]);
