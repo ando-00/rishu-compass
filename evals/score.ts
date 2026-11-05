@@ -42,7 +42,18 @@ function readGold() {
 function score(record: AdviseRecord) {
   const gold = readGold();
   if (!gold) return null;
-  const advice = new Map(record.results.map(({ studentId, result }) => [studentId, adviseResponseSchema.parse(result)]));
+  // 保存した案に、今のコードが付ける印（職員面談に回す。H28）を付け直す。検査に通らなくなった案はそのまま使う
+  const answers = { "seminar-credit-basis": record.option };
+  const advice = new Map<string, AdviseResponse>(
+    record.results.map(({ studentId, result }): [string, AdviseResponse] => {
+      const parsed = adviseResponseSchema.parse(result);
+      const student = sakuradaiEvalStudents.find((each) => each.student.id === studentId)?.student;
+      if (parsed.status !== "passed" || !student) return [studentId, parsed];
+      const input = { rules: goldRules, courses: sakuradaiCourses, student, answers };
+      const plan = parsed.plan.map(({ course, term }) => ({ course, term }));
+      return [studentId, reviewPlan(input, plan, parsed.draft, parsed.iterations, parsed.corrections) ?? parsed];
+    }),
+  );
   const missing = sakuradaiEvalStudents.filter(({ student }) => !gold.students[student.id]);
   if (missing.length > 0) {
     throw new Error(`正解がない学生がいます: ${missing.map(({ student }) => student.id).join("、")}`);

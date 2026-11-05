@@ -193,3 +193,22 @@ describe("summarizeChecks", () => {
     expect(summary).toEqual({ attempted: 4, firstPassed: 1, finalPassed: 3 });
   });
 });
+
+describe("職員面談に回す印の付いた案（H28）", () => {
+  const MARKED: AdviseResponse = { ...PASSED, staffReview: "職員面談に回す学生です。" };
+
+  it("職員に回すべき学生でも、印の付いた案なら取りこぼしにしない", () => {
+    const result = scoreStudent("E0008", { ...GOLD, escalate: true }, JUDGMENTS, MARKED);
+    expect(result.dangerous.filter(({ kind }) => kind === "not_escalated")).toEqual([]);
+  });
+
+  it("印のない案は今までどおり取りこぼし", () => {
+    const result = scoreStudent("E0008", { ...GOLD, escalate: true }, JUDGMENTS, PASSED);
+    expect(result.dangerous.map(({ kind }) => kind)).toContain("not_escalated");
+  });
+
+  it("回さなくてよい学生に印を付けたら、回し過ぎに数える", () => {
+    expect(scoreStudent("E0001", GOLD, JUDGMENTS, MARKED).overEscalated).toBe(true);
+    expect(scoreStudent("E0001", GOLD, JUDGMENTS, PASSED).overEscalated).toBe(false);
+  });
+});

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AdviseResponse, Correction, SavedAdvice } from "../shared/advise";
 import type { Answers } from "../shared/api";
 import { adviseStudent, fetchLatestAdvice, loadRecordedAdvice } from "./api";
-import { PlanBadge } from "./StatusBadge";
+import { PlanBadge, StateBadge } from "./StatusBadge";
 
 type Props = {
   datasetId: string;
@@ -37,6 +37,11 @@ function Corrections({ corrections }: { corrections: Correction[] }) {
 function PlanResult({ result }: { result: Extract<AdviseResponse, { status: "passed" }> }) {
   return (
     <>
+      {result.staffReview && (
+        <p role="note" className="staff-review">
+          <StateBadge state="staff_review" /> {result.staffReview}
+        </p>
+      )}
       <p>
         {result.planningYear}年次に向けた案です。コードの検査を通りました（合計 {result.totalCredits}単位）。
       </p>

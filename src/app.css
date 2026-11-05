@@ -577,6 +577,15 @@ button.summary-cell:hover:not(:disabled) {
   color: inherit;
 }
 
+/* 職員面談に回す印（H28） */
+.staff-review {
+  padding: 8px 12px;
+  border-left: 3px solid var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 13px;
+}
+
 /* 読み方の表 */
 
 .options-table td.option-label {

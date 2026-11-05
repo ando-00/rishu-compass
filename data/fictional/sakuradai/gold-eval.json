@@ -30,7 +30,7 @@
         "自由": 2
       },
       "delay": true,
-      "escalate": false,
+      "escalate": true,
       "points": []
     },
     "E0004": {
@@ -51,7 +51,7 @@
         "自由": 20
       },
       "delay": true,
-      "escalate": false,
+      "escalate": true,
       "points": []
     },
     "E0006": {
@@ -94,7 +94,7 @@
         "自由": 10
       },
       "delay": true,
-      "escalate": false,
+      "escalate": true,
       "points": []
     },
     "E0010": {

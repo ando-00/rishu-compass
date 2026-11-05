@@ -27,6 +27,16 @@ export type LoopResult = {
 export type AdvisorLoop = (request: LoopRequest) => Promise<LoopResult>;
 
 const NO_PLAN_REASON = "周回の上限までに検査を通る案を作れなかったので、職員の確認に回します。";
+export const STAFF_REVIEW_REASON =
+  "今年度の卒業が難しい見込みの学生です。職員面談に回してください。この案は面談の材料で、このまま学生に示すものではありません。";
+
+// 卒業要件が延期見込みなら、案を出しても職員面談に回す（H28）。判断ルールの10番を Claude に任せずコードで守る
+function staffReviewFor({ rules, courses, student, answers }: PlanInput) {
+  const { judgments } = evaluateStudent(rules, courses, student, answers);
+  return judgments.some(({ kind, status }) => kind === "graduation" && status === "delay_risk")
+    ? STAFF_REVIEW_REASON
+    : undefined;
+}
 
 // 画面へ返す案はすべてここを通す。道具の中の検査や保存したときの結果を信じず、今のルールで検査する。
 export function reviewPlan(
@@ -43,8 +53,10 @@ export function reviewPlan(
 
   const credits = new Map(courses.map((course) => [course.name, course.credits]));
   const entries = plan.map((entry) => ({ ...entry, credits: credits.get(entry.course) ?? 0 }));
+  const staffReview = staffReviewFor(input);
   return {
     status: "passed" as const,
+    ...(staffReview ? { staffReview } : {}),
     plan: entries,
     totalCredits: entries.reduce((sum, entry) => sum + entry.credits, 0),
     planningYear: target.studentYear,

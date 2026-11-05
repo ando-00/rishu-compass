@@ -71,14 +71,17 @@ export function scoreStudent(
   advice: AdviseResponse | null,
 ) {
   const { credits, dangerous } = compareCredits(studentId, gold, judgments);
+  // 職員面談に回す印（H28）の付いた案は、職員に回したものとして数える
+  const escalated =
+    advice?.status === "needs_staff" || (advice?.status === "passed" && advice.staffReview !== undefined);
   const notEscalated: Danger[] =
-    gold.escalate && advice?.status === "passed"
+    gold.escalate && advice !== null && !escalated
       ? [{ studentId, kind: "not_escalated", detail: "職員に回すべき学生に案を出した" }]
       : [];
   return {
     credits,
     dangerous: [...dangerous, ...compareGraduation(studentId, gold, judgments), ...notEscalated],
-    overEscalated: !gold.escalate && advice?.status === "needs_staff",
+    overEscalated: !gold.escalate && escalated,
     adviceMissing: advice === null,
   };
 }
