@@ -300,9 +300,22 @@ export function judgeGate(gate: Gate, context: EvaluationContext): Judgment {
     };
   }
   const passedCheck = student.studentYear > gate.checkAtEndOfYear;
+  // 条件を満たしていない科目を今年度に履修中なら、その事実を理由に添える。判定と対応は変えない（H33、第3回の監査 A3-14）
+  const unmet = outcome.status === "delayed" || outcome.status === "short";
+  const enrolledNow =
+    unmet && gate.target.kind === "course"
+      ? gate.target.courses.filter((name) =>
+          student.records.some(
+            (r) => r.course === name && r.result === "enrolled" && r.studentYear === student.studentYear,
+          ),
+        )
+      : [];
+  const reason =
+    enrolledNow.length > 0 ? `${outcome.reason}${enrolledNow.join("、")} は今年度、履修中です。` : outcome.reason;
   return {
     ...base,
     ...outcome,
+    reason,
     needsContact: outcome.atRisk === true || (outcome.status === "short" && passedCheck),
   };
 }
@@ -531,9 +544,8 @@ function judgeDelay(context: EvaluationContext, projected: CreditAllocation) {
   // 要確認のルールは中身そのものが未確定なので、読み方の両端を計算できない。
   if (delayInputs(context).some((rule) => rule.status === "needs_review")) return "unknown";
 
-  const lateIfOpen = requiredCoursesTooLate(context, deadline, false).tooLate;
+  if (requiredCoursesCertainlyLate(context)) return "delay";
   const lateIfClosed = requiredCoursesTooLate(context, deadline, true).tooLate;
-  if (lateIfOpen) return "delay";
   if (lateIfClosed) return "unknown";
 
   const shortfall = shortfallCredits(rules, student, projected);
@@ -553,6 +565,15 @@ function judgeDelay(context: EvaluationContext, projected: CreditAllocation) {
   if (shortfall <= capacity(lowest)) return "none";
   if (shortfall <= capacity(highest)) return "unknown";
   return highest.retakeExclusion === "none" ? "delay" : "unknown";
+}
+
+// 不足の必修が卒業予定に間に合わないことが、履修の順だけで確かめられるか。未回答の履修条件や先修は楽観側で計算する。
+// 卒業要件の合計単位と年数は使わない（judgeDelay の最初の段と同じ条件）
+function requiredCoursesCertainlyLate(context: EvaluationContext) {
+  const { student } = context;
+  if (!student.expectedGraduation) return false;
+  if (delayInputs(context).some((rule) => rule.status === "needs_review")) return false;
+  return requiredCoursesTooLate(context, termIndex(student.expectedGraduation), false).tooLate;
 }
 
 function judgeGraduation(
@@ -585,11 +606,25 @@ function judgeGraduation(
     needsContact: false,
   };
 
+  const delayRisk = (): Judgment => {
+    const deadline = termIndex(student.expectedGraduation!);
+    const { courses, grounds } = explainDelay(context, deadline);
+    const clauses = [...new Set(grounds.map(({ clause }) => clause))].join("、");
+    const reason =
+      courses.length > 0
+        ? `${courses.join("、")} が卒業予定に間に合わない見込みです。履修の順は${clauses}で決まります。職員と確認してください。`
+        : "卒業予定までの履修機会では足りない見込みです。職員と確認してください。";
+    return { ...base, status: "delay_risk", reason, grounds, needsContact: true };
+  };
+
   // 未確定の区分や卒業要件自身の曖昧箇所があっても、確定の区分の不足は読み方に関わらず確か（AGENTS.md、H30）。
   // ただし区分に入らない科目があると、算入先しだいで不足が消えうるので職員確認のまま。
   // 卒業要件そのものが要確認（review:）のときは、ルール全体が未確定なので職員確認のまま（H30 は未回答の曖昧箇所の決定）
   const ownReview = ownIds.some((id) => id.startsWith("review:"));
   if ((ownIds.length > 0 || uncertainIds.length > 0) && !ownReview && stray.length === 0 && shortCategories.length > 0) {
+    // 区分がすべて確定していれば、必修が卒業予定に間に合わないことは履修の順だけで決まり、合計単位と年数の読み方に関わらない。
+    // どう答えても延期見込みになる学生を、最終年次より前だからと対応なしにしない（H31、第3回の監査 A3-2）
+    if (uncertainIds.length === 0 && requiredCoursesCertainlyLate(context)) return delayRisk();
     const reason = `${shortCategories.join("、")}に不足があります。`;
     return { ...base, status: "short", reason, needsContact: finalYear };
   }
@@ -612,16 +647,7 @@ function judgeGraduation(
   }
 
   const delay = judgeDelay(context, projected);
-  if (delay === "delay") {
-    const deadline = termIndex(student.expectedGraduation!);
-    const { courses, grounds } = explainDelay(context, deadline);
-    const clauses = [...new Set(grounds.map(({ clause }) => clause))].join("、");
-    const reason =
-      courses.length > 0
-        ? `${courses.join("、")} が卒業予定に間に合わない見込みです。履修の順は${clauses}で決まります。職員と確認してください。`
-        : "卒業予定までの履修機会では足りない見込みです。職員と確認してください。";
-    return { ...base, status: "delay_risk", reason, grounds, needsContact: true };
-  }
+  if (delay === "delay") return delayRisk();
   if (delay === "unknown") {
     const inputIds = delayInputs(context).flatMap((rule) => pendingIds(rule, unresolved));
     return {

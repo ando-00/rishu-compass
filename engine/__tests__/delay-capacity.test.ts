@@ -34,7 +34,7 @@ const record = (course: string, studentYear: number, term: CourseRecord["term"],
 // 修得22単位。卒業予定は4年次の後期。残る学期は3年次後期、4年次前期、4年次後期（各4単位まで）。
 const earned = Array.from({ length: 11 }, (_, i) => record(`科目${i + 10}`, 1 + (i % 2), "前期", "passed"));
 
-function graduation(records: CourseRecord[]) {
+function graduation(records: CourseRecord[], ruleSet: RuleSet = rules) {
   const student: Student = {
     id: "X1",
     admissionYear: 2024,
@@ -45,7 +45,7 @@ function graduation(records: CourseRecord[]) {
     specialStatuses: [],
     records: [...earned, ...records],
   };
-  return evaluateStudent(rules, courses, student, {}).judgments.find((j) => j.kind === "graduation")!;
+  return evaluateStudent(ruleSet, courses, student, {}).judgments.find((j) => j.kind === "graduation")!;
 }
 
 describe("前期の学生の残りの学期の上限（A25-1）", () => {
@@ -57,6 +57,25 @@ describe("前期の学生の残りの学期の上限（A25-1）", () => {
       record("科目3", 3, "後期", "enrolled"),
     ]);
     expect(result).toMatchObject({ status: "delay_risk", needsContact: true });
+  });
+
+  it("要確認の先修があるルールでは、単位の余地が足りなくても、延期見込みにせず職員確認にする（第3回の監査 A3-6）", () => {
+    const review: RuleSet = {
+      ...rules,
+      prerequisites: [
+        { id: "pre", ...base, course: "科目29", conditions: [["科目28"]], allowSameTerm: false, status: "needs_review" },
+      ],
+    };
+    const result = graduation(
+      [
+        record("科目0", 3, "前期", "enrolled"),
+        record("科目2", 3, "前期", "enrolled"),
+        record("科目1", 3, "後期", "enrolled"),
+        record("科目3", 3, "後期", "enrolled"),
+      ],
+      review,
+    );
+    expect(result).toMatchObject({ status: "needs_staff", needsContact: false });
   });
 
   it("後期の登録がなければ、不足14単位に余地12単位で延期見込み", () => {
