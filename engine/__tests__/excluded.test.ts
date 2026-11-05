@@ -2,11 +2,20 @@ import { describe, expect, it } from "vitest";
 import { exampleCourses } from "../../data/fictional/example/courses";
 import { exampleRules } from "../../data/fictional/example/rules";
 import { evaluateStudent } from "../evaluate";
-import { computeImpact, computeImpacts } from "../impact";
+import { summarizeFinalYear } from "../finalYear";
+import { computeImpact, computeImpacts, settledStudentIds } from "../impact";
 import type { Student } from "../model";
 import { listOutreach } from "../outreach";
-import { checkPlan, isDisplayablePlan } from "../plan";
-import { makeStudent, numberedNames, passed } from "./helpers";
+import {
+  checkCurrentRegistrations,
+  checkPlan,
+  isDisplayablePlan,
+  lockedEnrollments,
+  pendingPromotions,
+  unavailableCourses,
+  unresolvedEnrollments,
+} from "../plan";
+import { enrolled, makeStudent, numberedNames, passed } from "./helpers";
 
 const ID = "ambiguity-seminar-credits";
 const records = passed(["入門A", "入門B", "基礎C", "基礎D", "基礎E", ...numberedNames("専門", 13)], 2);
@@ -66,6 +75,42 @@ describe.each(conditions)("%s", (_, student) => {
     const [impact] = computeImpacts(exampleRules, exampleCourses, [student], {}, states);
     expect(impact?.affectedStudentIds).toEqual([]);
     expect(impact?.staffReviewStudentIds).toEqual([student.id]);
+  });
+
+  // あとから足した公開の関数も、同じ条件で掛け合わせる（追加の監査 R-8）
+  it("settledStudentIds は、対応が要らないと確かめた学生に入れない", () => {
+    expect(settledStudentIds(exampleRules, exampleCourses, [student], {}).size).toBe(0);
+  });
+
+  it("checkCurrentRegistrations は、今期の登録の検査を職員確認にする", () => {
+    const registered = { ...student, records: [...student.records, ...enrolled(["専門14"], 3, "後期")] };
+    const result = checkCurrentRegistrations(exampleRules, exampleCourses, registered, answers);
+    expect(result?.courses).toEqual(["専門14"]);
+    expect(result?.check.status).toBe("needs_staff");
+  });
+
+  it("unavailableCourses は、候補から外す科目を決めない", () => {
+    expect(unavailableCourses(exampleRules, exampleCourses, student, answers)).toEqual([]);
+  });
+
+  it("履修案の前提（外す履修中の科目、未確定の科目、決まっていない進級）を計算しない", () => {
+    const registered = { ...student, records: [...student.records, ...enrolled(["ゼミ"], 3, "通年")] };
+    expect(lockedEnrollments(exampleRules, exampleCourses, registered, {})).toEqual([]);
+    expect(unresolvedEnrollments(exampleRules, exampleCourses, registered, {})).toEqual([]);
+    expect(pendingPromotions(exampleRules, exampleCourses, registered, {})).toEqual([]);
+  });
+
+  it("summarizeFinalYear は、最終年次の内訳で職員確認だけに数える", () => {
+    const final = { ...student, studentYear: 4, yearsEnrolled: 4 };
+    const evaluation = evaluateStudent(exampleRules, exampleCourses, final, answers);
+    const { studentCount, rows } = summarizeFinalYear(exampleRules, [final], [evaluation]);
+    expect(studentCount).toBe(1);
+    for (const { name, counts, notApplicable } of rows) {
+      const { needs_staff: staff, ...others } = counts;
+      expect([name, Object.values(others).every((count) => count === 0)]).toEqual([name, true]);
+      expect([name, staff + notApplicable]).toEqual([name, 1]);
+    }
+    expect(rows.find(({ kind }) => kind === "graduation")?.counts.needs_staff).toBe(1);
   });
 });
 

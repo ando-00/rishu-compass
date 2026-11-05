@@ -511,7 +511,7 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
-| R-7 | S3 | README の「フックの判定はテスト64件」は、数えると65件（止める35、通す21、コミット前の検査7、push のあとの促し2）。数えた | README.md | 未解決 | 次のコミットで直す |
+| R-7 | S3 | README の「フックの判定はテスト64件」は、数えると65件（止める35、通す21、コミット前の検査7、push のあとの促し2）。数えた | README.md | 解決 | R-4 で4件足したあとの69件に直した |
 | R-20 | S3 | README の判定と対応の表の「不足」は「最終年次なら声かけ。それより前は対応なし」だが、判定の年次を過ぎた履修条件の不足は3年次でも声かけになる。同梱データでは延期見込みと重なり、表の下の3つの理由で声かけの全員を説明できる。実行 | README.md、engine/evaluate.ts の `judgeGate` | 記録 | |
 | R-21 | S3 | `docs/RULE_FORMAT.md` の「`gold-rules.ts` を置くと大学が増える。コードの変更はいりません」は、今は `worker/datasets.ts` の `SOURCES` への追加が要る（G-7 と同じ箇所）。`docs/AUDIT.md` の壊す検査の手順のコピーの一覧に `src`、`evals`、`migrations` がない。読んだ | docs/RULE_FORMAT.md:13、docs/AUDIT.md | 記録 | |
 | R-22 | S3 | `docs/EVALUATION.md` の「食い違った5点は…4点について正解を直しました」の後ろに、直しが5件並ぶ（不足単位2件、延期見込み3件）。数え方が読み取れない。読んだ | docs/EVALUATION.md | 記録 | 数え方を知っているのは作り手 |
@@ -522,7 +522,7 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 
 | ID | 重大度 | 指摘 | 場所 | 状態 | 対応 |
 |---|---|---|---|---|---|
-| R-8 | S3 | 特別な学生のテスト（8条件の掛け合わせ）に、あとから足した公開の関数が入っていない（`settledStudentIds` は A25-18）。動作は正しい。実行 | engine/__tests__/excluded.test.ts | 未解決 | 次のコミットで直す |
+| R-8 | S3 | 特別な学生のテスト（8条件の掛け合わせ）に、あとから足した公開の関数が入っていない（`settledStudentIds` は A25-18）。動作は正しい。実行 | engine/__tests__/excluded.test.ts | 解決 | `settledStudentIds`、`checkCurrentRegistrations`、`unavailableCourses`、履修案の前提の3関数、`summarizeFinalYear` を、8条件の掛け合わせに足した |
 | R-25 | S3 | さくら台大学の検査用ケースは、合計単位を0にしても T03（合計が122単位で足りない）が通過のまま、基礎教育の選択必修の最低単位を0にしても T02（選択必修が2単位足りない）が通過のまま。区分の最低単位の合計が124ちょうどなので、どれかが欠けると別の不足も起きる。ルール案の値の誤りを、題名どおりのケースが見つけない。実行 | data/fictional/sakuradai/check-cases.ts | 記録 | 検査用ケースの中身は人が決める |
 | R-26 | S3 | 弱いテスト。`staff-review.test.ts` の「延期見込みでない学生の案には付けない」は、条件の中にだけ `expect` があり、案が検査に落ちると何も確かめない（読んだ）。T07 と T15 が題名の原因を切り分けていない、`enrolled-after-check.test.ts` が2つの呼び出しの一致だけを比べる（未確認） | worker/__tests__/staff-review.test.ts:42 ほか | 記録 | |
 | R-27 | S3 | 採点（`eval:score`）は10名そろった最新の回だけを選び、1人でも失敗した回を知らせずに飛ばす。正解の区分名が判定の名前と合わないと、照合せずに捨てる。今の正解の区分名は全て一致している（読んだ）。結果ファイル名の時刻が、変換は手元の時刻、ほかは UTC（未確認） | evals/score.ts の `latestFullRecord`、evals/scoring.ts | 記録 | |
