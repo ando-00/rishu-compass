@@ -125,6 +125,19 @@ function hasLong(args, full, minLength = 4) {
 // -v、--format、--sort は一覧の形を変えるだけで、名前を渡すとブランチを作る（git 2.54 で確かめた）
 const BRANCH_QUERY = ["-d", "-D", "--delete", "-l", "--list", "-a", "--all", "-r", "--remotes", "--show-current", "--contains", "--merged", "--no-merged", "--points-at", "-u", "--set-upstream-to", "--unset-upstream", "--edit-description"];
 
+// git commit の -a。-ma は「a」というメッセージで、-m -a の -a も -m の値なので、値を取るオプションの先は見ない
+function commitAll(args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const match = /^-([A-Za-z]+)$/.exec(args[i]);
+    if (!match) continue;
+    const at = match[1].search(/[mFCct]/);
+    const flags = at === -1 ? match[1] : match[1].slice(0, at);
+    if (flags.includes("a")) return true;
+    if (at === match[1].length - 1) i += 1;
+  }
+  return false;
+}
+
 // 決まりに反する理由を返す。反しなければ null。
 export function violation({ configs, sub, args }) {
   for (const config of configs) {
@@ -154,6 +167,10 @@ export function violation({ configs, sub, args }) {
       return null;
     case "commit":
       if (hasLong(args, "--amend")) return "--amend は使わない（履歴を書き換えない）";
+      // 同じ作業ツリーの別のセッションの変更が混ざるので止める（H35）
+      if (hasLong(args, "--all", 5) || commitAll(args)) {
+        return "git commit -a は使わない。自分が変えたファイルを git add でパス指定する";
+      }
       if (hasShort(args, "n") || hasLong(args, "--no-verify", 6)) return "--no-verify は使わない。鍵の検査を飛ばさない";
       return null;
     case "reset":

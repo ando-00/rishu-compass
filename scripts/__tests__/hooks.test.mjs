@@ -24,6 +24,11 @@ function run(hook, command, cwd = plain) {
 const guard = (command, cwd) => run("guard-bash.mjs", command, cwd);
 
 const BLOCK = [
+  "git commit -a",
+  "git commit -am x",
+  "git commit -a -m x",
+  "git commit --all -m x",
+  "git -C /repo commit -qam x",
   "git add -A",
   "git add .",
   "git add -vA",
@@ -92,7 +97,9 @@ const ALLOW = [
   "git commit -F - <<'EOF'\ngit rebase の話\nEOF",
   'git commit -F - <<"EOF"\ngit add -A は使わない\nEOF',
   "git commit -m x",
-  "git commit -am x",
+  // -ma は「a」というメッセージで、-a ではない
+  "git commit -ma",
+  "git commit -m -a",
   "git push -u origin main",
   // push の -n は --dry-run で、フックを飛ばすものではない
   "git push -n origin main",

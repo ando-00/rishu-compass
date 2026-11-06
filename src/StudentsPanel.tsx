@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { amountCaveat } from "./judgmentAmounts";
 import type {
   Answers,
   Judgment,
@@ -386,6 +387,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                           {judgment.missingCourses && judgment.missingCourses.length > 0 && (
                             <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
                           )}
+                          {amountCaveat(judgment) && <span className="muted"> {amountCaveat(judgment)}</span>}
                           <span className="quote">{judgment.sourceQuote}</span>
                         </td>
                       </tr>
