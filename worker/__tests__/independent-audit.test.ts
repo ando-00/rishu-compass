@@ -96,6 +96,59 @@ describe("失格の再履修を認めない読み方の判定（V-1）", () => {
     expect(find(judgments("S0074", {}), "卒業要件").status).toBe("needs_staff");
   });
 
+  it("単位も延期見込みも読み方で変わらなくても、止めた区分があれば卒業要件を確定にしない", () => {
+    const base = { clause: "第1条", sourceQuote: "根拠" };
+    const courses: Course[] = [
+      { name: "必修A", credits: 4, assignedYear: 1, groups: ["必修"], offeredIn: "前期" },
+      { name: "選択A", credits: 8, assignedYear: 1, groups: ["選択"], offeredIn: "前期" },
+    ];
+    const rules: RuleSet = {
+      id: "t",
+      name: "t",
+      admissionYears: [2023],
+      graduation: { ...base, id: "graduation", minYears: 4, totalCredits: 4 },
+      categories: [
+        { ...base, id: "required", name: "必修", groups: ["必修"], minCredits: 4, requireAll: true, overflowTo: null },
+        { ...base, id: "elective", name: "選択", groups: ["選択"], minCredits: 0, requireAll: false, overflowTo: null },
+      ],
+      gates: [],
+      loadLimits: [{ ...base, id: "load", maxPerTerm: 30, retakeExclusion: "none" }],
+      courseCountLimits: [],
+      prerequisites: [],
+      retake: { ...base, id: "retake", clause: "第13条", forbidDisqualified: false, ambiguityIds: ["scope"] },
+      ambiguities: [
+        {
+          id: "scope",
+          ...base,
+          question: "失格を含みますか。",
+          options: [
+            { id: "include", label: "含む", patches: [{ ruleId: "retake", field: "forbidDisqualified", value: false }] },
+            { id: "exclude", label: "含まない", patches: [{ ruleId: "retake", field: "forbidDisqualified", value: true }] },
+          ],
+        },
+      ],
+    };
+    // 卒業予定を指定しないので延期見込みは計算しない。合計単位は選択Aで足りている
+    const student: Student = {
+      id: "T",
+      admissionYear: 2023,
+      studentYear: 4,
+      currentTerm: "後期",
+      yearsEnrolled: 4,
+      specialStatuses: [],
+      records: [
+        { course: "選択A", studentYear: 1, term: "前期", result: "passed" },
+        { course: "必修A", studentYear: 3, term: "前期", result: "disqualified" },
+        { course: "必修A", studentYear: 4, term: "後期", result: "enrolled" },
+      ],
+    };
+    const graduation = (answers: Answers) =>
+      find(evaluateStudent(rules, courses, student, answers).judgments, "卒業要件").status;
+    expect(graduation({})).toBe("needs_staff");
+    expect(graduation({ scope: "include" })).toBe("expected");
+    expect(graduation({ scope: "exclude" })).toBe("short");
+  });
+
   it("全体の人数は未回答と各読み方で変わらない", async () => {
     expect(await summary({})).toEqual({ total: 300, contact: 28, staffReview: 29, clear: 243 });
     expect(await summary(EXCLUDE)).toEqual({ total: 300, contact: 35, staffReview: 22, clear: 243 });
@@ -353,6 +406,15 @@ describe("未回答の在学年数で声かけを決めない（V-4）", () => {
     const list = judge(rules(threeOrFour), 2);
     expect([find(list, "必修").status, find(list, "必修").needsContact]).toEqual(["short", false]);
     expect(kinds(rules(threeOrFour), 2)).toEqual([]);
+  });
+
+  it("止めた区分があっても、必修が履修の順で間に合わないと確かめられる学生は延期見込みにする（H31）", () => {
+    const target = rules(threeOrFour);
+    target.categories[0]!.requireAll = true;
+    const late: Student = { ...student(3), expectedGraduation: { studentYear: 3, term: "後期" } };
+    const list = evaluateStudent(target, courses, late, {}).judgments;
+    expect(find(list, "必修").status).toBe("needs_staff");
+    expect([find(list, "卒業要件").status, find(list, "卒業要件").needsContact]).toEqual(["delay_risk", true]);
   });
 
   it("答えれば読み方どおりになる", () => {
