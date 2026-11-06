@@ -73,6 +73,6 @@ node scripts/audit.mjs            # 速い検査。build と test を含む。�
 - `data/fictional/*/gold*`、要項、`data/fictional/advice-rules.md` の変更
 - `AGENTS.md` の「守ること」と `docs/AUDIT.md` の重大度の変更
 - 監査のサブエージェントの回。`docs/AUDIT.md` は3回と定めている
-- 公開 URL、送信の機能、学生の画面、相談チャット
+- 公開デモの作りを変えること、それ以外の公開 URL、送信の機能、学生の画面、相談チャット
 - 他の作品のフォルダを読むこと
 - 新しい依存の追加と更新
