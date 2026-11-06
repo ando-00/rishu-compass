@@ -205,6 +205,8 @@ const M = [
   ["impact", "(!hasStaff || settled)", "!hasStaff", "影響: 一覧で対応なしへ動く学生を数える（V-5）"],
   ["outreach", "...(unreflected ? { unreflected } : {}),", "", "声かけ: 反映できない回答を未回答と言わない（V-7）"],
   ["plan", "return allUnreflected(this.context, ambiguityIds)\n", "return false\n", "案: 反映できない回答に回答を促さない（V-7）"],
+  ["src/retakeNotice", "if (retake) return null;", "", "確定の注意: 再履修のルールがある案には出さない（V-2）"],
+  ["src/retakeNotice", 'noRetakeRule ? "この版', 'false ? "この版', "確定の注意: 確定後の行に添える（V-2）"],
   ["plan", "if (!disqualified.has(course) || passed.has(course)) continue;", "if (!disqualified.has(course)) continue;", "再履修: 修得した科目"],
   ["plan", "if (rule.forbidDisqualified) {", "if (false) {", "再履修: 検査で止める"],
   ["validate", "if (cycle) problems.push(", "if (false) problems.push(", "検証: 先修の循環"],

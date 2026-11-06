@@ -167,6 +167,8 @@ export const datasetsResponseSchema = z.object({
       confirmation: confirmationSchema.optional(),
       // 要項のある対象にだけある。見本にはない
       sourceId: z.string().optional(),
+      // 確定した版に失格の再履修のルールがない（V-2）
+      noRetakeRule: z.literal(true).optional(),
     }),
   ),
 });

@@ -106,12 +106,13 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 app.get("/api/datasets", async (c) => {
   const listed = await listDatasets(c.env?.DB);
   const body: DatasetsResponse = {
-    datasets: listed.map(({ id, name, problems, confirmation, sourceId }) => ({
+    datasets: listed.map(({ id, name, problems, confirmation, sourceId, rules }) => ({
       id,
       name,
       problems,
       ...(confirmation ? { confirmation } : {}),
       ...(sourceId ? { sourceId } : {}),
+      ...(confirmation && !rules.retake ? { noRetakeRule: true as const } : {}),
     })),
   };
   return c.json(body);

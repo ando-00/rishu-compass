@@ -21,7 +21,7 @@ import {
   type Student,
   type StudentState,
 } from "../../engine";
-import { findRecordedProposal } from "../datasets";
+import { findRecordedProposal, findSource } from "../datasets";
 import app from "../index";
 import { acceptRules, needsReviewIds } from "../ruleSets";
 import { createTestDb } from "./testDb";
@@ -100,6 +100,33 @@ describe("失格の再履修を認めない読み方の判定（V-1）", () => {
     expect(await summary({})).toEqual({ total: 300, contact: 28, staffReview: 29, clear: 243 });
     expect(await summary(EXCLUDE)).toEqual({ total: 300, contact: 35, staffReview: 22, clear: 243 });
     expect(await summary(INCLUDE)).toEqual({ total: 300, contact: 28, staffReview: 22, clear: 250 });
+  });
+});
+
+describe("確定した版に失格の再履修のルールがないことを示す（V-2）", () => {
+  type Listed = { id: string; noRetakeRule?: true };
+  const list = async (db: unknown) =>
+    ((await (await app.request("/api/datasets", {}, { DB: db } as never)).json()) as { datasets: Listed[] }).datasets;
+
+  it("確定した版にだけ印を付ける。正解ルールには付けない", async () => {
+    const { db, sqlite } = createTestDb();
+    const recorded = findRecordedProposal("sakuradai")!;
+    sqlite
+      .prepare("INSERT INTO rule_sets (source_id, handbook, proposal, created_at) VALUES (?,?,?,?)")
+      .run("sakuradai", findSource("sakuradai")!.handbook, JSON.stringify(recorded), "2026-01-01");
+    const confirmed = await app.request(
+      "/api/proposals/1/confirm",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ respondent: "教務職員A", acceptedRuleIds: needsReviewIds(recorded.rules) }),
+      },
+      { DB: db } as never,
+    );
+    expect(confirmed.status).toBe(200);
+    const datasets = await list(db);
+    expect(datasets.find(({ id }) => id === "ruleset-1")?.noRetakeRule).toBe(true);
+    expect(datasets.find(({ id }) => id === "sakuradai")?.noRetakeRule).toBeUndefined();
   });
 });
 

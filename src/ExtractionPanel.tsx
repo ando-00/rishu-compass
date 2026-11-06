@@ -1,3 +1,4 @@
+import { retakeNotice } from "./retakeNotice";
 import { useEffect, useRef, useState } from "react";
 import type { Ambiguity } from "../engine/rules";
 import {
@@ -324,6 +325,7 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
     );
   }
 
+  const notice = retakeNotice(proposal.rules);
   const blocked =
     proposalId === null
       ? "この案は保存できなかったので確定できません。"
@@ -361,6 +363,7 @@ function ConfirmSection({ proposal, rows, respondent, confirmedDatasetId, onConf
           ))}
         </>
       )}
+      {notice && <p className="notice" data-testid="retake-notice">{notice}</p>}
       {blocked && <p className="notice">{blocked}</p>}
       <div className="actions">
         <button type="button" disabled={blocked !== null || saving} onClick={() => void confirm()}>

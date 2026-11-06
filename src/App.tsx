@@ -1,3 +1,4 @@
+import { confirmedRetakeNote } from "./retakeNotice";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   respondentSchema,
@@ -280,6 +281,7 @@ export function App() {
               {ruleSource}
               {confirmation &&
                 `${confirmation.respondent}が${new Date(confirmation.confirmedAt).toLocaleString("ja-JP")}に確定しました。`}
+              {confirmation && confirmedRetakeNote(current?.noRetakeRule)}
             </span>
             {confirmation && (
               <button type="button" className="secondary" disabled={withdrawing} onClick={() => void withdraw(confirmation.proposalId)}>

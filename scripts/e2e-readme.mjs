@@ -236,9 +236,13 @@ async function walkReadme(page, consoleErrors) {
     if (missing.length > 0) throw new Error(`見当たらない: ${missing.join("、")}`);
   });
   await step("5 このルール案を確定する", async () => {
+    // 変換の形式に失格の再履修のルールがないことを、確定の前と後の画面で示す（V-2）
+    const notice = await page.getByTestId("retake-notice").innerText();
+    if (!notice.includes("失格した科目の再履修")) throw new Error(`確定の注意の表示が違う: ${notice}`);
     await page.getByRole("button", { name: /このルール案を確定する/ }).click();
     await page.getByRole("button", { name: "確定を取り消す" }).waitFor();
     const source = await page.getByTestId("rule-source").innerText();
+    if (!source.includes("失格した科目も止めずに判定します")) throw new Error(`確定後の注意の表示が違う: ${source}`);
     if (!/職員が確定したルール案（第\d+版）で判定しています/.test(source)) throw new Error(`判定に使うルールの表示が「${source}」`);
   });
   let before = 0;
