@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sakuradaiCourses } from "../../data/fictional/sakuradai/courses";
 import { goldRules } from "../../data/fictional/sakuradai/gold-rules";
 import { sakuradaiStudents } from "../../data/fictional/sakuradai/students";
-import { evaluateStudent, type Answers, type Judgment } from "../../engine";
+import { evaluateStudent, listOutreach, type Answers, type Course, type Judgment, type RuleSet, type Student } from "../../engine";
 import app from "../index";
 import { createTestDb } from "./testDb";
 
@@ -80,5 +80,143 @@ describe("失格の再履修を認めない読み方の判定（V-1）", () => {
     expect(await summary({})).toEqual({ total: 300, contact: 28, staffReview: 29, clear: 243 });
     expect(await summary(EXCLUDE)).toEqual({ total: 300, contact: 35, staffReview: 22, clear: 243 });
     expect(await summary(INCLUDE)).toEqual({ total: 300, contact: 28, staffReview: 22, clear: 250 });
+  });
+});
+
+describe("差分で表せない未回答の先修からは延期見込みを言い切らない（V-3）", () => {
+  const ANSWERED = { "seminar-credit-basis": "countable", "retake-disqualified-scope": "include" };
+
+  function withOpenPrerequisites(): RuleSet {
+    const rules = structuredClone(goldRules);
+    rules.ambiguities.push({
+      id: "prerequisite-reading",
+      clause: "第11条",
+      sourceQuote: rules.prerequisites[0]!.sourceQuote,
+      question: "先修の条件は修得を必須としますか。",
+      options: [
+        { id: "required", label: "必須", patches: null },
+        { id: "recommended", label: "推奨にとどめる", patches: null },
+      ],
+    });
+    for (const rule of rules.prerequisites) rule.ambiguityIds = ["prerequisite-reading"];
+    return rules;
+  }
+
+  function withoutPrerequisites(): RuleSet {
+    return { ...structuredClone(goldRules), prerequisites: [] };
+  }
+
+  const graduation = (rules: RuleSet, student: Student, answers: Answers = ANSWERED) =>
+    find(evaluateStudent(rules, sakuradaiCourses, student, answers).judgments, "卒業要件");
+
+  it("先修がなければ延期見込みにならない学生は、未回答の間は職員確認にする", () => {
+    const open = withOpenPrerequisites();
+    const none = withoutPrerequisites();
+    const hinged = sakuradaiStudents.filter(
+      (student) =>
+        graduation(goldRules, student).status === "delay_risk" && graduation(none, student).status !== "delay_risk",
+    );
+    expect(hinged.length).toBeGreaterThan(0);
+    for (const student of hinged) {
+      const judgment = graduation(open, student);
+      expect([student.id, judgment.status, judgment.needsContact]).toEqual([student.id, "needs_staff", false]);
+      expect(judgment.ambiguityIds).toContain("prerequisite-reading");
+    }
+  });
+
+  it("先修がなくても間に合わない学生は、延期見込みのまま", () => {
+    const open = withOpenPrerequisites();
+    const none = withoutPrerequisites();
+    const certain = sakuradaiStudents.filter((student) => graduation(none, student).status === "delay_risk");
+    expect(certain.length).toBeGreaterThan(0);
+    for (const student of certain) expect([student.id, graduation(open, student).status]).toEqual([student.id, "delay_risk"]);
+  });
+});
+
+describe("未回答の在学年数で声かけを決めない（V-4）", () => {
+  const base = { clause: "第1条", sourceQuote: "根拠" };
+  const courses: Course[] = [
+    { name: "必修A", credits: 4, assignedYear: 1, groups: ["必修"], offeredIn: "前期" },
+    { name: "選択A", credits: 4, assignedYear: 1, groups: ["選択"], offeredIn: "前期" },
+  ];
+  const rules = (options: RuleSet["ambiguities"][number]["options"], minYears = 4): RuleSet => ({
+    id: "t",
+    name: "t",
+    admissionYears: [2023],
+    graduation: { ...base, id: "graduation", minYears, totalCredits: 8, ambiguityIds: ["years"] },
+    categories: [
+      { ...base, id: "required", name: "必修", groups: ["必修"], minCredits: 4, requireAll: false, overflowTo: null },
+      { ...base, id: "elective", name: "選択", groups: ["選択"], minCredits: 0, requireAll: false, overflowTo: null },
+    ],
+    gates: [],
+    loadLimits: [{ ...base, id: "load", maxPerTerm: 30, retakeExclusion: "none" }],
+    courseCountLimits: [],
+    prerequisites: [],
+    ambiguities: [{ id: "years", ...base, question: "何年ですか。", options }],
+  });
+  const threeOrFour = [
+    { id: "three", label: "3年", patches: [{ ruleId: "graduation", field: "minYears", value: 3 }] },
+    { id: "four", label: "4年", patches: [{ ruleId: "graduation", field: "minYears", value: 4 }] },
+  ];
+  const student = (studentYear: number): Student => ({
+    id: "T",
+    admissionYear: 2023,
+    studentYear,
+    currentTerm: "後期",
+    yearsEnrolled: studentYear,
+    specialStatuses: [],
+    records: [],
+  });
+  const judge = (target: RuleSet, year: number, answers: Answers = {}) =>
+    evaluateStudent(target, courses, student(year), answers).judgments;
+  const kinds = (target: RuleSet, year: number, answers: Answers = {}) =>
+    listOutreach([evaluateStudent(target, courses, student(year), answers)], [student(year)]).map(({ kind }) => kind);
+
+  it.each([4, 3])("今の値が %i 年でも、読み方で最終年次かどうかが変わる3年次は職員確認にする", (minYears) => {
+    const target = rules(threeOrFour, minYears);
+    const category = find(judge(target, 3), "必修");
+    expect([category.status, category.needsContact]).toEqual(["needs_staff", false]);
+    expect(category.ambiguityIds).toEqual(["years"]);
+    expect(kinds(target, 3)).toEqual(["staff_review"]);
+  });
+
+  it("確定の区分の不足は、卒業要件を「不足」のままにする（H30）。読み方で変わる声かけは付けない", () => {
+    const graduation = find(judge(rules(threeOrFour), 3), "卒業要件");
+    expect([graduation.status, graduation.needsContact]).toEqual(["short", false]);
+    expect(graduation.reason).toBe("必修に不足があります。");
+  });
+
+  it("どの読み方でも最終年次の4年次は、未回答でも声かけにする", () => {
+    const list = judge(rules(threeOrFour), 4);
+    expect([find(list, "必修").status, find(list, "必修").needsContact]).toEqual(["short", true]);
+    expect([find(list, "卒業要件").status, find(list, "卒業要件").needsContact]).toEqual(["short", true]);
+  });
+
+  it("どの読み方でも最終年次でない2年次は、未回答でも声かけにしない", () => {
+    const list = judge(rules(threeOrFour), 2);
+    expect([find(list, "必修").status, find(list, "必修").needsContact]).toEqual(["short", false]);
+    expect(kinds(rules(threeOrFour), 2)).toEqual([]);
+  });
+
+  it("答えれば読み方どおりになる", () => {
+    const target = rules(threeOrFour);
+    expect(kinds(target, 3, { years: "three" })).toEqual(["contact"]);
+    expect(kinds(target, 3, { years: "four" })).toEqual([]);
+  });
+
+  it("差分で表せない読み方があれば、最終年次か分からないので職員確認にする", () => {
+    const target = rules([{ id: "other", label: "別の読み方", patches: null }, threeOrFour[1]!]);
+    expect(find(judge(target, 2), "必修").status).toBe("needs_staff");
+    expect(kinds(target, 2)).toEqual(["staff_review"]);
+  });
+
+  it("関係のない項目の曖昧箇所なら、今の値で決める", () => {
+    const target = rules([
+      { id: "a", label: "8単位", patches: [{ ruleId: "graduation", field: "totalCredits", value: 8 }] },
+      { id: "b", label: "12単位", patches: [{ ruleId: "graduation", field: "totalCredits", value: 12 }] },
+    ]);
+    expect(find(judge(target, 3), "必修").needsContact).toBe(false);
+    expect(find(judge(target, 3), "必修").status).toBe("short");
+    expect(find(judge(target, 4), "必修").needsContact).toBe(true);
   });
 });

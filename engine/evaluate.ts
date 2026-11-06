@@ -153,6 +153,29 @@ function allocationOf(result: CreditAllocation, category: Category) {
   return allocation;
 }
 
+// 最終年次かどうか。卒業要件の未回答の曖昧箇所が在学年数を変えるなら、読み方の両端で見る（V-4）。
+// 差分で表せない候補があれば、年数が分からないので「最終年次かもしれないが確かでない」にする
+function finalYearReadings({ rules, student, unresolved }: EvaluationContext) {
+  const { graduation } = rules;
+  const years = [graduation.minYears];
+  const ids: string[] = [];
+  let unknown = false;
+  for (const { id, options } of rules.ambiguities) {
+    if (!unresolved.has(id)) continue;
+    const listed = graduation.ambiguityIds?.includes(id) ?? false;
+    const values = options.flatMap(({ patches }) =>
+      (patches ?? []).filter((patch) => patch.ruleId === graduation.id && patch.field === "minYears"),
+    );
+    const open = listed && options.some(({ patches }) => patches === null);
+    if (open) unknown = true;
+    if (open || values.length > 0) ids.push(id);
+    for (const { value } of values) years.push(Number(value));
+  }
+  const certain = !unknown && student.studentYear >= Math.max(...years);
+  const possible = unknown || student.studentYear >= Math.min(...years);
+  return { certain, undecided: possible && !certain, ids };
+}
+
 // 履修中を修得した場合の見込み。失格の再履修を認めない読み方では、失格の科目を履修中でも修得を見込めない（独立の全体監査 V-1）
 type Projection = {
   projected: CreditAllocation;
@@ -192,8 +215,9 @@ function judgeCategory(
   context: EvaluationContext,
   current: CreditAllocation,
   { projected, alternative, barred, retakeIds }: Projection,
+  heldByYears: Set<string>,
 ): Judgment {
-  const { student, rules, catalog, uncertainCategories } = context;
+  const { rules, catalog, uncertainCategories } = context;
   const allocation = allocationOf(current, category);
   const base = {
     ruleId: category.id,
@@ -224,6 +248,12 @@ function judgeCategory(
   if (metIfEnrolled) {
     return { ...base, status: "expected", reason: "履修中の科目を修得すれば満たします。" };
   }
+  // 不足は確かだが、声をかけるかは最終年次かどうかで変わる。読み方で変わるなら確定の扱いをしない（V-4）
+  const finalYear = finalYearReadings(context);
+  if (finalYear.undecided) {
+    heldByYears.add(category.id);
+    return { ...base, ambiguityIds: finalYear.ids, status: "needs_staff", reason: unresolvedReason(context, finalYear.ids) };
+  }
   // 失格の科目を数えないことで足りなくなった区分は、その理由を示す
   const blocking = metOtherwise
     ? barred.filter((name) => catalog.get(name)?.groups.some((group) => category.groups.includes(group)))
@@ -235,7 +265,7 @@ function judgeCategory(
       blocking.length > 0
         ? `${blocking.join("、")} は失格のため再び履修できません（${rules.retake?.clause}）。`
         : "必要な単位または科目が不足しています。",
-    needsContact: student.studentYear >= rules.graduation.minYears,
+    needsContact: finalYear.certain,
   };
 }
 
@@ -431,6 +461,12 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
   const finished = new Map<string, number>();
   // 未回答の項目は今の値を使わず、読み方の両端で計算する。
   const isOpen = (rule: Pending) => pendingIds(rule, unresolved).length > 0;
+  // 差分で表せない候補がある未回答の先修は、中身が決まっていない。楽観側は「条件がない」、悲観側は「履修できない」で計算する（V-3、A3-1 と同じ）
+  const isUndecided = (rule: Prerequisite) =>
+    (rule.ambiguityIds ?? []).some(
+      (id) =>
+        unresolved.has(id) && rules.ambiguities.find((a) => a.id === id)?.options.some((o) => o.patches === null),
+    );
   const { enrollment } = rules;
   const forbidEarly =
     enrollment && (isOpen(enrollment) ? pessimistic : enrollment.forbidBeforeAssignedYear);
@@ -477,6 +513,10 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
     let start = Math.max(now + 1, gateStart);
     if (forbidEarly) start = Math.max(start, yearStart(course.assignedYear));
     for (const rule of prerequisites.filter((p) => p.course === name)) {
+      if (isUndecided(rule)) {
+        if (pessimistic) start = Number.POSITIVE_INFINITY;
+        continue;
+      }
       const sameTerm = isOpen(rule) ? !pessimistic : rule.allowSameTerm;
       const gap = sameTerm ? 0 : 1;
       const options = rule.conditions.map((names) =>
@@ -641,6 +681,7 @@ function judgeGraduation(
   categories: Judgment[],
   current: CreditAllocation,
   { projected, alternative, retakeIds }: Projection,
+  heldByYears: Set<string>,
 ): Judgment {
   const { rules, student, unresolved } = context;
   const { graduation } = rules;
@@ -651,11 +692,18 @@ function judgeGraduation(
       retakeIds.length > 0 && status === "needs_staff" && ambiguityIds.every((id) => retakeIds.includes(id)),
   );
   const uncertainIds = [
-    ...new Set(categories.filter((c) => !heldByRetake.includes(c)).flatMap((category) => category.ambiguityIds)),
+    ...new Set(
+      categories
+        .filter((c) => !heldByRetake.includes(c) && !heldByYears.has(c.ruleId))
+        .flatMap((category) => category.ambiguityIds),
+    ),
   ];
   const ownIds = pendingIds(graduation, unresolved);
-  const finalYear = student.studentYear >= graduation.minYears;
-  const shortCategories = categories.filter((c) => c.status === "short").map((c) => c.name);
+  const finalYear = finalYearReadings(context).certain;
+  // 最終年次かどうかだけで止めた区分も、不足は確か（H30）
+  const shortCategories = categories
+    .filter((c) => c.status === "short" || heldByYears.has(c.ruleId))
+    .map((c) => c.name);
   // 決定は「修得した学生」について。履修中だけの科目は今までどおり（延期見込みの計算で単位に数えない）
   const stray = current.uncategorized;
   const base = {
@@ -774,13 +822,14 @@ function judgeAll(context: EvaluationContext): Judgment[] {
   const { rules, catalog, student } = context;
   const current = allocateCredits(rules, catalog, student, passedCourses(student));
   const projection = projectCredits(context);
+  const heldByYears = new Set<string>();
   const categories = applicableCategories(rules, student).map((category) =>
-    judgeCategory(category, context, current, projection),
+    judgeCategory(category, context, current, projection, heldByYears),
   );
   const gates = rules.gates
     .filter((gate) => matchesCondition(gate.when, student))
     .map((gate) => judgeGate(gate, context));
-  return [...categories, judgeGraduation(context, categories, current, projection), ...gates];
+  return [...categories, judgeGraduation(context, categories, current, projection, heldByYears), ...gates];
 }
 
 export function evaluatePrepared(prepared: PreparedRules, student: Student): StudentEvaluation {
