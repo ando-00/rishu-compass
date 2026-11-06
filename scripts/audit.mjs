@@ -95,8 +95,7 @@ function checkKeys() {
       }
     };
     walk(dist);
-    expectEmpty(id, `鍵: ${dir}`, hits.join("
-"));
+    expectEmpty(id, `鍵: ${dir}`, hits.join("\n"));
   }
   const tracked = lines(git(["ls-files"]).stdout).filter((f) => /(^|\/)\.dev\.vars$/.test(f));
   expectEmpty("K5", ".dev.vars が追跡されていない", tracked.join("\n"));
