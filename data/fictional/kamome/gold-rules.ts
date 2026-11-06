@@ -98,7 +98,8 @@ const freeCategories: Category[] = [
   ...MAJORS.map(({ key, major, other }) => ({
     id: `free-${key}`,
     clause: `${CHAPTER_1}、${CHAPTER_2}`,
-    sourceQuote: "副専攻を登録していない学生が、もう一方の専攻の科目を修得した場合は、自由科目に算入します。",
+    sourceQuote:
+      "他学部の科目は、自由科目に上限なく算入できます。専攻科目には算入できません。\n\n副専攻を登録していない学生が、もう一方の専攻の科目を修得した場合は、自由科目に算入します。",
     when: { major, hasMinor: false },
     ambiguityIds: ["shared-courses"],
     name: "自由（副専攻なし）",
@@ -110,7 +111,8 @@ const freeCategories: Category[] = [
   {
     id: "free-minor",
     clause: `${CHAPTER_1}、${CHAPTER_2}`,
-    sourceQuote: "専攻科目と副専攻科目で必要単位を超えた分は、自由科目に算入します。",
+    sourceQuote:
+      "専攻科目と副専攻科目で必要単位を超えた分は、自由科目に算入します。コア科目で必要単位を超えた分は、卒業に必要な単位に算入しません。\n\n他学部の科目は、自由科目に上限なく算入できます。専攻科目には算入できません。",
     when: { hasMinor: true },
     name: "自由（副専攻あり）",
     groups: [],
@@ -350,7 +352,7 @@ const ambiguities: Ambiguity[] = [
     id: "retake-passed",
     clause: CHAPTER_5,
     sourceQuote: "再履修科目は上限に含めません。",
-    question: "修得済みの科目をもう一度履修することはできますか。",
+    question: "修得済みの科目をもう一度履修することはできますか（手引きに定めがありません）。",
     options: [
       {
         id: "forbid",
