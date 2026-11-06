@@ -28,6 +28,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build:demo
+      - name: 公開するビルドに鍵がないことを確かめる
+        run: "! grep -rlE 'sk-ant-[A-Za-z0-9_-]{8}' dist-demo"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist-demo

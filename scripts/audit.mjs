@@ -75,22 +75,28 @@ function checkKeys() {
   expectEmpty("K2", "鍵: 索引", git(["grep", "-nE", "--cached", KEY]).stdout);
   const messages = lines(git(["log", "--all", "--format=%h %B"]).stdout).filter((l) => new RegExp(KEY).test(l));
   expectEmpty("K3", "鍵: コミットメッセージ", messages.join("\n"));
-  const dist = join(ROOT, "dist/client");
-  if (existsSync(dist)) {
-    // Windows でも動くように、grep を使わず Node で読む
-    const pattern = new RegExp(`${KEY}|ANTHROPIC_API_KEY`);
+  // ブラウザへ渡すビルドに鍵がないこと。公開デモは誰でも取得できる。Windows でも動くように、grep を使わず Node で読む。
+  // 公開デモは Worker のコードごと渡すので、SDK の中の環境変数の名前は残る。値の形だけを見る
+  for (const [id, dir, pattern] of [
+    ["K4", "dist/client", new RegExp(`${KEY}|ANTHROPIC_API_KEY`)],
+    ["K6", "dist-demo", new RegExp(KEY)],
+  ]) {
+    const dist = join(ROOT, dir);
+    if (!existsSync(dist)) {
+      record(id, "未検証", `鍵: ${dir}`, `${dir} がない（build のあとに検査する）`);
+      continue;
+    }
     const hits = [];
-    const walk = (dir) => {
-      for (const name of readdirSync(dir)) {
-        const path = join(dir, name);
+    const walk = (folder) => {
+      for (const name of readdirSync(folder)) {
+        const path = join(folder, name);
         if (statSync(path).isDirectory()) walk(path);
         else if (pattern.test(readFileSync(path, "latin1"))) hits.push(path.slice(ROOT.length + 1));
       }
     };
     walk(dist);
-    expectEmpty("K4", "鍵: dist/client", hits.join("\n"));
-  } else {
-    record("K4", "未検証", "鍵: dist/client", "dist/client がない（build のあとに検査する）");
+    expectEmpty(id, `鍵: ${dir}`, hits.join("
+"));
   }
   const tracked = lines(git(["ls-files"]).stdout).filter((f) => /(^|\/)\.dev\.vars$/.test(f));
   expectEmpty("K5", ".dev.vars が追跡されていない", tracked.join("\n"));
