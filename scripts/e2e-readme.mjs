@@ -2,6 +2,7 @@
 // Claude を呼ばない。作業ツリーのファイルを書き換えない（結果は evals/tmp/e2e/ に出す）。
 //
 // 使い方: node scripts/e2e-readme.mjs
+//         E2E_URL=<公開デモの URL> node scripts/e2e-readme.mjs  （起動済みの URL に対して手順だけを通す）
 // 終了コード: 0 は全手順が通った、1 はどこかで落ちた、3 は Playwright がなく確かめられない（未検証）
 //
 // Playwright は依存に入れていない。手元で入れてある環境（グローバルや NODE_PATH）のものを使う。
@@ -130,6 +131,24 @@ async function cleanup() {
 }
 
 async function main() {
+  const demoUrl = process.env.E2E_URL;
+  const base = demoUrl || (await startCleanClone());
+  if (demoUrl) say(`対象 ${demoUrl}（起動済み）`);
+
+  // 3. README の手順
+  browser = await playwright.chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const consoleErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => consoleErrors.push(String(error)));
+  page.setDefaultTimeout(30000);
+  await page.goto(base);
+  await walkReadme(page, consoleErrors);
+}
+
+async function startCleanClone() {
   // 1. clean clone。node_modules は手元のものをつなぐ（npm ci は scripts/audit.mjs --full が別に確かめる）
   work = mkdtempSync(join(tmpdir(), "rishu-e2e-"));
   const clone = join(work, "clone");
@@ -151,12 +170,12 @@ async function main() {
   });
   server.stdout.on("data", (chunk) => serverLog.push(String(chunk)));
   server.stderr.on("data", (chunk) => serverLog.push(String(chunk)));
-  const base = `http://127.0.0.1:${port}`;
+  const url = `http://127.0.0.1:${port}`;
   let ready = false;
   for (let i = 0; i < 120 && !ready; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (server.exitCode !== null) break;
-    ready = await fetch(`${base}/api/health`).then((r) => r.ok).catch(() => false);
+    ready = await fetch(`${url}/api/health`).then((r) => r.ok).catch(() => false);
   }
   writeFileSync(join(OUT, "server.log"), serverLog.join(""));
   if (!ready) throw new Error(`サーバーが起動しない（server.log を見る）`);
@@ -165,18 +184,10 @@ async function main() {
   else if (pids.length === 0 || !pids.every((pid) => isDescendant(pid, server.pid))) {
     throw new Error(`ポート ${port} で待ち受けているのが自分の起動したサーバーでない: ${pids.join(",")}`);
   } else say(`PASS 起動: ポート ${port}、PID ${pids.join(",")} は起動したプロセス ${server.pid} の子`);
+  return url;
+}
 
-  // 3. README の手順
-  browser = await playwright.chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  const consoleErrors = [];
-  page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
-  });
-  page.on("pageerror", (error) => consoleErrors.push(String(error)));
-  page.setDefaultTimeout(30000);
-  await page.goto(base);
-
+async function walkReadme(page, consoleErrors) {
   let n = 0;
   const step = async (title, action) => {
     n += 1;

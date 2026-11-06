@@ -5,5 +5,5 @@
     "types": ["./worker-configuration.d.ts", "vite/client"],
     "tsBuildInfoFile": "node_modules/.tmp/tsconfig.worker.tsbuildinfo"
   },
-  "include": ["worker", "shared", "engine", "data/fictional/**/*.ts"]
+  "include": ["worker", "demo/apiWorker.ts", "demo/d1.ts", "demo/protocol.ts", "demo/__tests__", "shared", "engine", "data/fictional/**/*.ts"]
 }

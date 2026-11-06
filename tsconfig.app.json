@@ -6,5 +6,5 @@
     "types": ["vite/client"],
     "tsBuildInfoFile": "node_modules/.tmp/tsconfig.app.tsbuildinfo"
   },
-  "include": ["src", "shared", "engine", "data/fictional/**/*.ts"]
+  "include": ["src", "demo/main.ts", "demo/protocol.ts", "shared", "engine", "data/fictional/**/*.ts"]
 }

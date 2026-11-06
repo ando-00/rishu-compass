@@ -1,6 +1,7 @@
 # 依存とビルド
 node_modules/
 dist/
+dist-demo/
 .wrangler/
 *.tsbuildinfo
 worker-configuration.d.ts
