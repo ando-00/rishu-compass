@@ -17,7 +17,7 @@ import {
   type CourseIndex,
   type Student,
 } from "./model";
-import type { Category, Gate, LoadLimit, Prerequisite, RuleSet } from "./rules";
+import type { Category, Gate, LoadLimit, Prerequisite, RetakeRule, RuleSet } from "./rules";
 
 // expected は履修中の科目を修得すれば満たす。delayed は判定の時点に満たさず、次の年度以降に認める（H29）
 export type JudgmentStatus = "satisfied" | "expected" | "delayed" | "short" | "delay_risk" | "needs_staff";
@@ -153,13 +153,47 @@ function allocationOf(result: CreditAllocation, category: Category) {
   return allocation;
 }
 
+// 履修中を修得した場合の見込み。失格の再履修を認めない読み方では、失格の科目を履修中でも修得を見込めない（独立の全体監査 V-1）
+type Projection = {
+  projected: CreditAllocation;
+  // 読み方を逆にした場合の見込み。失格の科目を履修中の学生だけが持つ
+  alternative: CreditAllocation | null;
+  // 履修中の失格の科目
+  barred: string[];
+  // 再履修のルールが未確定のときの曖昧箇所
+  retakeIds: string[];
+};
+
+function projectCredits({ rules, catalog, student, unresolved }: EvaluationContext): Projection {
+  const names = passedCourses(student, { includeEnrolled: true });
+  const optimistic = allocateCredits(rules, catalog, student, names);
+  const { retake } = rules;
+  const passed = passedCourses(student);
+  const disqualified = disqualifiedCourses(student);
+  const barred = retake
+    ? [...names].filter((name) => disqualified.has(name) && !passed.has(name)).sort()
+    : [];
+  if (!retake || barred.length === 0) {
+    return { projected: optimistic, alternative: null, barred: [], retakeIds: [] };
+  }
+  const closed = allocateCredits(rules, catalog, student, new Set([...names].filter((name) => !barred.includes(name))));
+  const retakeIds = pendingIds(retake, unresolved);
+  const forbids = retakeIds.length === 0 && retake.forbidDisqualified;
+  return {
+    projected: forbids ? closed : optimistic,
+    alternative: forbids ? optimistic : closed,
+    barred,
+    retakeIds,
+  };
+}
+
 function judgeCategory(
   category: Category,
   context: EvaluationContext,
   current: CreditAllocation,
-  projected: CreditAllocation,
+  { projected, alternative, barred, retakeIds }: Projection,
 ): Judgment {
-  const { student, rules, uncertainCategories } = context;
+  const { student, rules, catalog, uncertainCategories } = context;
   const allocation = allocationOf(current, category);
   const base = {
     ruleId: category.id,
@@ -181,13 +215,26 @@ function judgeCategory(
   if (isCategoryMet(category, allocation)) {
     return { ...base, status: "satisfied", reason: "必要な単位を満たしています。" };
   }
-  if (isCategoryMet(category, allocationOf(projected, category))) {
+  const metIfEnrolled = isCategoryMet(category, allocationOf(projected, category));
+  const metOtherwise = alternative !== null && isCategoryMet(category, allocationOf(alternative, category));
+  // 再履修の読み方で満たすかどうかが変わる区分は、未回答の間は確定の扱いをしない
+  if (retakeIds.length > 0 && alternative !== null && metIfEnrolled !== metOtherwise) {
+    return { ...base, ambiguityIds: retakeIds, status: "needs_staff", reason: unresolvedReason(context, retakeIds) };
+  }
+  if (metIfEnrolled) {
     return { ...base, status: "expected", reason: "履修中の科目を修得すれば満たします。" };
   }
+  // 失格の科目を数えないことで足りなくなった区分は、その理由を示す
+  const blocking = metOtherwise
+    ? barred.filter((name) => catalog.get(name)?.groups.some((group) => category.groups.includes(group)))
+    : [];
   return {
     ...base,
     status: "short",
-    reason: "必要な単位または科目が不足しています。",
+    reason:
+      blocking.length > 0
+        ? `${blocking.join("、")} は失格のため再び履修できません（${rules.retake?.clause}）。`
+        : "必要な単位または科目が不足しています。",
     needsContact: student.studentYear >= rules.graduation.minYears,
   };
 }
@@ -464,17 +511,27 @@ function requiredCoursesTooLate(context: EvaluationContext, deadline: number, pe
 
 // 間に合わない科目と、その履修の順を決めている条文を返す。
 function explainDelay(context: EvaluationContext, deadline: number) {
-  const { rules, student } = context;
+  const { rules, student, unresolved } = context;
   const { courses } = requiredCoursesTooLate(context, deadline, false);
   const passed = passedCourses(student);
   const grounds = new Map<string, Ground>();
   const seen = new Set<string>();
-  const cite = ({ id, clause, sourceQuote }: Gate | Prerequisite) =>
+  const barred: string[] = [];
+  const { retake } = rules;
+  const barsRetake = retake && pendingIds(retake, unresolved).length === 0 && retake.forbidDisqualified;
+  const disqualified = disqualifiedCourses(student);
+  const cite = ({ id, clause, sourceQuote }: Gate | Prerequisite | RetakeRule) =>
     grounds.set(id, { ruleId: id, clause, sourceQuote });
 
   function follow(name: string) {
     if (seen.has(name) || passed.has(name)) return;
     seen.add(name);
+    // 再び履修できない科目は、履修の順ではなく再履修のルールで止まっている（V-1）
+    if (barsRetake && disqualified.has(name)) {
+      cite(retake);
+      barred.push(name);
+      return;
+    }
     for (const gate of rules.gates) {
       const applies = gate.target.kind === "course" && gate.target.courses.includes(name);
       if (applies && matchesCondition(gate.when, student)) cite(gate);
@@ -486,7 +543,7 @@ function explainDelay(context: EvaluationContext, deadline: number) {
     }
   }
   courses.forEach(follow);
-  return { courses, grounds: [...grounds.values()] };
+  return { courses, barred, grounds: [...grounds.values()] };
 }
 
 function maxRemainingCredits(context: EvaluationContext, deadline: number, maxPerTerm: number, maxPerYear?: number) {
@@ -583,11 +640,19 @@ function judgeGraduation(
   context: EvaluationContext,
   categories: Judgment[],
   current: CreditAllocation,
-  projected: CreditAllocation,
+  { projected, alternative, retakeIds }: Projection,
 ): Judgment {
   const { rules, student, unresolved } = context;
   const { graduation } = rules;
-  const uncertainIds = [...new Set(categories.flatMap((category) => category.ambiguityIds))];
+  // 再履修の読み方だけで止めた区分は、卒業要件の「未確定の区分」に数えない。
+  // どの読み方でも間に合わない学生は延期見込みのままで、それ以外は下の retakeDecides で職員確認にする（V-1）
+  const heldByRetake = categories.filter(
+    ({ status, ambiguityIds }) =>
+      retakeIds.length > 0 && status === "needs_staff" && ambiguityIds.every((id) => retakeIds.includes(id)),
+  );
+  const uncertainIds = [
+    ...new Set(categories.filter((c) => !heldByRetake.includes(c)).flatMap((category) => category.ambiguityIds)),
+  ];
   const ownIds = pendingIds(graduation, unresolved);
   const finalYear = student.studentYear >= graduation.minYears;
   const shortCategories = categories.filter((c) => c.status === "short").map((c) => c.name);
@@ -611,11 +676,18 @@ function judgeGraduation(
 
   const delayRisk = (): Judgment => {
     const deadline = termIndex(student.expectedGraduation!);
-    const { courses, grounds } = explainDelay(context, deadline);
-    const clauses = [...new Set(grounds.map(({ clause }) => clause))].join("、");
+    const { courses, barred, grounds } = explainDelay(context, deadline);
+    const orderClauses = [
+      ...new Set(grounds.filter(({ ruleId }) => ruleId !== rules.retake?.id).map(({ clause }) => clause)),
+    ].join("、");
     const reason =
       courses.length > 0
-        ? `${courses.join("、")} が卒業予定に間に合わない見込みです。履修の順は${clauses}で決まります。職員と確認してください。`
+        ? [
+            `${courses.join("、")} が卒業予定に間に合わない見込みです。`,
+            barred.length > 0 ? `${barred.join("、")} は失格のため再び履修できません（${rules.retake?.clause}）。` : "",
+            orderClauses ? `履修の順は${orderClauses}で決まります。` : "",
+            "職員と確認してください。",
+          ].join("")
         : "卒業予定までの履修機会では足りない見込みです。職員と確認してください。";
     return { ...base, status: "delay_risk", reason, grounds, needsContact: true };
   };
@@ -651,7 +723,14 @@ function judgeGraduation(
 
   const delay = judgeDelay(context, projected);
   if (delay === "delay") return delayRisk();
-  if (delay === "unknown") {
+  // 再履修の読み方で見込みが変わるなら、未回答の間は確定の扱いをしない（V-1）
+  const retakeDecides =
+    retakeIds.length > 0 &&
+    alternative !== null &&
+    (heldByRetake.length > 0 ||
+      judgeDelay(context, alternative) !== delay ||
+      (alternative.counted < graduation.totalCredits) !== (projected.counted < graduation.totalCredits));
+  if (delay === "unknown" || retakeDecides) {
     const inputIds = delayInputs(context).flatMap((rule) => pendingIds(rule, unresolved));
     return {
       ...base,
@@ -694,19 +773,14 @@ function excludedJudgments(rules: RuleSet, student: Student, reason: string): Ju
 function judgeAll(context: EvaluationContext): Judgment[] {
   const { rules, catalog, student } = context;
   const current = allocateCredits(rules, catalog, student, passedCourses(student));
-  const projected = allocateCredits(
-    rules,
-    catalog,
-    student,
-    passedCourses(student, { includeEnrolled: true }),
-  );
+  const projection = projectCredits(context);
   const categories = applicableCategories(rules, student).map((category) =>
-    judgeCategory(category, context, current, projected),
+    judgeCategory(category, context, current, projection),
   );
   const gates = rules.gates
     .filter((gate) => matchesCondition(gate.when, student))
     .map((gate) => judgeGate(gate, context));
-  return [...categories, judgeGraduation(context, categories, current, projected), ...gates];
+  return [...categories, judgeGraduation(context, categories, current, projection), ...gates];
 }
 
 export function evaluatePrepared(prepared: PreparedRules, student: Student): StudentEvaluation {
