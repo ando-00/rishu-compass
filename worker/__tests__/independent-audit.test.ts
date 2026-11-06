@@ -6,7 +6,9 @@ import { kamomeCourses } from "../../data/fictional/kamome/courses";
 import { goldRules as kamomeGold } from "../../data/fictional/kamome/gold-rules";
 import { kamomeStudents } from "../../data/fictional/kamome/students";
 import {
+  checkPlan,
   computeImpact,
+  describeAmounts,
   evaluatePrepared,
   evaluateStudent,
   listOutreach,
@@ -98,6 +100,61 @@ describe("失格の再履修を認めない読み方の判定（V-1）", () => {
     expect(await summary({})).toEqual({ total: 300, contact: 28, staffReview: 29, clear: 243 });
     expect(await summary(EXCLUDE)).toEqual({ total: 300, contact: 35, staffReview: 22, clear: 243 });
     expect(await summary(INCLUDE)).toEqual({ total: 300, contact: 28, staffReview: 22, clear: 250 });
+  });
+});
+
+describe("全問に答えたあと「未回答」と言わない（V-7）", () => {
+  const allAnswered: Answers = Object.fromEntries(kamomeGold.ambiguities.map((a) => [a.id, a.options[0]!.id]));
+  const reflectable: Answers = Object.fromEntries(
+    kamomeGold.ambiguities.filter((a) => a.options[0]!.patches !== null).map((a) => [a.id, a.options[0]!.id]),
+  );
+  const list = (answers: Answers) => {
+    const prepared = prepareRules(kamomeGold, kamomeCourses, answers);
+    return listOutreach(
+      kamomeStudents.map((student) => evaluatePrepared(prepared, student)),
+      kamomeStudents,
+    );
+  };
+  const notes = (answers: Answers) =>
+    list(answers)
+      .flatMap((entry) => entry.reasons)
+      .filter((reason) => reason.mayChange)
+      .map((reason) => describeAmounts(reason));
+
+  // 科目数の上限は、演習の科目群の読み方（seminar-courses。差分で表せない）で止まる
+  const gateIssues = (answers: Answers) => {
+    const student = kamomeStudents.find(({ id }) => id === "K0001")!;
+    const { issues } = checkPlan(kamomeGold, kamomeCourses, student, [{ course: "人間科学入門", term: "前期" }], answers);
+    return issues.filter((issue) => issue.code === "PENDING_RULE" && issue.ruleId === "seminar-count");
+  };
+
+  it("声かけの量の注記: 全問に答えたあとは、反映できない回答があると言う", () => {
+    const shown = notes(allAnswered);
+    expect(shown.length).toBeGreaterThan(0);
+    for (const note of shown) {
+      expect(note).not.toContain("未回答");
+      expect(note).toContain("判定に反映できない回答があり、変わることがあります");
+    }
+  });
+
+  it("声かけの量の注記: 未回答が残っていれば、今までの文のまま", () => {
+    const shown = notes(reflectable);
+    expect(shown.some((note) => note.includes("未回答の確認事項があり、変わることがあります"))).toBe(true);
+  });
+
+  it("履修案の検査: 反映できない回答で止まった検査は、回答を促さない", () => {
+    const pending = gateIssues(allAnswered);
+    expect(pending.length).toBeGreaterThan(0);
+    for (const issue of pending) {
+      expect(issue.message).not.toContain("未回答");
+      expect(issue.hint).not.toContain("回答すると検査できます");
+    }
+  });
+
+  it("履修案の検査: 未回答があれば、今までどおり回答を促す", () => {
+    const pending = gateIssues({});
+    expect(pending.length).toBeGreaterThan(0);
+    for (const issue of pending) expect(issue.hint).toBe("曖昧箇所に回答すると検査できます。");
   });
 });
 

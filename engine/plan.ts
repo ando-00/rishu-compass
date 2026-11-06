@@ -1,9 +1,11 @@
 import {
+  allUnreflected,
   createContext,
   exclusionReason,
   judgeGate,
   pendingIds,
   prepareRules,
+  unresolvedReason,
   type EvaluationContext,
 } from "./evaluate";
 import {
@@ -59,7 +61,6 @@ type Rule = { id: string; clause: string; sourceQuote: string; ambiguityIds?: st
 
 const DATA_RULE: Rule = { id: "course-data", clause: "科目データ", sourceQuote: "" };
 const TIMETABLE_RULE: Rule = { id: "timetable", clause: "時間割", sourceQuote: "" };
-const UNRESOLVED_MESSAGE = "未回答の確認事項があるため、職員が確認します。";
 
 // 検査の前提のうち、学生の記録だけでは表せないもの。
 export type PlanAssumptions = {
@@ -240,6 +241,13 @@ class PlanChecker {
     });
   }
 
+  // 答えても反映できない読み方には、回答を促さない（V-7）
+  private unresolvedHint(ambiguityIds: string[]) {
+    return allUnreflected(this.context, ambiguityIds)
+      ? "この読み方はルールの形で表せないので、検査できません。職員が要項を見て確かめてください。"
+      : "曖昧箇所に回答すると検査できます。";
+  }
+
   // 未確定のルールは、違反の有無にかかわらず職員確認にする。
   private deferIfUnresolved(rule: Rule, course?: string) {
     const ambiguityIds = pendingIds(rule, this.context.unresolved);
@@ -249,8 +257,8 @@ class PlanChecker {
       ruleId: rule.id,
       clause: rule.clause,
       sourceQuote: rule.sourceQuote,
-      message: UNRESOLVED_MESSAGE,
-      hint: "曖昧箇所に回答すると検査できます。",
+      message: unresolvedReason(this.context, ambiguityIds),
+      hint: this.unresolvedHint(ambiguityIds),
       ambiguityIds,
       ...(course ? { course } : {}),
     });
@@ -348,8 +356,11 @@ class PlanChecker {
           .find((name) => this.assumptions.pendingCourses?.includes(name));
         if (!met && pending) {
           // 前提の科目の履修条件が未回答で決まらないので、不合格と言い切らない。
-          const message = `${entry.course} の前提の ${pending} は、履修条件が未確定です。${UNRESOLVED_MESSAGE}`;
-          this.add("PENDING_RULE", rule, message, "曖昧箇所に回答すると検査できます。", entry.course);
+          const gateIds = this.context.rules.gates
+            .filter((gate) => gate.target.kind === "course" && gate.target.courses.includes(pending))
+            .flatMap((gate) => pendingIds(gate, this.context.unresolved));
+          const message = `${entry.course} の前提の ${pending} は、履修条件が未確定です。${unresolvedReason(this.context, gateIds)}`;
+          this.add("PENDING_RULE", rule, message, this.unresolvedHint(gateIds), entry.course);
           continue;
         }
         if (!met) {
@@ -388,7 +399,7 @@ class PlanChecker {
             sourceQuote: gate.sourceQuote,
             course,
             message: judgment.reason,
-            hint: "曖昧箇所に回答すると検査できます。",
+            hint: this.unresolvedHint(judgment.ambiguityIds),
             ambiguityIds: judgment.ambiguityIds,
           });
           continue;

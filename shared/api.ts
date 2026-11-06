@@ -91,6 +91,7 @@ export const judgmentSchema = z.object({
   atRisk: z.boolean().optional(),
   eligibleFromYear: z.number().optional(),
   grounds: z.array(groundSchema).optional(),
+  unreflected: z.literal(true).optional(),
 });
 
 export const impactSchema = z.object({
@@ -143,6 +144,7 @@ export const outreachSchema = z.object({
       missingCourses: z.array(z.string()).optional(),
       // 未回答の確認事項に関わる量。回答で変わりうる（H19）
       mayChange: z.literal(true).optional(),
+      unreflected: z.literal(true).optional(),
     }),
   ),
   // 声かけの対象にだけ下書きを作る

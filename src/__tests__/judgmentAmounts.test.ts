@@ -20,6 +20,12 @@ describe("学生別の画面の量に添える文（H36）", () => {
     expect(amountCaveat({ ...base, missingCourses: ["演習Ⅰ"] })).toBe("未回答の確認事項があり、変わることがあります");
   });
 
+  it("答えたが反映できない回答で止まった判定には、未回答と言わない（V-7）", () => {
+    expect(amountCaveat({ ...base, unreflected: true, required: 20, actual: 16 })).toBe(
+      "判定に反映できない回答があり、変わることがあります",
+    );
+  });
+
   it("量がなければ添えない", () => {
     expect(amountCaveat(base)).toBeNull();
     expect(amountCaveat({ ...base, missingCourses: [] })).toBeNull();

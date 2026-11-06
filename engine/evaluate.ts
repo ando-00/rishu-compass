@@ -44,6 +44,8 @@ export type Judgment = {
   eligibleFromYear?: number;
   // 延期見込みの発端になった条文。卒業要件の条文とは別に示す
   grounds?: Ground[];
+  // 止めている曖昧箇所がすべて「答えたが判定に反映できない」もの（未回答とは言わない。V-7）
+  unreflected?: true;
 };
 
 export type Ground = { ruleId: string; clause: string; sourceQuote: string };
@@ -75,8 +77,12 @@ const UNRESOLVED_REASON = "未回答の確認事項があるため、職員が�
 const UNREFLECTED_REASON = "判定に反映できない回答（ルールの形で表せない読み方）があるため、職員が確認します。";
 
 // 止めている曖昧箇所がすべて「答えたが反映できない」ものなら、未回答とは言わない（監査の第2.5回の A25-4）
-function unresolvedReason({ unreflected }: { unreflected: Set<string> }, ids: string[]) {
-  return ids.length > 0 && ids.every((id) => unreflected.has(id)) ? UNREFLECTED_REASON : UNRESOLVED_REASON;
+export function allUnreflected({ unreflected }: { unreflected: Set<string> }, ids: string[]) {
+  return ids.length > 0 && ids.every((id) => unreflected.has(id));
+}
+
+export function unresolvedReason(context: { unreflected: Set<string> }, ids: string[]) {
+  return allUnreflected(context, ids) ? UNREFLECTED_REASON : UNRESOLVED_REASON;
 }
 
 export function prepareRules(baseRules: RuleSet, courses: Course[], answers: Answers): PreparedRules {
@@ -829,7 +835,10 @@ function judgeAll(context: EvaluationContext): Judgment[] {
   const gates = rules.gates
     .filter((gate) => matchesCondition(gate.when, student))
     .map((gate) => judgeGate(gate, context));
-  return [...categories, judgeGraduation(context, categories, current, projection, heldByYears), ...gates];
+  const judgments = [...categories, judgeGraduation(context, categories, current, projection, heldByYears), ...gates];
+  return judgments.map((judgment) =>
+    allUnreflected(context, judgment.ambiguityIds) ? { ...judgment, unreflected: true as const } : judgment,
+  );
 }
 
 export function evaluatePrepared(prepared: PreparedRules, student: Student): StudentEvaluation {
