@@ -185,7 +185,7 @@ function checkHistory() {
 
 // ---- フォルダ構成 ----
 function checkFolders() {
-  const expected = new Set(["engine", "shared", "worker", "src", "migrations", "data", "evals", "scripts", "docs", ".github", ".githooks", ".claude"]);
+  const expected = new Set(["engine", "shared", "worker", "src", "migrations", "data", "evals", "scripts", "docs", "demo", ".github", ".githooks", ".claude"]);
   const top = new Set(lines(git(["ls-files"]).stdout).filter((f) => f.includes("/")).map((f) => f.split("/")[0]));
   const extra = [...top].filter((d) => !expected.has(d));
   expectEmpty("F1", "最上位のフォルダが AGENTS.md の表と合う", extra.join("\n"));

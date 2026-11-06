@@ -27,6 +27,7 @@
 | `shared/` | 画面と API が共有する型と Zod スキーマ |
 | `worker/` | API（Hono）。`engine/` と `shared/` を呼ぶ |
 | `src/` | 画面（React） |
+| `demo/` | 公開デモの入口。`src/` と `worker/` をブラウザの中で動かす |
 | `migrations/` | D1 の表 |
 | `data/fictional/` | 架空データ |
 | `evals/` | 評価の実行と結果 |
