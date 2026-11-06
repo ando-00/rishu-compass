@@ -2,8 +2,26 @@ import { describe, expect, it } from "vitest";
 import { sakuradaiCourses } from "../../data/fictional/sakuradai/courses";
 import { goldRules } from "../../data/fictional/sakuradai/gold-rules";
 import { sakuradaiStudents } from "../../data/fictional/sakuradai/students";
-import { evaluateStudent, listOutreach, type Answers, type Course, type Judgment, type RuleSet, type Student } from "../../engine";
+import { kamomeCourses } from "../../data/fictional/kamome/courses";
+import { goldRules as kamomeGold } from "../../data/fictional/kamome/gold-rules";
+import { kamomeStudents } from "../../data/fictional/kamome/students";
+import {
+  computeImpact,
+  evaluatePrepared,
+  evaluateStudent,
+  listOutreach,
+  prepareRules,
+  settledStudentIds,
+  type Answers,
+  type Course,
+  type Judgment,
+  type RuleSet,
+  type Student,
+  type StudentState,
+} from "../../engine";
+import { findRecordedProposal } from "../datasets";
 import app from "../index";
+import { acceptRules, needsReviewIds } from "../ruleSets";
 import { createTestDb } from "./testDb";
 
 // 独立の全体監査（2026-11-06）で見つけた誤りの再現。
@@ -81,6 +99,61 @@ describe("失格の再履修を認めない読み方の判定（V-1）", () => {
     expect(await summary(EXCLUDE)).toEqual({ total: 300, contact: 35, staffReview: 22, clear: 243 });
     expect(await summary(INCLUDE)).toEqual({ total: 300, contact: 28, staffReview: 22, clear: 250 });
   });
+});
+
+describe("影響人数は、一覧で実際に動く学生を全て含む（V-5）", () => {
+  function states(rules: RuleSet, courses: Course[], students: Student[], answers: Answers) {
+    const prepared = prepareRules(rules, courses, answers);
+    const evaluations = students.map((student) => evaluatePrepared(prepared, student));
+    const candidates = students.filter((_, i) => evaluations[i]!.judgments.some((j) => j.status === "needs_staff"));
+    const outreach = listOutreach(evaluations, students, settledStudentIds(rules, courses, candidates, answers));
+    const result = new Map<string, StudentState>(outreach.map((entry) => [entry.studentId, entry.kind]));
+    for (const { id } of students) if (!result.has(id)) result.set(id, "clear");
+    return result;
+  }
+
+  const recordedKamome = () => {
+    const { rules } = findRecordedProposal("kamome")!;
+    return acceptRules(rules, needsReviewIds(rules));
+  };
+
+  it("かもめ大学の記録の案: どちらに答えても対応なしへ動く7人を数える", () => {
+    const rules = recordedKamome();
+    const before = states(rules, kamomeCourses, kamomeStudents, {});
+    for (const ambiguityId of ["thesis-retry", "run1-amb-credit-basis"]) {
+      const card = computeImpact(rules, kamomeCourses, kamomeStudents, {}, ambiguityId, before);
+      expect([ambiguityId, card.affectedStudentIds]).toEqual([
+        ambiguityId,
+        expect.arrayContaining(["K0012", "K0016", "K0080", "K0112", "K0116", "K0120", "K0148"]),
+      ]);
+      // 動く学生を「別途、職員確認」に重ねて数えない
+      expect(card.staffReviewStudentIds).not.toContain("K0012");
+    }
+  });
+
+  it("同梱の全ての対象で、回答の前後で一覧の状態が変わる学生は全て数える", () => {
+    const targets: [RuleSet, Course[], Student[]][] = [
+      [goldRules, sakuradaiCourses, sakuradaiStudents],
+      [kamomeGold, kamomeCourses, kamomeStudents],
+      [recordedKamome(), kamomeCourses, kamomeStudents],
+    ];
+    for (const [rules, courses, students] of targets) {
+      const before = states(rules, courses, students, {});
+      for (const ambiguity of rules.ambiguities) {
+        if (ambiguity.options.some((option) => option.patches === null)) continue;
+        const card = computeImpact(rules, courses, students, {}, ambiguity.id, before);
+        for (const option of ambiguity.options) {
+          const after = states(rules, courses, students, { [ambiguity.id]: option.id });
+          const moved = students.filter(({ id }) => before.get(id) !== after.get(id)).map(({ id }) => id);
+          expect([ambiguity.id, option.id, moved.filter((id) => !card.affectedStudentIds.includes(id))]).toEqual([
+            ambiguity.id,
+            option.id,
+            [],
+          ]);
+        }
+      }
+    }
+  }, 120000);
 });
 
 describe("差分で表せない未回答の先修からは延期見込みを言い切らない（V-3）", () => {

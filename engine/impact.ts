@@ -113,32 +113,52 @@ export function computeImpact(
     counts: {} as Partial<Record<JudgmentStatus, number>>,
   }));
 
+  const evaluated = prepared.map(({ rules: resolved }) =>
+    students.map((student) => evaluatePrepared(resolved, student).judgments),
+  );
+  // 回答しても職員確認の判定が残る学生は、残りの読み方しだいで一覧では対応なしへ動く（独立の全体監査 V-5）。
+  // 一覧と同じ確かめ方で、回答のあとの状態を求める
+  const settledAfter = prepared.map(({ option }, optionIndex) => {
+    if (!beforeStates) return new Set<string>();
+    const candidates = students.filter((student, studentIndex) => {
+      const judgments = evaluated[optionIndex]![studentIndex]!;
+      return (
+        beforeStates.get(student.id) === "staff_review" &&
+        !judgments.some((j) => j.needsContact) &&
+        judgments.some((j) => j.status === "needs_staff")
+      );
+    });
+    if (candidates.length === 0) return new Set<string>();
+    return settledStudentIds(rules, courses, candidates, { ...answers, [ambiguityId]: option.id });
+  });
+
   const changes: ImpactChange[] = [];
   const counted = new Set<string>();
   const affected = new Set<string>();
   const stuck = new Set<string>();
-  for (const student of students) {
+  for (const [studentIndex, student] of students.entries()) {
     const beforeState: StudentState = beforeStates?.get(student.id) ?? "clear";
 
     const byRule = new Map<string, ImpactChange>();
     const shown = new Map<string, Set<string>>();
     let moved = false;
-    for (const { option, rules: resolved, counts } of prepared) {
-      const { judgments } = evaluatePrepared(resolved, student);
+    for (const [optionIndex, { option, counts }] of prepared.entries()) {
+      const judgments = evaluated[optionIndex]![studentIndex]!;
       // 履修上限のように判定を持たないルールは、学生の全判定の中で数える。
       const related = judgments.filter((judgment) => linked.has(judgment.ruleId));
       for (const judgment of related) counted.add(judgment.name);
       const worst = worstStatus(related.length > 0 ? related : judgments);
       if (worst) counts[worst] = (counts[worst] ?? 0) + 1;
 
-      // 回答の前後で職員の対応が変わるか。声かけの有無は確定で分かる。職員確認が残るかは、他の曖昧箇所の
-      // 読み方次第で対応なしになる場合があるので、確定で消えるときだけ変わったと数える
+      // 回答の前後で職員の対応が変わるか。声かけの有無は確定で分かる。職員確認が残っても、残りの読み方の
+      // どれでも対応が要らないと確かめられれば、一覧では対応なしへ動く
       // 一覧の状態を渡されていないときは、仮の状態では「対応なし」と「職員確認」を見分けられないので比べない
       if (beforeStates) {
         const hasContact = judgments.some((j) => j.needsContact);
         const hasStaff = judgments.some((j) => j.status === "needs_staff");
         if ((beforeState === "contact") !== hasContact) moved = true;
-        if (beforeState === "staff_review" && !hasContact && !hasStaff) moved = true;
+        const settled = settledAfter[optionIndex]!.has(student.id);
+        if (beforeState === "staff_review" && !hasContact && (!hasStaff || settled)) moved = true;
       }
       // 回答しても職員確認が残る学生（A25-3）。一覧の状態を渡されていれば、今の一覧で職員確認の学生に限る。
       // 渡されていないと、どの読み方でも対応が要らない学生を見分けられないので、従来どおり全員を数える
@@ -191,20 +211,33 @@ export function settledStudentIds(
   students: Student[],
   answers: Answers,
 ) {
-  const readings = rules.ambiguities
-    .filter((ambiguity) => !Object.hasOwn(answers, ambiguity.id) && ambiguity.options.length > 0)
-    .map((ambiguity) =>
-      ambiguity.options.map((option) =>
-        prepareRules(rules, courses, { ...answers, [ambiguity.id]: option.id }),
-      ),
-    );
+  const unanswered = rules.ambiguities.filter(
+    (ambiguity) => !Object.hasOwn(answers, ambiguity.id) && ambiguity.options.length > 0,
+  );
+  const prepared = new Map<string, ReturnType<typeof prepareRules>[]>();
+  const readingsOf = ({ id, options }: RuleSet["ambiguities"][number]) => {
+    let readings = prepared.get(id);
+    if (!readings) {
+      readings = options.map((option) => prepareRules(rules, courses, { ...answers, [id]: option.id }));
+      prepared.set(id, readings);
+    }
+    return readings;
+  };
   const needsNothing = (resolved: ReturnType<typeof prepareRules>, student: Student) =>
     evaluatePrepared(resolved, student).judgments.every(
       (judgment) => judgment.status !== "needs_staff" && !judgment.needsContact,
     );
-  const settled = students.filter((student) =>
-    readings.some((options) => options.every((resolved) => needsNothing(resolved, student))),
-  );
+  const current = prepareRules(rules, courses, answers);
+  const settled = students.filter((student) => {
+    // 区分と履修条件の職員確認を消せるのは、その判定の ambiguityIds にある曖昧箇所だけ
+    // （resolveRules が、書き換えるルールと単位を受け取る区分に結びつける）。ほかの読み方は試さない
+    const held = evaluatePrepared(current, student).judgments.filter(
+      ({ status, kind }) => status === "needs_staff" && kind !== "graduation",
+    );
+    return unanswered
+      .filter(({ id }) => held.every(({ ambiguityIds }) => ambiguityIds.includes(id)))
+      .some((ambiguity) => readingsOf(ambiguity).every((resolved) => needsNothing(resolved, student)));
+  });
   return new Set(settled.map((student) => student.id));
 }
 
