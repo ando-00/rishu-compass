@@ -1,3 +1,4 @@
+import { quoteText } from "./quoteText";
 import { countedCaption, type MeetingSheet } from "./meetingSheet";
 import { JudgmentBadge } from "./StatusBadge";
 
@@ -35,7 +36,7 @@ export function MeetingSheetView({ sheet, datasetName, onClose }: Props) {
           <h3>
             {index + 1}. {item.clause}　{item.question}
           </h3>
-          <blockquote>{item.sourceQuote}</blockquote>
+          <blockquote>{quoteText(item.sourceQuote)}</blockquote>
           {item.computable ? (
             <p>
               回答で判定が変わる学生 <strong>{item.affected}人</strong>

@@ -9,7 +9,7 @@ import {
   type PreviousAnswer,
   type Respondent,
 } from "../shared/api";
-import { changesAfterAnswer } from "./answerChanges";
+import { type AnswerAction, changedBadgeLabel, changesAfterAnswer } from "./answerChanges";
 import { fetchAnswerRecords, fetchDatasets, fetchOverview, saveAnswer, withdrawProposal } from "./api";
 import { ChangesPanel } from "./ChangesPanel";
 import { ExtractionPanel } from "./ExtractionPanel";
@@ -65,6 +65,7 @@ export function App() {
   const [respondent, setRespondent] = useState<Respondent>("教務職員A");
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [previous, setPrevious] = useState<OverviewResponse | null>(null);
+  const [lastAction, setLastAction] = useState<AnswerAction>("answer");
   const [tab, setTab] = useState<Tab>("questions");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 学生別の絞り込み。上の人数から開くときに指定し、学生別を離れたら「すべて」に戻す
@@ -171,6 +172,7 @@ export function App() {
       if (latestDataset.current !== requested) return;
       resultPending.current = true;
       setPrevious(overview);
+      setLastAction(optionId === null ? "clear" : "answer");
       setRecords(result.records);
       setHistory(result.history);
       setPreviousAnswers(result.previous);
@@ -375,6 +377,7 @@ export function App() {
             {changes && tab !== "import" && (
               <ChangesPanel
                 changes={changes}
+                action={lastAction}
                 onOpenStudent={openStudent}
                 onOpenOutreach={() => setTab("outreach")}
               />
@@ -421,6 +424,7 @@ export function App() {
                 outreach={overview.outreach}
                 finalYear={overview.finalYear}
                 changes={changes ?? []}
+                changedLabel={changedBadgeLabel(lastAction)}
                 onOpenStudent={openStudent}
               />
             )}

@@ -89,6 +89,14 @@ h3 {
   line-height: 1.5;
 }
 
+.proposal > h3 {
+  margin-top: 24px;
+}
+
+.proposal > .table-scroll + .muted {
+  margin-top: 16px;
+}
+
 h4 {
   margin: 16px 0 8px;
   font-size: 15px;
@@ -1376,7 +1384,7 @@ button.option:hover:not(:disabled) {
     flex: none;
   }
 
-  /* 人数は狭い画面でも1段に収め、説明は隠す */
+  /* 人数は狭い画面でも1段に収め、説明は隠す。直前の人数との差は回答の結果なので残す */
   .summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1389,9 +1397,15 @@ button.option:hover:not(:disabled) {
     font-size: 18px;
   }
 
-  .summary-note,
-  .summary-delta {
+  .summary-note {
     display: none;
+  }
+
+  .summary-delta {
+    display: block;
+    margin-left: 0;
+    font-size: 11px;
+    line-height: 1.35;
   }
 
   .card {

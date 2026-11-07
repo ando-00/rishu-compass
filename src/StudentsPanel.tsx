@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { quoteText } from "./quoteText";
 import { amountCaveat } from "./judgmentAmounts";
 import type {
   Answers,
@@ -318,7 +319,8 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
             </label>
             <p className="muted">{shown.length}人を表示（声かけ、職員確認、対応なしの順）</p>
           </div>
-          <ul className="student-list" aria-label="学生の一覧">
+          {shown.length === 0 && <p className="empty-line">絞り込みに当てはまる学生はいません。</p>}
+          {shown.length > 0 && <ul className="student-list" aria-label="学生の一覧">
             {shown.map((student) => (
               <li key={student.id}>
                 <button
@@ -333,7 +335,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 </button>
               </li>
             ))}
-          </ul>
+          </ul>}
         </div>
 
         <div className="student-detail">
@@ -389,7 +391,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                             <span className="muted"> 未修得: {judgment.missingCourses.join("、")}</span>
                           )}
                           {amountCaveat(judgment) && <span className="muted"> {amountCaveat(judgment)}</span>}
-                          <span className="quote">{judgment.sourceQuote}</span>
+                          <span className="quote">{quoteText(judgment.sourceQuote)}</span>
                         </td>
                       </tr>
                     </Fragment>

@@ -7,6 +7,7 @@ import type {
   OverviewResponse,
   PreviousAnswer,
 } from "../shared/api";
+import { quoteText } from "./quoteText";
 import { buildMeetingSheet, countedCaption, countedStatuses } from "./meetingSheet";
 import { MeetingSheetView } from "./MeetingSheetView";
 import { JudgmentBadge, judgmentLabel } from "./StatusBadge";
@@ -202,7 +203,7 @@ function QuestionHead({ impact, answered, unreflected }: { impact: Impact; answe
         {answered && unreflected && <span className="badge badge-warn">回答済み（判定に未反映）</span>}
       </p>
       <h3>{impact.question}</h3>
-      <blockquote>{impact.sourceQuote}</blockquote>
+      <blockquote>{quoteText(impact.sourceQuote)}</blockquote>
     </>
   );
 }

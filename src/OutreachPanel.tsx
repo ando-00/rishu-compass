@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { describeAmounts } from "../engine/outreach";
 import type { StateChange } from "../engine/stateChanges";
 import type { Outreach, OverviewResponse } from "../shared/api";
+import { quoteText } from "./quoteText";
 import { FinalYearSummary } from "./FinalYearSummary";
 import { JudgmentBadge, NewlyListedBadge } from "./StatusBadge";
 
@@ -9,12 +10,13 @@ type Props = {
   outreach: Outreach[];
   finalYear: OverviewResponse["finalYear"];
   changes: StateChange[];
+  changedLabel: string;
   onOpenStudent: (studentId: string) => void;
 };
 
 type CardProps = {
   entry: Outreach;
-  newlyListed: boolean;
+  newlyListed: string | null;
   onOpenStudent: Props["onOpenStudent"];
 };
 
@@ -25,7 +27,7 @@ function Grounds({ reasons }: { reasons: Outreach["reasons"] }) {
   return (
     <>
       {unique.map(({ ruleId, clause, sourceQuote }) => (
-        <blockquote key={ruleId}>{sourceQuote.startsWith(clause) ? sourceQuote : `${clause}: ${sourceQuote}`}</blockquote>
+        <blockquote key={ruleId}>{sourceQuote.startsWith(clause) ? quoteText(sourceQuote) : `${clause}: ${quoteText(sourceQuote)}`}</blockquote>
       ))}
     </>
   );
@@ -74,7 +76,7 @@ function OutreachRow({ entry, newlyListed, onOpenStudent }: CardProps) {
           <button type="button" className="link id" onClick={() => onOpenStudent(entry.studentId)}>
             {entry.studentId}
           </button>
-          {newlyListed && <NewlyListedBadge />}
+          {newlyListed && <NewlyListedBadge label={newlyListed} />}
         </td>
         <td className="num">{entry.studentYear}</td>
         <td className="nowrap">
@@ -154,7 +156,7 @@ function OutreachTable({ entries, row }: { entries: Outreach[]; row: (entry: Out
   );
 }
 
-export function OutreachPanel({ outreach, finalYear, changes, onOpenStudent }: Props) {
+export function OutreachPanel({ outreach, finalYear, changes, changedLabel, onOpenStudent }: Props) {
   // 絞り込みは画面の中だけで行う。人数の計算は engine の結果のまま
   const [year, setYear] = useState("all");
   const [ruleName, setRuleName] = useState("all");
@@ -173,7 +175,7 @@ export function OutreachPanel({ outreach, finalYear, changes, onOpenStudent }: P
     <OutreachRow
       key={entry.studentId}
       entry={entry}
-      newlyListed={changed.has(entry.studentId)}
+      newlyListed={changed.has(entry.studentId) ? changedLabel : null}
       onOpenStudent={onOpenStudent}
     />
   );

@@ -234,6 +234,18 @@ async function walkReadme(page, consoleErrors) {
     const body = await page.locator("main").innerText();
     const missing = ["第6条", "検査用ケース"].filter((word) => !body.includes(word));
     if (missing.length > 0) throw new Error(`見当たらない: ${missing.join("、")}`);
+    if (body.includes("|")) throw new Error("根拠の文に要項の表の記号が残っている");
+    const headings = page.locator("section.proposal > h3, section.proposal > .table-scroll + .muted");
+    if ((await headings.count()) === 0) throw new Error("ルール案の見出しが見当たらない");
+    const tight = await headings.evaluateAll((items) =>
+      items
+        .filter((item) => {
+          const before = item.previousElementSibling;
+          return before && item.getBoundingClientRect().top - before.getBoundingClientRect().bottom < 16;
+        })
+        .map((item) => item.innerText),
+    );
+    if (tight.length > 0) throw new Error(`前の内容に詰まっている: ${tight.join("、")}`);
   });
   await step("5 このルール案を確定する", async () => {
     // 変換の形式に失格の再履修のルールがないことを、確定の前と後の画面で示す（V-2）
@@ -283,6 +295,8 @@ async function walkReadme(page, consoleErrors) {
     await page.getByRole("heading", { name: /履修の記録（\d+件）/ }).waitFor();
     const body = await page.locator("main").innerText();
     if (!/第\d+条/.test(body)) throw new Error("根拠の条文が見当たらない");
+    if (body.includes("|")) throw new Error("根拠の文に要項の表の記号が残っている");
+    if (!body.includes(" ／ ")) throw new Error("要項の表の行を引いた根拠の文が見当たらない");
   });
   await step("10 履修案の記録を読み込むと、検査を通った案と下書きが出る", async () => {
     const panel = page.locator("div").filter({ has: page.getByRole("heading", { name: "履修案", exact: true }) }).last();
@@ -367,6 +381,35 @@ async function walkReadme(page, consoleErrors) {
     await page.locator(".judgment-table").waitFor();
     if ((await overflow()) > 0) throw new Error(`学生詳細で ${await overflow()}px はみ出す`);
     if ((await squeezed(page.locator(".judgment-table td"))) > 0) throw new Error("学生詳細の判定の表の列が潰れている");
+  });
+
+  await step("14 回答を取り消すと取り消しの結果として出て、幅 390 でも直前の人数との差が見える", async () => {
+    await tab("確認事項").click();
+    const cancel = page.getByRole("button", { name: "回答を取り消す" });
+    if ((await cancel.count()) === 0) {
+      await page.getByRole("button", { name: /卒業に必要な単位に算入される単位だけを数える/ }).click();
+      await cancel.first().waitFor();
+    }
+    await cancel.first().click();
+    const result = page.locator(".changes");
+    await result.getByText("回答の取り消しで、職員の対応が変わった学生は").waitFor();
+    const delta = page.locator(".summary-delta").first();
+    await delta.waitFor();
+    const box = await delta.boundingBox();
+    if (!box || box.width === 0 || box.height === 0) throw new Error("直前の人数との差が見えない");
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (overflow > 0) throw new Error(`人数の欄で ${overflow}px はみ出す`);
+    await tab("声かけ").click();
+    if ((await page.getByText("直前の回答で変化").count()) > 0) throw new Error("取り消しのあとに「直前の回答で変化」と出る");
+    if ((await page.getByText("直前の取り消しで変化").count()) === 0) throw new Error("「直前の取り消しで変化」が見当たらない");
+  });
+  await step("15 当てはまらない学生 ID では、空の枠でなく当てはまる学生がいないと出る", async () => {
+    await tab("学生別").click();
+    const id = page.getByLabel("学生 ID");
+    await id.fill("S9999");
+    await page.getByText("絞り込みに当てはまる学生はいません。").waitFor();
+    if ((await page.getByRole("list", { name: "学生の一覧" }).count()) !== 0) throw new Error("空の一覧が残っている");
+    await id.fill("");
   });
 
   const errors = consoleErrors.filter((text) => !/favicon/.test(text));

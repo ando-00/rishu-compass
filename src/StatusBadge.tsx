@@ -52,8 +52,8 @@ export function StateBadge({ state }: { state: keyof typeof STATE_LABELS }) {
   return <Badge {...STATE_LABELS[state]} />;
 }
 
-export function NewlyListedBadge() {
-  return <Badge label="直前の回答で変化" tone="neutral" />;
+export function NewlyListedBadge({ label }: { label: string }) {
+  return <Badge label={label} tone="neutral" />;
 }
 
 export function ReviewBadge({ review }: { review: keyof typeof REVIEW_LABELS }) {

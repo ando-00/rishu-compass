@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changesAfterAnswer } from "../answerChanges";
+import { changesAfterAnswer, changesMessage, changedBadgeLabel } from "../answerChanges";
 
 const before = { students: [{ id: "S0007", state: "staff_review" as const }, { id: "S0010", state: "clear" as const }] };
 const after = { students: [{ id: "S0007", state: "contact" as const }, { id: "S0010", state: "clear" as const }] };
@@ -23,5 +23,19 @@ describe("changesAfterAnswer（回答のあとの「全学生の判定を更新�
 
   it("新しい判定が届いて誰も変わらなければ、空の一覧を返す", () => {
     expect(changesAfterAnswer(before, { students: [...before.students] })).toEqual([]);
+  });
+});
+
+describe("更新の知らせの文", () => {
+  it("回答のあとは回答の結果として書く", () => {
+    expect(changesMessage(6, "answer")).toBe("直前の回答で、職員の対応が変わった学生は 6人です。");
+    expect(changesMessage(0, "answer")).toBe("この回答で職員の対応が変わる学生はいません。");
+    expect(changedBadgeLabel("answer")).toBe("直前の回答で変化");
+  });
+
+  it("取り消しのあとは「回答で」と書かない", () => {
+    expect(changesMessage(6, "clear")).toBe("回答の取り消しで、職員の対応が変わった学生は 6人です。");
+    expect(changesMessage(0, "clear")).toBe("この取り消しで職員の対応が変わる学生はいません。");
+    expect(changedBadgeLabel("clear")).toBe("直前の取り消しで変化");
   });
 });

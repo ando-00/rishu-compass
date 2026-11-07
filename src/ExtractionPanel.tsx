@@ -1,3 +1,4 @@
+import { quoteText } from "./quoteText";
 import { retakeNotice } from "./retakeNotice";
 import { useEffect, useRef, useState } from "react";
 import type { Ambiguity } from "../engine/rules";
@@ -34,7 +35,7 @@ function Questions({ ambiguities, proposal }: { ambiguities: Ambiguity[]; propos
           <article className="card" key={ambiguity.id}>
             <p className="clause">{ambiguity.clause}</p>
             <h3>{ambiguity.question}</h3>
-            <blockquote>{ambiguity.sourceQuote}</blockquote>
+            <blockquote>{quoteText(ambiguity.sourceQuote)}</blockquote>
             {impact ? (
               <>
                 <ImpactCounts impact={impact} />
@@ -74,7 +75,7 @@ function RuleTable({ rows }: { rows: RuleRow[] }) {
             <tr key={row.id}>
               <td className="nowrap">{row.clause}</td>
               <td>{row.summary}</td>
-              <td className="muted">{row.sourceQuote}</td>
+              <td className="muted">{quoteText(row.sourceQuote)}</td>
               <td>
                 <ReviewBadge review={row.review} />
               </td>
@@ -221,7 +222,7 @@ function ExtraQuestions({ questions }: { questions: ProposalResponse["extraQuest
         <article className="card" key={sourceQuote}>
           <p className="clause">{clause}</p>
           <h3>{question}</h3>
-          <blockquote>{sourceQuote}</blockquote>
+          <blockquote>{quoteText(sourceQuote)}</blockquote>
           <ul>
             {options.map((option) => (
               <li key={option}>{option}</li>
@@ -421,7 +422,7 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
   const { rules, notes, problems, attempts, extraQuestions, caseResults, recording } = proposal;
   const rows = summarizeRules(rules);
   return (
-    <section>
+    <section className="proposal">
       <h2>ルール案</h2>
       <p className="notice">
         職員が確定するまで、この案は判定に使いません。根拠の文が要項にあることは検査しましたが、解釈が正しいことは保証しません。
@@ -475,7 +476,7 @@ function Proposal({ proposal, respondent, confirmedDatasetId, onConfirmed }: Pro
           {notes.map((note) => (
             <article className="card" key={`${note.clause}-${note.sourceQuote}`}>
               <p className="clause">{note.clause}</p>
-              <blockquote>{note.sourceQuote}</blockquote>
+              <blockquote>{quoteText(note.sourceQuote)}</blockquote>
               <p>{note.reason}</p>
             </article>
           ))}
