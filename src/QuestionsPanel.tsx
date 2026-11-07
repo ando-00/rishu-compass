@@ -114,7 +114,7 @@ export function ChangeList({ impact }: { impact: Impact }) {
         {impact.changes.length}件）
       </summary>
       <div className="table-scroll">
-        <table>
+        <table className="changes-table">
           <thead>
             <tr>
               <th>学生</th>
@@ -130,7 +130,7 @@ export function ChangeList({ impact }: { impact: Impact }) {
                 <td>{change.studentId}</td>
                 <td>{change.name}</td>
                 {impact.options.map((option) => (
-                  <td key={option.id}>
+                  <td key={option.id} className="change-status" data-label={option.label}>
                     {change.statuses[option.id] && <JudgmentBadge status={change.statuses[option.id]!} />}
                   </td>
                 ))}

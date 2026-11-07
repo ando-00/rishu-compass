@@ -286,6 +286,10 @@ async function walkReadme(page, consoleErrors) {
   });
   await step("10 履修案の記録を読み込むと、検査を通った案と下書きが出る", async () => {
     const panel = page.locator("div").filter({ has: page.getByRole("heading", { name: "履修案", exact: true }) }).last();
+    // 鍵がない環境では作成を押せず、次にできることを先に示す
+    await panel.locator("button:disabled", { hasText: "履修案を作る" }).waitFor();
+    const notice = await panel.locator(".notice").first().innerText();
+    if (!notice.includes("「記録を読み込む」を押すと")) throw new Error(`履修案の案内が「${notice}」`);
     await panel.getByRole("button", { name: "記録を読み込む" }).click();
     const result = panel.locator(".plan-result");
     await result.waitFor();
@@ -313,6 +317,56 @@ async function walkReadme(page, consoleErrors) {
     }, undefined, { timeout: 10000 });
     const focused = await page.evaluate(() => document.activeElement?.id);
     if (focused !== "answer-result") throw new Error(`焦点が結果にない: ${focused}`);
+  });
+
+  // 手順11 はかもめ大学で終わる。判定が変わる学生と対応なしの学生がいるさくら台大学へ戻す
+  const openSakuradai = async () => {
+    const select = page.getByLabel("対象");
+    const value = await select.evaluate((el) => [...el.options].find((option) => option.text.includes("さくら台大学"))?.value);
+    await select.selectOption(value);
+    await page.getByRole("heading", { name: /未回答の確認事項/ }).or(page.locator(".student-list")).first().waitFor();
+    await page.locator(".summary-cell").first().waitFor();
+  };
+  await step("12 上の「対応なし」を押すと対応なしの学生だけが出て、画面を移ると「すべて」に戻る", async () => {
+    await openSakuradai();
+    const count = await summary("対応なし");
+    if (count === 0) throw new Error("対応なしの学生がいない");
+    await page.locator(".summary-cell").filter({ has: page.getByText("対応なし", { exact: true }) }).click();
+    const filters = page.getByRole("group", { name: "絞り込み" });
+    const pressed = await filters.getByRole("button", { pressed: true }).innerText();
+    if (!pressed.startsWith("対応なし")) throw new Error(`絞り込みが「${pressed}」`);
+    const rows = page.getByRole("list", { name: "学生の一覧" }).getByRole("listitem");
+    if ((await rows.count()) !== count) throw new Error(`一覧が ${await rows.count()}人（対応なしは ${count}人）`);
+    await tab("声かけ").click();
+    await tab("学生別").click();
+    const back = await page.getByRole("group", { name: "絞り込み" }).getByRole("button", { pressed: true }).innerText();
+    if (!back.startsWith("すべて")) throw new Error(`戻ったときの絞り込みが「${back}」`);
+    return `対応なし ${count}人`;
+  });
+  await step("13 幅 390 でも、判定が変わる学生の表と学生詳細の判定の表が横にはみ出さず、列が潰れない", async () => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    // 中身の幅に2文字半も入らないセルを数える（1文字ずつ縦に並ぶ状態）
+    const squeezed = (cells) =>
+      cells.evaluateAll((cells) =>
+        cells.filter((cell) => {
+          if (cell.innerText.trim().length < 3) return false;
+          const style = getComputedStyle(cell);
+          const width = cell.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+          return width < parseFloat(style.fontSize) * 2.5;
+        }).length,
+      );
+    const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    await tab("確認事項").click();
+    const change = page.locator("details", { has: page.locator("summary", { hasText: "判定が変わる学生を見る" }) }).first();
+    await change.locator("summary").click();
+    await page.locator(".changes-table").first().waitFor();
+    if ((await overflow()) > 0) throw new Error(`判定が変わる学生の表で ${await overflow()}px はみ出す`);
+    if ((await squeezed(change.locator("td"))) > 0) throw new Error("判定が変わる学生の表の列が潰れている");
+    await tab("学生別").click();
+    await page.getByRole("list", { name: "学生の一覧" }).getByRole("button").first().click();
+    await page.locator(".judgment-table").waitFor();
+    if ((await overflow()) > 0) throw new Error(`学生詳細で ${await overflow()}px はみ出す`);
+    if ((await squeezed(page.locator(".judgment-table td"))) > 0) throw new Error("学生詳細の判定の表の列が潰れている");
   });
 
   const errors = consoleErrors.filter((text) => !/favicon/.test(text));

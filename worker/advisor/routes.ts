@@ -1,5 +1,6 @@
 import { Hono, type Context } from "hono";
 import adviceRules from "../../data/fictional/advice-rules.md?raw";
+import { NO_ADVISOR_MESSAGE } from "../../shared/advise";
 import { answersRequestSchema } from "../../shared/api";
 import { claudeKey, FAILURE_STATUS, type ClaudeBindings } from "../claudeAccess";
 import { isValidAnswers } from "../datasets";
@@ -33,10 +34,6 @@ async function readRequest(c: Context<Bindings>) {
     input: { rules, courses, student, answers: body.data.answers },
   };
 }
-
-// 公開デモでも押せるので、理由だけで終わらせず、記録を見られる手順を示す（P3-18）。文のとおりに読めることはテストで確かめる。
-const NO_ADVISOR_MESSAGE =
-  "この環境では履修案の作成を使えません。さくら台大学の第6条だけに「単位だけを数える」の読み方で答えて S0095 を開くと、「記録を読み込む」で実際に作った案の記録を見られます。";
 
 advisorRoutes.post("/:id/students/:studentId/advise", async (c) => {
   const apiKey = claudeKey(c.env ?? {});

@@ -16,7 +16,7 @@ import { ExtractionPanel } from "./ExtractionPanel";
 import { OutreachPanel } from "./OutreachPanel";
 import { QuestionsPanel } from "./QuestionsPanel";
 import { revealResult } from "./revealResult";
-import { StudentsPanel } from "./StudentsPanel";
+import { StudentsPanel, type StateFilter } from "./StudentsPanel";
 import "./app.css";
 
 type Tab = "import" | "questions" | "outreach" | "students";
@@ -67,6 +67,8 @@ export function App() {
   const [previous, setPrevious] = useState<OverviewResponse | null>(null);
   const [tab, setTab] = useState<Tab>("questions");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 学生別の絞り込み。上の人数から開くときに指定し、学生別を離れたら「すべて」に戻す
+  const [studentFilter, setStudentFilter] = useState<StateFilter>("all");
   const [error, setError] = useState<string | null>(null);
   const [answerError, setAnswerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -82,6 +84,10 @@ export function App() {
     [records],
   );
   const changes = useMemo(() => changesAfterAnswer(previous, overview), [previous, overview]);
+
+  useEffect(() => {
+    if (tab !== "students") setStudentFilter("all");
+  }, [tab]);
 
   useEffect(() => {
     fetchDatasets()
@@ -240,6 +246,11 @@ export function App() {
     });
   }
 
+  function openStudents(filter: StateFilter) {
+    setStudentFilter(filter);
+    openTab("students");
+  }
+
   function tabCount(id: Tab) {
     if (!overview) return null;
     if (id === "questions" && overview.unanswered.length > 0)
@@ -333,7 +344,7 @@ export function App() {
                 label="学生"
                 value={overview.summary.total}
                 note="全学生の一覧を開く"
-                onOpen={() => openTab("students")}
+                onOpen={() => openStudents("all")}
               />
               <SummaryCell
                 label="声かけ"
@@ -357,7 +368,7 @@ export function App() {
                 note="今は声をかけなくてよい"
                 tone="good"
                 previous={previous?.summary.clear}
-                onOpen={() => openTab("students")}
+                onOpen={() => openStudents("clear")}
               />
             </div>
   
@@ -420,6 +431,8 @@ export function App() {
                 students={overview.students}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
+                filter={studentFilter}
+                onFilterChange={setStudentFilter}
               />
             )}
           </>

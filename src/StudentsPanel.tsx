@@ -21,7 +21,7 @@ const STATE_FILTERS = [
   { id: "clear", label: "対応なし" },
 ] as const;
 
-type StateFilter = (typeof STATE_FILTERS)[number]["id"];
+export type StateFilter = (typeof STATE_FILTERS)[number]["id"];
 
 const STATE_ORDER = { contact: 0, staff_review: 1, clear: 2 } as const;
 
@@ -31,6 +31,8 @@ type Props = {
   students: OverviewResponse["students"];
   selectedId: string | null;
   onSelect: (studentId: string) => void;
+  filter: StateFilter;
+  onFilterChange: (filter: StateFilter) => void;
 };
 
 function credits({ required, actual, enrolled }: Judgment) {
@@ -245,10 +247,9 @@ function RecordsTable({ records }: { records: StudentResponse["records"] }) {
   );
 }
 
-export function StudentsPanel({ datasetId, answers, students, selectedId, onSelect }: Props) {
+export function StudentsPanel({ datasetId, answers, students, selectedId, onSelect, filter, onFilterChange }: Props) {
   const [detail, setDetail] = useState<StudentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<StateFilter>("all");
   const [keyword, setKeyword] = useState("");
   const [year, setYear] = useState("all");
   const years = [...new Set(students.map((student) => student.studentYear))].sort((a, b) => a - b);
@@ -293,7 +294,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 key={id}
                 type="button"
                 aria-pressed={filter === id}
-                onClick={() => setFilter(id)}
+                onClick={() => onFilterChange(id)}
               >
                 {label} {id === "all" ? students.length : students.filter(({ state }) => state === id).length}
               </button>
@@ -361,7 +362,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 </p>
               </div>
               {detail.excludedReason && <p className="notice">{detail.excludedReason}</p>}
-              <table>
+              <table className="judgment-table">
                 <thead>
                   <tr>
                     <th>判定</th>
@@ -379,7 +380,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                           <JudgmentBadge status={judgment.status} />
                         </td>
                         <td className="nowrap">{credits(judgment)}</td>
-                        <td className="nowrap">{judgment.clause}</td>
+                        <td className={judgment.clause.length > 16 ? undefined : "nowrap"}>{judgment.clause}</td>
                       </tr>
                       <tr className="judgment-detail">
                         <td colSpan={4}>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { AdviseResponse, Correction, SavedAdvice } from "../shared/advise";
 import type { Answers } from "../shared/api";
-import { adviseStudent, fetchLatestAdvice, loadRecordedAdvice } from "./api";
+import { advisorNotice } from "./advisorNotice";
+import { adviseStudent, fetchLatestAdvice, fetchSources, loadRecordedAdvice } from "./api";
 import { PlanBadge, StateBadge } from "./StatusBadge";
 
 type Props = {
@@ -102,6 +103,7 @@ export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
   const [saved, setSaved] = useState<SavedAdvice | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
   // 学生や回答が変わったあとに届いた結果を、別の学生の案として見せない。
   const latestRequest = useRef(0);
   const result = saved?.advice ?? null;
@@ -121,6 +123,17 @@ export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
       });
   }, [datasetId, studentId, answers]);
 
+  // 履修案の作成は要項の変換と同じ鍵の条件で動く（claudeKey）。読めないときは押せるままにし、サーバーの文で示す
+  useEffect(() => {
+    let active = true;
+    fetchSources()
+      .then((sources) => active && setEnabled(sources.extractionEnabled))
+      .catch(() => active && setEnabled(null));
+    return () => {
+      active = false;
+    };
+  }, []);
+
   async function run(create: typeof adviseStudent) {
     const request = ++latestRequest.current;
     setRunning(true);
@@ -137,14 +150,21 @@ export function AdvisorPanel({ datasetId, studentId, answers }: Props) {
     }
   }
 
+  const notice = advisorNotice({
+    enabled,
+    recordingAvailable: Boolean(saved?.recordingAvailable),
+    hasResult: result !== null,
+  });
+
   return (
     <div>
       <h3>履修案</h3>
+      {notice && <p className="notice">{notice}</p>}
       <p className="muted">
         履修中の科目をすべて修得した前提で、Claude が案を組みます。検査を通った案だけを表示します。
       </p>
       <div className="actions">
-        <button type="button" disabled={running} onClick={() => void run(adviseStudent)}>
+        <button type="button" disabled={running || enabled === false} onClick={() => void run(adviseStudent)}>
           {running ? "作成中です" : result ? "履修案を作り直す" : "履修案を作る"}
         </button>
         {saved?.recordingAvailable && !result && (

@@ -1446,6 +1446,49 @@ button.option:hover:not(:disabled) {
     text-align: left;
   }
 
+  /* 判定が変わる学生も、読み方の列に分けず、読み方と判定を縦に並べる */
+  .links-row details[open] {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .changes-table,
+  .changes-table tbody {
+    display: block;
+  }
+
+  .changes-table thead {
+    display: none;
+  }
+
+  .changes-table tr {
+    display: block;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .changes-table td {
+    display: inline;
+    padding: 0 8px 0 0;
+    border: 0;
+  }
+
+  .changes-table td.change-status {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding: 0;
+  }
+
+  .changes-table td.change-status::before {
+    min-width: 0;
+    color: var(--muted);
+    font-size: 12px;
+    content: attr(data-label);
+  }
+
   .outreach-table tr.outreach-row {
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr);
@@ -1581,4 +1624,49 @@ button.option:hover:not(:disabled) {
 
 .plan-term select {
   width: 100%;
+}
+
+/* 一覧と並べる幅では、学生詳細の判定の表が足りなくなるので折り返す */
+@media (max-width: 1100px) {
+  .student-detail td.nowrap {
+    white-space: normal;
+  }
+}
+
+/* 学生詳細の判定は、列が1文字幅まで潰れる幅では行ごとの塊にする */
+@media (max-width: 640px) {
+  .judgment-table,
+  .judgment-table tbody {
+    display: block;
+  }
+
+  .judgment-table thead {
+    display: none;
+  }
+
+  .judgment-table tr.judgment-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    align-items: center;
+    padding-top: 10px;
+  }
+
+  .judgment-table tr.judgment-row td {
+    padding: 0;
+    border: 0;
+  }
+
+  .judgment-table tr.judgment-row td:first-child {
+    flex: 0 0 100%;
+  }
+
+  .judgment-table tr.judgment-detail {
+    display: block;
+  }
+
+  .judgment-table tr.judgment-detail td {
+    display: block;
+    padding: 4px 0 10px;
+  }
 }

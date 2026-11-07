@@ -28,6 +28,13 @@ describe("revealResult", () => {
     expect(anchor.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
   });
 
+  it("知らせが見えていても、上の人数の欄が画面の外なら戻す（1366×650 の README の流れ）", () => {
+    const target = element(45, 70);
+    const anchor = element(-85, 40);
+    revealResult(target, anchor, 650);
+    expect(anchor.scrollIntoView).toHaveBeenCalledOnce();
+  });
+
   it("画面の下に外れているときも戻す", () => {
     const target = element(800, 830);
     const anchor = element(700, 790);

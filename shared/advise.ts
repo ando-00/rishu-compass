@@ -2,6 +2,11 @@ import { z } from "zod";
 import { planEntrySchema } from "./api";
 
 // 検査に落ちて直した経過。文はコードの検査が返したもので、Claude の文章ではない
+// 鍵がない環境で履修案を作ろうとしたときの案内。理由だけで終わらせず、記録を見られる手順を示す（P3-18）。
+// 文のとおりに読めることは worker/__tests__/recorded-advice.test.ts で確かめる。
+export const NO_ADVISOR_MESSAGE =
+  "この環境では履修案の作成を使えません。さくら台大学の第6条だけに「単位だけを数える」の読み方で答えて S0095 を開くと、「記録を読み込む」で実際に作った案の記録を見られます。";
+
 export const correctionSchema = z.object({
   stage: z.enum(["plan", "draft"]),
   messages: z.array(z.string()),
