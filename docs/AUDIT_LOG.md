@@ -605,7 +605,7 @@ Windows の実機（同日、手元の Windows 11、Node 24）: 速い検査は 
 |---|---|---|---|---|---|
 | V-19 | S2 | 監査の途中で main の CI が2回落ちた。825973b で `demo/` が F1 の一覧と表になかった。811d309 で `scripts/audit.mjs` の構文エラーが push された。実行 | scripts/audit.mjs、AGENTS.md | 解決 | a635cad（F1）、2f8e29b（構文）。別のセッションが K6 で `dist-demo` の鍵も見るようにした |
 | V-20 | S3 | V-19 の構文エラーがコミット前の検査を通った。`npm test` が `scripts/audit.mjs` を読まない。読んだ | .githooks/staged-check.mjs、scripts/__tests__/ | 解決 | `scripts/__tests__/syntax.test.mjs` を足し、`scripts`、`.claude/hooks`、`.githooks` の `.mjs` を `node --check` で確かめる |
-| V-21 | S3 | 鍵を止める `.githooks/pre-commit` と `pre-push` にテストがない（`hooks.test.mjs` に鍵の事例0件）。書いてある検査は読んで妥当。機械検査の K1〜K3 も同じものを見る。読んだ | scripts/__tests__/hooks.test.mjs | 記録 | |
+| V-21 | S3 | 鍵を止める `.githooks/pre-commit` と `pre-push` にテストがない（`hooks.test.mjs` に鍵の事例0件）。書いてある検査は読んで妥当。機械検査の K1〜K3 も同じものを見る。読んだ | scripts/__tests__/hooks.test.mjs | 解決 | 鍵の事例を10件足した（pre-commit の `.dev.vars`、鍵を足す、接頭辞だけ、鍵を消す。pre-push の中身、`.dev.vars`、メッセージ、途中のコミット）。使い捨ての複製でフックの検査を8か所壊し、すべて落ちることを確かめた。フックは変えていない |
 
 ### 文書と画面
 

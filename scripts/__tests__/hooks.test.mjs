@@ -211,6 +211,128 @@ describe("pre-commit のコミットされる中身での build と test（A25-7
   }, 60000);
 });
 
+describe("鍵を止める pre-commit と pre-push（V-21）", () => {
+  // 鍵の形の偽の文字列。このファイルが鍵の検査に掛からないよう、実行のときに組み立てる
+  const FAKE_KEY = ["sk", "ant", "x".repeat(24)].join("-");
+
+  function keyRepo() {
+    const dir = mkdtempSync(join(tmpdir(), "hook-key-"));
+    const remote = mkdtempSync(join(tmpdir(), "hook-key-remote-"));
+    const git = (...args) => spawnSync("git", args, { cwd: dir, encoding: "utf8", timeout: 60000 });
+    const remoteGit = (...args) => spawnSync("git", args, { cwd: remote, encoding: "utf8", timeout: 60000 });
+    remoteGit("init", "-q", "--bare");
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@t");
+    git("config", "user.name", "t");
+    git("config", "core.hooksPath", GITHOOKS);
+    git("remote", "add", "origin", remote);
+    writeFileSync(join(dir, "note.md"), "a\n");
+    git("add", "note.md");
+    git("commit", "-q", "--no-verify", "-m", "init");
+    const head = () => git("rev-parse", "HEAD").stdout.trim();
+    const remoteHead = () => remoteGit("rev-parse", "--verify", "-q", "refs/heads/main").stdout.trim();
+    // pre-commit を通さずにコミットする。pre-push だけを確かめるため
+    const commitRaw = (file, content, message = "x") => {
+      mkdirSync(join(dir, file, ".."), { recursive: true });
+      writeFileSync(join(dir, file), content);
+      git("add", "-f", file);
+      expect(git("commit", "-q", "--no-verify", "-m", message).status).toBe(0);
+    };
+    return { dir, git, head, remoteHead, commitRaw };
+  }
+
+  describe("pre-commit", () => {
+    it.each([".dev.vars", "sub/.dev.vars"])("%s をコミットさせない", (file) => {
+      const { dir, git, head } = keyRepo();
+      const before = head();
+      mkdirSync(join(dir, file, ".."), { recursive: true });
+      writeFileSync(join(dir, file), "ANTHROPIC_API_KEY=x\n");
+      git("add", "-f", file);
+      const result = git("commit", "-q", "-m", "x");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(".dev.vars");
+      expect(head()).toBe(before);
+    }, 60000);
+
+    it("鍵の形の文字列を足すコミットを止める", () => {
+      const { dir, git, head } = keyRepo();
+      const before = head();
+      writeFileSync(join(dir, "note.md"), `a\n${FAKE_KEY}\n`);
+      git("add", "note.md");
+      const result = git("commit", "-q", "-m", "x");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("pre-commit:");
+      expect(head()).toBe(before);
+    }, 60000);
+
+    it("鍵の形でない文字列（文書の中の接頭辞だけ）は止めない", () => {
+      const { dir, git, head } = keyRepo();
+      const before = head();
+      writeFileSync(join(dir, "note.md"), "a\nsk-ant- で検索する\n");
+      git("add", "note.md");
+      expect(git("commit", "-q", "-m", "x").status).toBe(0);
+      expect(head()).not.toBe(before);
+    }, 60000);
+
+    it("鍵を消すコミットは止めない", () => {
+      const { dir, git, head, commitRaw } = keyRepo();
+      commitRaw("note.md", `${FAKE_KEY}\n`);
+      const before = head();
+      writeFileSync(join(dir, "note.md"), "a\n");
+      git("add", "note.md");
+      expect(git("commit", "-q", "-m", "x").status).toBe(0);
+      expect(head()).not.toBe(before);
+    }, 60000);
+  });
+
+  describe("pre-push", () => {
+    it("鍵のないコミットは送れる", () => {
+      const { git, head, remoteHead, commitRaw } = keyRepo();
+      commitRaw("note.md", "b\n");
+      expect(git("push", "-q", "origin", "main").status).toBe(0);
+      expect(remoteHead()).toBe(head());
+    }, 60000);
+
+    it("中身に鍵があるコミットを止める", () => {
+      const { git, remoteHead, commitRaw } = keyRepo();
+      commitRaw("note.md", `${FAKE_KEY}\n`);
+      const result = git("push", "-q", "origin", "main");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("pre-push:");
+      expect(remoteHead()).toBe("");
+    }, 60000);
+
+    it(".dev.vars があるコミットを止める", () => {
+      const { git, remoteHead, commitRaw } = keyRepo();
+      commitRaw("sub/.dev.vars", "ANTHROPIC_API_KEY=x\n");
+      const result = git("push", "-q", "origin", "main");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(".dev.vars");
+      expect(remoteHead()).toBe("");
+    }, 60000);
+
+    it("メッセージに鍵があるコミットを止める", () => {
+      const { git, remoteHead, commitRaw } = keyRepo();
+      commitRaw("note.md", "b\n", `メモ ${FAKE_KEY}`);
+      const result = git("push", "-q", "origin", "main");
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("pre-push:");
+      expect(remoteHead()).toBe("");
+    }, 60000);
+
+    it("あとのコミットで消しても、途中のコミットに鍵があれば止める", () => {
+      const { git, remoteHead, commitRaw } = keyRepo();
+      expect(git("push", "-q", "origin", "main").status).toBe(0);
+      const pushed = remoteHead();
+      commitRaw("note.md", `${FAKE_KEY}\n`);
+      commitRaw("note.md", "a\n");
+      const result = git("push", "-q", "origin", "main");
+      expect(result.status).not.toBe(0);
+      expect(remoteHead()).toBe(pushed);
+    }, 60000);
+  });
+});
+
 describe("after-push", () => {
   const notice = (command) =>
     spawnSync(process.execPath, [join(HOOKS, "after-push.mjs")], {
