@@ -412,6 +412,83 @@ async function walkReadme(page, consoleErrors) {
     await id.fill("");
   });
 
+  const summaryCell = (label) => page.locator(".summary-cell").filter({ has: page.getByText(label, { exact: true }) });
+  await step("16 上の人数から開くと、年次と学生 ID の絞り込みも解除され、人数と一覧が合う", async () => {
+    await openSakuradai();
+    await tab("学生別").click();
+    await page.getByLabel("年次").first().selectOption("4");
+    await page.getByLabel("学生 ID").fill("S00");
+    const rowsAre = (expected) =>
+      page.waitForFunction((n) => document.querySelectorAll(".student-list li").length === n, expected, { timeout: 5000 });
+    const clear = await summary("対応なし");
+    await summaryCell("対応なし").click();
+    await rowsAre(clear);
+    const total = await summary("学生");
+    await page.getByLabel("年次").first().selectOption("4");
+    await summaryCell("学生").click();
+    await rowsAre(total);
+    return "対応なし " + clear + "人、全学生 " + total + "人";
+  });
+  await step("17 対象を変えると、学生別の絞り込みが「すべて」に戻る", async () => {
+    await openSakuradai();
+    await summaryCell("対応なし").click();
+    const select = page.getByLabel("対象");
+    const kamome = await select.evaluate((el) => [...el.options].find((option) => option.text.includes("かもめ大学"))?.value);
+    await select.selectOption(kamome);
+    await page.waitForTimeout(300);
+    const filters = page.getByRole("group", { name: "絞り込み" });
+    await filters.waitFor({ timeout: 60000 });
+    const pressed = await filters.getByRole("button", { pressed: true }).innerText();
+    if (!pressed.startsWith("すべて")) throw new Error("絞り込みが「" + pressed + "」");
+    const total = await summary("学生");
+    const rows = await page.locator(".student-list li").count();
+    if (rows !== total) throw new Error("一覧が " + rows + "人（全学生は " + total + "人）");
+  });
+  await step("18 読み方で人数が変わらない確認事項では「人数のほか」と言わない", async () => {
+    await tab("確認事項").click();
+    const cards = page.locator("article.card");
+    await cards.first().waitFor({ timeout: 60000 });
+    const same = await cards.filter({ hasText: "どの読み方でも表の人数は同じで" }).count();
+    const more = await cards.filter({ hasText: "人数のほか" }).count();
+    if (same === 0 || more !== 0) throw new Error("同じと言うカード " + same + "件、人数のほかと言うカード " + more + "件");
+    return "表の人数が同じカード " + same + "件";
+  });
+  await step("19 対応なしの学生に職員確認の行があるときは、理由を添える", async () => {
+    await page.getByLabel("対象").selectOption({ label: "さくら台大学（架空）" });
+    await page.waitForTimeout(300);
+    await summaryCell("対応なし").click();
+    await page.locator(".student-list li button").first().click();
+    await page.getByRole("heading", { name: /履修の記録（\d+件）/ }).waitFor({ timeout: 60000 });
+    await page.getByText("どの読み方でも対応が要らないと確かめたので").waitFor({ timeout: 10000 });
+  });
+  await step("20 幅 390 で学生を選ぶと詳細が画面内に出て焦点が移り、横に並ぶ幅では動かない", async () => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const titleShown = () =>
+      page.waitForFunction(
+        () => {
+          const element = document.getElementById("student-title");
+          if (!element) return false;
+          const { top, bottom } = element.getBoundingClientRect();
+          return top >= 0 && bottom <= window.innerHeight && document.activeElement === element;
+        },
+        undefined,
+        { timeout: 10000 },
+      );
+    await tab("学生別").click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.locator(".student-list li button").nth(1).click();
+    await titleShown();
+    await tab("声かけ").click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByRole("button", { name: /^S\d{4}$/ }).first().click();
+    await titleShown();
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.locator(".student-list li button").nth(2).click();
+    await page.waitForTimeout(800);
+    const focused = await page.evaluate(() => document.activeElement?.id);
+    if (focused === "student-title") throw new Error("横に並ぶ幅で焦点が詳細へ移った");
+  });
+
   const errors = consoleErrors.filter((text) => !/favicon/.test(text));
   if (errors.length > 0) {
     failed = true;

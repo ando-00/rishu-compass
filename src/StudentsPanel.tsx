@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import { settledNotice } from "./countNotices";
 import { quoteText } from "./quoteText";
 import { amountCaveat } from "./judgmentAmounts";
 import type {
@@ -13,7 +14,11 @@ import { AdvisorPanel } from "./AdvisorPanel";
 import { checkPlan, fetchCourses, fetchPlanCandidates, fetchStudent } from "./api";
 import { type CourseOption, candidatesFor, TERMS } from "./courseCandidates";
 import { RegistrationCheck } from "./RegistrationCheck";
+import { revealResult } from "./revealResult";
 import { JudgmentBadge, PlanBadge, StateBadge } from "./StatusBadge";
+
+// app.css で一覧と詳細が縦に並ぶ幅
+const STACKED_LAYOUT = "(max-width: 860px)";
 
 const STATE_FILTERS = [
   { id: "all", label: "すべて" },
@@ -34,6 +39,11 @@ type Props = {
   onSelect: (studentId: string) => void;
   filter: StateFilter;
   onFilterChange: (filter: StateFilter) => void;
+  // 上の人数から開くたびに増える。増えたら年次と学生 ID の絞り込みを解除する
+  filterReset: number;
+  // 学生を選んだ直後か。詳細が出たら onRevealed で知らせる
+  revealStudent: boolean;
+  onRevealed: () => void;
 };
 
 function credits({ required, actual, enrolled }: Judgment) {
@@ -248,7 +258,18 @@ function RecordsTable({ records }: { records: StudentResponse["records"] }) {
   );
 }
 
-export function StudentsPanel({ datasetId, answers, students, selectedId, onSelect, filter, onFilterChange }: Props) {
+export function StudentsPanel({
+  datasetId,
+  answers,
+  students,
+  selectedId,
+  onSelect,
+  filter,
+  onFilterChange,
+  filterReset,
+  revealStudent,
+  onRevealed,
+}: Props) {
   const [detail, setDetail] = useState<StudentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState("");
@@ -265,6 +286,21 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
     .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state]);
 
   const state = students.find(({ id }) => id === selectedId)?.state;
+
+  // 上の人数から開いたときは、人数と一覧が合うように年次と学生 ID も解除する
+  useEffect(() => {
+    setKeyword("");
+    setYear("all");
+  }, [filterReset]);
+
+  // 縦に並ぶ幅では詳細が一覧の下に出るので、選んだら詳細へ移る。横に並ぶ幅では動かさない
+  const detailReady = Boolean(selectedId) && detail?.student.id === selectedId;
+  useEffect(() => {
+    if (!revealStudent || !detailReady) return;
+    onRevealed();
+    if (!window.matchMedia(STACKED_LAYOUT).matches) return;
+    revealResult(document.getElementById("student-title"), null, window.innerHeight);
+  }, [revealStudent, detailReady, onRevealed]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -342,7 +378,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
           {!selectedId && (
             <div className="empty">
               <p>
-                左の一覧から学生を選ぶと、区分ごとの判定と根拠、履修の記録、履修案がここに出ます。
+                一覧から学生を選ぶと、区分ごとの判定と根拠、履修の記録、履修案がここに出ます。
                 <br />
                 声かけの学生から見るときは、上の「声かけ」の人数を押してください。
               </p>
@@ -353,7 +389,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
             <>
               <div className="card">
               <div className="detail-head">
-                <h2>
+                <h2 id="student-title" tabIndex={-1}>
                   {detail.student.id}（{detail.student.studentYear}年次）
                 </h2>
                 {state && <StateBadge state={state} />}
@@ -364,6 +400,7 @@ export function StudentsPanel({ datasetId, answers, students, selectedId, onSele
                 </p>
               </div>
               {detail.excludedReason && <p className="notice">{detail.excludedReason}</p>}
+              {settledNotice(state, detail.judgments) && <p className="notice">{settledNotice(state, detail.judgments)}</p>}
               <table className="judgment-table">
                 <thead>
                   <tr>

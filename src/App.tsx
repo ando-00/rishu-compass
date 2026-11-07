@@ -70,6 +70,8 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 学生別の絞り込み。上の人数から開くときに指定し、学生別を離れたら「すべて」に戻す
   const [studentFilter, setStudentFilter] = useState<StateFilter>("all");
+  const [studentFilterReset, setStudentFilterReset] = useState(0);
+  const [revealStudent, setRevealStudent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [answerError, setAnswerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -199,6 +201,8 @@ export function App() {
     setOverview(null);
     setPrevious(null);
     setSelectedId(null);
+    setStudentFilter("all");
+    setRevealStudent(false);
   }
 
   async function reloadDatasets() {
@@ -233,8 +237,13 @@ export function App() {
     }
   }
 
-  function openStudent(studentId: string) {
+  function selectStudent(studentId: string) {
     setSelectedId(studentId);
+    setRevealStudent(true);
+  }
+
+  function openStudent(studentId: string) {
+    selectStudent(studentId);
     setTab("students");
   }
 
@@ -250,6 +259,7 @@ export function App() {
 
   function openStudents(filter: StateFilter) {
     setStudentFilter(filter);
+    setStudentFilterReset((count) => count + 1);
     openTab("students");
   }
 
@@ -434,9 +444,12 @@ export function App() {
                 answers={answers}
                 students={overview.students}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={selectStudent}
                 filter={studentFilter}
                 onFilterChange={setStudentFilter}
+                filterReset={studentFilterReset}
+                revealStudent={revealStudent}
+                onRevealed={() => setRevealStudent(false)}
               />
             )}
           </>
