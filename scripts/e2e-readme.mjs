@@ -469,7 +469,8 @@ async function walkReadme(page, consoleErrors) {
           const element = document.getElementById("student-title");
           if (!element) return false;
           const { top, bottom } = element.getBoundingClientRect();
-          return top >= 0 && bottom <= window.innerHeight && document.activeElement === element;
+          // 上端にそろえると、小数の丸めで top が -0.5 ほどになる
+          return top >= -1 && bottom <= window.innerHeight && document.activeElement === element;
         },
         undefined,
         { timeout: 10000 },
