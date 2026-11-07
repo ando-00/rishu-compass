@@ -4,7 +4,7 @@
 
 学生が使う画面や相談チャットはありません。作り手は大学の教務職員です。
 
-> Built with Claude: Japan 2026 の期間中（2026-11-02〜11-08）に作成しました。**公開デモ: https://ando-00.github.io/rishu-compass/** 。インストールも API キーも要らず、下の[試す手順](#試す手順)をそのまま試せます。
+> Built with Claude: Japan 2026 の期間中（2026-11-02〜11-08）に作成しました。**デモ動画: https://youtu.be/DVIDRZUQXqI** 。**公開デモ: https://ando-00.github.io/rishu-compass/** 。インストールも API キーも要らず、下の[試す手順](#試す手順)をそのまま試せます。
 
 ## 何に困っているか
 
