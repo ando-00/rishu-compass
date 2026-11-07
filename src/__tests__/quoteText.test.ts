@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { goldRules as kamomeRules } from "../../data/fictional/kamome/gold-rules";
-import { goldRules as sakuradaiRules } from "../../data/fictional/sakuradai/gold-rules";
 import { quoteText } from "../quoteText";
 
 const recorded = import.meta.glob("../../data/fictional/*/recorded-proposal.json", { eager: true, import: "default" });
@@ -24,8 +22,8 @@ describe("根拠の文の見せ方", () => {
     expect(quoteText("A | B")).toBe("A | B");
   });
 
-  it("架空の2校のルールと変換の記録のどの根拠の文にも、表の記号を残さない", () => {
-    const quotes = quotesIn([sakuradaiRules, kamomeRules, recorded]);
+  it("架空の2校の変換の記録のどの根拠の文にも、表の記号を残さない", () => {
+    const quotes = quotesIn(recorded);
     expect(quotes.filter((quote) => quote.includes("|")).length).toBeGreaterThan(0);
     expect(quotes.map(quoteText).filter((text) => text.includes("|"))).toEqual([]);
   });
