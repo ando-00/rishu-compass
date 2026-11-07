@@ -15,6 +15,7 @@ import { ChangesPanel } from "./ChangesPanel";
 import { ExtractionPanel } from "./ExtractionPanel";
 import { OutreachPanel } from "./OutreachPanel";
 import { QuestionsPanel } from "./QuestionsPanel";
+import { revealResult } from "./revealResult";
 import { StudentsPanel } from "./StudentsPanel";
 import "./app.css";
 
@@ -74,6 +75,8 @@ export function App() {
   // 応答が届いたときに、対象が変わっていないかを見る（追加の監査 R-12）
   const latestDataset = useRef(datasetId);
   latestDataset.current = datasetId;
+  // 記録できた回答の結果が届いたら、結果を見えるところへ移す（V-24）
+  const resultPending = useRef(false);
   const answers = useMemo(
     () => Object.fromEntries((records ?? []).map((r) => [r.ambiguityId, r.optionId])),
     [records],
@@ -135,15 +138,32 @@ export function App() {
     };
   }, [datasetId, records, answers, reloadCount]);
 
+  useEffect(() => {
+    if (!overview || !resultPending.current) return;
+    resultPending.current = false;
+    const anchor = document.querySelector<HTMLElement>(".summary");
+    revealResult(document.getElementById("answer-result"), anchor, window.innerHeight);
+  }, [overview]);
+
+  // 失敗の表示も画面の上に出るので、同じように見えるところへ移す（V-24）
+  useEffect(() => {
+    if (!error && !answerError) return;
+    resultPending.current = false;
+    revealResult(document.querySelector<HTMLElement>('[role="alert"]'), null, window.innerHeight);
+  }, [error, answerError]);
+
   // 記録できた回答だけを判定に使う。
   async function submitAnswer(ambiguityId: string, optionId: string | null) {
     if (!datasetId || saving) return;
     const requested = datasetId;
     setSaving(true);
+    // 同じ文の失敗が続いても、もう一度見えるところへ移す
+    setAnswerError(null);
     try {
       const result = await saveAnswer(requested, { ambiguityId, optionId, respondent });
       // 記録は前の対象に入った。今の対象の画面には反映しない
       if (latestDataset.current !== requested) return;
+      resultPending.current = true;
       setPrevious(overview);
       setRecords(result.records);
       setHistory(result.history);
@@ -162,6 +182,7 @@ export function App() {
     // 同じ対象では取り直しが走らないので、読み込み済みの内容を消さない。
     if (id === datasetId) return;
     latestDataset.current = id;
+    resultPending.current = false;
     setDatasetId(id);
     setRecords(null);
     setHistory([]);

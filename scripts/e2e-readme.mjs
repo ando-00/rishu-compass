@@ -295,6 +295,26 @@ async function walkReadme(page, consoleErrors) {
     if (!text.includes("職員面談に回してください")) throw new Error("職員面談に回す印が見当たらない");
   });
 
+  await step("11 かもめ大学の下のカードで回答しても、結果が画面内に出て焦点が移る（V-24）", async () => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.locator("select").first().selectOption({ label: "かもめ大学（架空）" });
+    await tab("確認事項").click();
+    await page.getByRole("heading", { name: /未回答の確認事項（11件）/ }).waitFor({ timeout: 60000 });
+    const answer = page.getByRole("button", { name: /で回答する$/ }).last();
+    await answer.scrollIntoViewIfNeeded();
+    await answer.click();
+    const heading = page.getByRole("heading", { name: "全学生の判定を更新しました" });
+    await heading.waitFor({ timeout: 60000 });
+    await page.waitForFunction(() => {
+      const element = document.getElementById("answer-result");
+      if (!element) return false;
+      const { top, bottom } = element.getBoundingClientRect();
+      return top >= 0 && bottom <= window.innerHeight;
+    }, undefined, { timeout: 10000 });
+    const focused = await page.evaluate(() => document.activeElement?.id);
+    if (focused !== "answer-result") throw new Error(`焦点が結果にない: ${focused}`);
+  });
+
   const errors = consoleErrors.filter((text) => !/favicon/.test(text));
   if (errors.length > 0) {
     failed = true;

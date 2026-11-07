@@ -570,6 +570,13 @@ const UNAVAILABLE_CODES: PlanIssueCode[] = ["ALREADY_EARNED", "DISQUALIFIED_RETA
 
 // 履修案の検査の候補から外す科目（B41）。検査そのものに1科目ずつ掛け、修得済み、履修中、失格の再履修で
 // 必ず落ちる科目だけを返す。未回答で決まらない科目は外さない（職員確認は検査が出す）。
+// 履修案の各科目に科目データの単位を添え、合計を数える。
+export function planCredits(courses: Course[], plan: PlanEntry[]) {
+  const credits = new Map(courses.map((course) => [course.name, course.credits]));
+  const entries = plan.map((entry) => ({ ...entry, credits: credits.get(entry.course) ?? 0 }));
+  return { entries, totalCredits: entries.reduce((sum, entry) => sum + entry.credits, 0) };
+}
+
 export function unavailableCourses(
   rules: RuleSet,
   courses: Course[],

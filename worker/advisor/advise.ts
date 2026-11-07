@@ -1,4 +1,4 @@
-import { checkPlan, evaluateStudent, isDisplayablePlan, type PlanEntry } from "../../engine";
+import { checkPlan, evaluateStudent, isDisplayablePlan, planCredits, type PlanEntry } from "../../engine";
 import type { AdviseResponse, Correction } from "../../shared/advise";
 import { ModelError, type ModelUsage } from "../rule-extraction/model";
 import { ADVISOR_SYSTEM_PROMPT, advisorPrompt } from "./prompt";
@@ -51,14 +51,13 @@ export function reviewPlan(
   const check = checkPlan(rules, courses, target, plan, answers, assumptions);
   if (!isDisplayablePlan(check)) return null;
 
-  const credits = new Map(courses.map((course) => [course.name, course.credits]));
-  const entries = plan.map((entry) => ({ ...entry, credits: credits.get(entry.course) ?? 0 }));
+  const { entries, totalCredits } = planCredits(courses, plan);
   const staffReview = staffReviewFor(input);
   return {
     status: "passed" as const,
     ...(staffReview ? { staffReview } : {}),
     plan: entries,
-    totalCredits: entries.reduce((sum, entry) => sum + entry.credits, 0),
+    totalCredits,
     planningYear: target.studentYear,
     warnings: [...lockedNotes, ...check.warnings],
     draft,

@@ -19,7 +19,7 @@ function groupByRoute(changes: StateChange[]) {
 export function ChangesPanel({ changes, onOpenStudent, onOpenOutreach }: Props) {
   return (
     <section className="changes card" aria-live="polite">
-      <h2>全学生の判定を更新しました</h2>
+      <h2 id="answer-result" tabIndex={-1}>全学生の判定を更新しました</h2>
       {changes.length === 0 && <p className="muted">この回答で職員の対応が変わる学生はいません。</p>}
       {changes.length > 0 && <p>直前の回答で、職員の対応が変わった学生は {changes.length}人です。</p>}
       {groupByRoute(changes).map((group) => {

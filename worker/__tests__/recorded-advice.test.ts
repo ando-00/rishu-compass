@@ -76,6 +76,18 @@ describe("履修案の記録", () => {
     expect((await load("sakuradai", studentId, both)).status).toBe(404);
   });
 
+  it("履修案を作れない環境の案内のとおりに答えると、記録を読み込める（P3-18）", async () => {
+    const response = await post(`/api/datasets/sakuradai/students/${unrecorded.id}/advise`, { answers: {} });
+    expect(response.status).toBe(403);
+    const { error } = (await response.json()) as { error: string };
+    for (const part of ["さくら台大学", "第6条だけに", "単位だけを数える", "S0095", "「記録を読み込む」"]) {
+      expect(error).toContain(part);
+    }
+    const sixth = goldRules.ambiguities.find(({ clause }) => clause === "第6条")!;
+    const option = sixth.options.find(({ label }) => label.includes("単位だけを数える"))!;
+    expect((await latest("sakuradai", "S0095", { [sixth.id]: option.id })).recordingAvailable).toBe(true);
+  });
+
   it("API キーなしで読み込み、Claude を呼ばずに記録する", async () => {
     const fetchStub = vi.fn();
     vi.stubGlobal("fetch", fetchStub);

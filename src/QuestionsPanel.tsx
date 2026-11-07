@@ -43,7 +43,7 @@ export function ImpactCounts({ impact, chosen, onAnswer, saving = false }: Impac
         <p className="notice">この候補はルールの差分で表せないため、人数は計算できません。</p>
       )}
       {impact.computable && !impact.judged && (
-        <p className="notice">履修上限などに関わる確認事項です。人数のほか、履修案の検査の結果も変わります。</p>
+        <p className="notice">履修案の検査に関わる確認事項です。人数のほか、検査の結果も変わります。</p>
       )}
       <div className="table-scroll">
         <table className="options-table">

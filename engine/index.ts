@@ -24,6 +24,7 @@ export {
   isDisplayablePlan,
   lockedEnrollments,
   pendingPromotions,
+  planCredits,
   planningStudent,
   unavailableCourses,
   unresolvedEnrollments,
