@@ -24,7 +24,7 @@
 | 場所 | 中身 |
 |---|---|
 | `engine/` | 判定エンジン。外部に依存しない |
-| `shared/` | 画面と API が共有する型と Zod スキーマ |
+| `shared/` | 画面と API が共有する型と Zod スキーマ。`engine/` からは型だけを読む |
 | `worker/` | API（Hono）。`engine/` と `shared/` を呼ぶ |
 | `src/` | 画面（React） |
 | `demo/` | 公開デモの入口。`src/` と `worker/` をブラウザの中で動かす |

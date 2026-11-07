@@ -3,7 +3,8 @@ import type { Student } from "../../../engine/model";
 import { kamomeCourses } from "./courses";
 
 // 判定エンジン仕様 v2 のテスト表（T 番号）の型を、この大学の科目で組んだ。
-// 読み方が分かれる箇所に関わるものは入れない。曖昧箇所の検出の評価を甘くしないため。
+// 読み方が分かれる箇所に関わるものは入れない方針で組んだ。曖昧箇所の検出の評価を甘くしないため。
+// ただし正解ルールでは、T22b（同じ学期の履修）と T35（再履修と履修上限）が曖昧箇所に関わって保留（pending）になる。誤りには数えない。
 
 function student(overrides: Partial<Student> = {}): Student {
   return {

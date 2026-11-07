@@ -137,6 +137,9 @@ function checkCode() {
   expectEmpty("D2", "依存の向き: src と shared は worker を読まない", toWorker);
   const toSrc = git(["grep", "-nE", 'from "(\\.\\./)+src', "--", "engine", "shared", "worker"]).stdout;
   expectEmpty("D3", "依存の向き: engine、shared、worker は src を読まない", toSrc);
+  const fromEngine = git(["grep", "-nE", '^(import|export) .*from "(\\.\\./)+engine', "--", "shared"]).stdout;
+  const sharedRuntime = lines(fromEngine).filter((l) => !/:(import|export) type /.test(l)).join("\n");
+  expectEmpty("D4", "依存の向き: shared は engine の型だけを読む", sharedRuntime);
 
   const sdk = lines(git(["grep", "-n", "@anthropic-ai/sdk", "--", ":!package.json", ":!package-lock.json", ":!docs", ":!scripts/audit.mjs"]).stdout)
     .filter((l) => !l.startsWith("worker/"));
